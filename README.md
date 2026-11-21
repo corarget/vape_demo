@@ -22,11 +22,11 @@ White-label движок магазина: Telegram Mini App-витрина, о�
 
 Источник Google Sheets задаётся в `/admin → Каталог и синхронизация`. Для новой копии нет привязки к таблице предыдущего магазина: менеджер подключает свою таблицу, выбирает GID листа, проверяет заголовки и настраивает сопоставление столбцов.
 
-Importer maps columns by header name and supports a saved CSV template plus manual field mapping. The canonical columns include `product_key`, `sku`, `category`, `name`, `option_label`, `price_byn`, `image_url`, `available`, `active`, `manufacturer`, `strength_mg`, `resistance_ohm`, `component_type`, and `color`.
+Importer maps columns by header name and supports a saved CSV template plus manual field mapping. The canonical columns include `product_key` or `sku` (unique variant ID), `category`, `category_label`, `category_image_url`, `category_icon`, `name`, `option_label`, `price_byn`, `image_url`, `available`, `active`, `manufacturer`, `strength_mg`, `resistance_ohm`, `component_type`, and `color`. Category label, image and icon columns are optional; when present, their values are synchronized into category settings.
 
 ### Product families and variants
 
-The current sheet has one unique `product_key` per row, so grouping only by `product_key` would leave every flavour in a separate card.
+Use one row per sellable variant. Grouping by the unique variant ID would leave every flavour in a separate card, so product families are formed from category, manufacturer, product-line name and component type.
 
 A storefront card is grouped by:
 - category;
@@ -36,14 +36,14 @@ A storefront card is grouped by:
 
 Rows in the same family become selectable variants. Variant attributes such as flavour, strength, resistance and colour remain attached to the variant. If one line has multiple strengths, strength is appended to the option label. Internal `product_key` and `sku` are retained for order records and manager views but are not rendered in the customer UI.
 
-This groups, for example, all 51 rows of Tasty Lab's “Рик и Морти на замерзоне” line into one product card while keeping other Tasty Lab lines separate.
+This keeps flavour variants together while preserving distinct product lines and component types.
 
 New public attributes can be added using known field names or a `public_` / `display_` prefix. Unknown unprefixed columns are not exposed to the customer API.
 
 ## Customer flow
 
 1. Browse families, search, filter by category and brand, sort by analytics / brand / price / name.
-2. Choose a flavour/variant. Unavailable variants are disabled.
+2. Choose a flavour/variant. Unavailable variants are visually de-emphasized; selecting one explains that it is temporarily unavailable and does not add it to the cart.
 3. Add variants to the cart.
 4. Enter name and phone, choose pickup or delivery, date and available time slot.
 5. The Worker rechecks availability and price against the current sheet before creating an order.
