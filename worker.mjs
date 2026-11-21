@@ -725,7 +725,13 @@ export default {
           return json({headers:rows[0].map(value=>String(value||"").trim()),sample:rows[1]||[],rowCount:Math.max(0,rows.length-1)});
         }
         if(path==="/api/admin/catalog-template"&&request.method==="GET"){
-          return json(await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}}));
+          const template=await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}});
+          return json({name:template.name||"",headers:template.headers||[],columnMapping:template.columnMapping||{},updatedAt:template.updatedAt||null,hasContent:!!template.content});
+        }
+        if(path==="/api/admin/catalog-template/file"&&request.method==="GET"){
+          const template=await getSetting(env,"catalog_template",{});
+          if(!template.content)return json({error:"Файл шаблона ещё не прикреплён"},404);
+          return new Response(template.content,{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":"attachment; filename*=UTF-8''"+encodeURIComponent(template.name||"catalog-template.csv"),"Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
         }
         if(path==="/api/admin/catalog-template"&&request.method==="PUT"){
           const body=await bodyJson(request);
@@ -736,7 +742,10 @@ export default {
             if(!/^[a-z][a-z0-9_]{1,40}$/.test(field))continue;
             if(headers.includes(String(source)))columnMapping[field]=String(source);
           }
-          const template={name:String(body.name||"Шаблон каталога.csv").slice(0,120),headers,columnMapping,updatedAt:now()};
+          const previous=await getSetting(env,"catalog_template",{});
+          const content=typeof body.content==="string"?body.content:String(previous.content||"");
+          if(content.length>50000)return json({error:"CSV-шаблон слишком большой. Максимум 50 КБ"},413);
+          const template={name:String(body.name||"Шаблон каталога.csv").slice(0,120),headers,columnMapping,content,updatedAt:now()};
           const catalog=await getCatalogConfig(env);
           await setSetting(env,"catalog_template",template,staff.id);
           await setSetting(env,"catalog_config",{...catalog,columnMapping},staff.id);
