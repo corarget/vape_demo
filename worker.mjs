@@ -636,9 +636,24 @@ export default {
         const adminOrderMatch=path.match(/^\/api\/admin\/orders\/([^/]+)$/);
         if(adminOrderMatch&&request.method==="PATCH"){
           const body=await bodyJson(request);
-          const status=String(body?.status||"");
-          const result=await updateOrderStatus(env,adminOrderMatch[1],status,staff,String(body?.message||""),body?.courierId||null);
-          return result.error?json({error:result.error},result.status):json({success:true,order:adminOrder(result.order)});
+          let order=await loadOrder(env,adminOrderMatch[1]);
+          if(!order)return json({error:"Заказ не найден"},404);
+          if(body?.status){
+            const result=await updateOrderStatus(env,adminOrderMatch[1],String(body.status),staff,String(body.message||""),body.courierId||null);
+            if(result.error)return json({error:result.error},result.status);
+            order=result.order;
+          }
+          if(body?.paymentStatus!==undefined){
+            const paymentStatus=String(body.paymentStatus);
+            if(!["unpaid","paid","refunded","failed"].includes(paymentStatus))return json({error:"Некорректный статус оплаты"},400);
+            await env.DB.batch([
+              env.DB.prepare("UPDATE orders SET payment_status=?,updated_at=?,version=version+1 WHERE id=?").bind(paymentStatus,now(),adminOrderMatch[1]),
+              env.DB.prepare("INSERT INTO order_events(order_id,actor_id,actor_role,event_type,message,metadata_json,created_at) VALUES(?,?,?,?,?,?,?)").bind(adminOrderMatch[1],staff.id,staff.role,"payment_updated","Статус оплаты изменён",JSON.stringify({paymentStatus}),now())
+            ]);
+            order=await loadOrder(env,adminOrderMatch[1]);
+            await logSystem(env,"info","orders","Обновлён статус оплаты",{orderId:adminOrderMatch[1],paymentStatus,staffId:staff.id});
+          }
+          return json({success:true,order:adminOrder(order)});
         }
         if(path==="/api/admin/settings"&&request.method==="GET")return json(await getConfig(env));
         if(path==="/api/admin/settings"&&request.method==="PUT"){
