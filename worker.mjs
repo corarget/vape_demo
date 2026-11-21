@@ -317,8 +317,8 @@ async function getSlots(env,date,method){
 async function getCatalogConfig(env){
   const saved=await getSetting(env,"catalog_config",{});
   return {
-    spreadsheetId:String(saved.spreadsheetId||env.GOOGLE_SHEET_ID||"1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk"),
-    catalogGid:String(saved.catalogGid||env.GOOGLE_CATALOG_GID||"782461029"),
+    spreadsheetId:String(saved.spreadsheetId||env.GOOGLE_SHEET_ID||""),
+    catalogGid:String(saved.catalogGid||env.GOOGLE_CATALOG_GID||""),
     cacheSeconds:Math.max(15,Math.min(600,Number(saved.cacheSeconds)||45)),
     columnMapping:saved.columnMapping&&typeof saved.columnMapping==="object"?saved.columnMapping:{}
   };
@@ -328,6 +328,7 @@ async function syncCatalog(env){
   await run(env,"INSERT INTO sync_runs(id,status,started_at) VALUES(?,?,?)",[id,"running",started]);
   try{
     const catalogConfig=await getCatalogConfig(env);
+    if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
     const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
     const details={fields:payload.fields,source:payload.source,categories:[...new Set(payload.products.map(product=>product.category).filter(Boolean))]};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
@@ -717,6 +718,7 @@ export default {
         }
         if(path==="/api/admin/catalog-preview"&&request.method==="GET"){
           const config=await getCatalogConfig(env);
+          if(!config.spreadsheetId||!config.catalogGid)return json({error:"Сначала подключите Google Sheets"},400);
           const url="https://docs.google.com/spreadsheets/d/"+encodeURIComponent(config.spreadsheetId)+"/export?format=csv&gid="+encodeURIComponent(config.catalogGid);
           const response=await fetch(url,{headers:{Accept:"text/csv,text/plain;q=0.9,*/*;q=0.1"},signal:AbortSignal.timeout(12000)});
           if(!response.ok)return json({error:"Google Sheets вернул HTTP "+response.status},502);

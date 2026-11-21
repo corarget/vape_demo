@@ -1,5 +1,5 @@
-const DEFAULT_SHEET_ID = "1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk";
-const DEFAULT_CATALOG_GID = "782461029";
+const DEFAULT_SHEET_ID = "";
+const DEFAULT_CATALOG_GID = "";
 
 const HEADER_ALIASES = {
   product_id:"product_key", productid:"product_key", id:"product_key",
@@ -126,9 +126,10 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
   const mapping=new Map(Object.entries(columnMapping||{}).filter(([,source])=>String(source||"").trim()).map(([field,source])=>[String(source).trim().toLocaleLowerCase("ru"),field]));
   const headers=rawHeaders.map(raw=>mapping.get(String(raw??"").trim().toLocaleLowerCase("ru"))||normalizeHeader(raw));
   const headerSet=new Set(headers);
-  for(const required of ["product_key","name","category","price_byn"]){
+  for(const required of ["name","category","price_byn"]){
     if(!headerSet.has(required))throw new Error("В листе Catalog отсутствует обязательный столбец: "+required);
   }
+  if(!headerSet.has("product_key")&&!headerSet.has("sku"))throw new Error("Нужен столбец product_key или sku — уникальный ID варианта");
 
   const families=new Map();
   const allFields=new Map();
