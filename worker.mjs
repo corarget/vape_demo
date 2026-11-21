@@ -1,4 +1,5 @@
 import { loadCatalog } from "./catalog.mjs";
+import { html } from "./site.mjs";
 
 const VERSION = "1.0.0";
 
@@ -50,6 +51,20 @@ async function catalogResponse(request, env, ctx) {
   }
 }
 
+function htmlResponse() {
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+      "Content-Security-Policy": "default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' https://telegram.org; connect-src 'self'; base-uri 'self'; object-src 'none'"
+    }
+  });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -70,22 +85,13 @@ export default {
       }, 200);
     }
 
-    if (!env.ASSETS) return new Response("Static assets binding is not configured", { status: 503 });
-
-    const assetResponse = await env.ASSETS.fetch(request);
-    const headers = new Headers(assetResponse.headers);
-    headers.set("X-Content-Type-Options", "nosniff");
-    headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    if ((headers.get("Content-Type") || "").includes("text/html")) {
-      headers.set("Content-Security-Policy",
-        "default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' https://telegram.org; connect-src 'self'; base-uri 'self'; object-src 'none'");
-      headers.set("Cache-Control", "no-cache");
+    if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
+      return htmlResponse();
     }
-    return new Response(assetResponse.body, {
-      status: assetResponse.status,
-      statusText: assetResponse.statusText,
-      headers
+
+    return new Response("Не найдено", {
+      status: 404,
+      headers: { "Content-Type": "text/plain; charset=utf-8", "X-Content-Type-Options": "nosniff" }
     });
   }
 };

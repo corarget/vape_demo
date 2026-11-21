@@ -5,9 +5,10 @@
 ## Архитектура
 
 - `index.html` — интерфейс Telegram Mini App.
+- `site.mjs` — HTML как строковый модуль для Worker.
 - `catalog.mjs` — общий модуль импорта и нормализации Google Sheets CSV.
 - `server.mjs` — локальный сервер для разработки.
-- `worker.mjs` — Cloudflare Worker: API каталога, кеширование и раздача статических файлов.
+- `worker.mjs` — Cloudflare Worker: API каталога, кеширование и выдача Mini App.
 
 Production Worker: `violet-shop-demo`  
 URL: https://violet-shop-demo.platondran.workers.dev
