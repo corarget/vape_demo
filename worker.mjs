@@ -734,7 +734,7 @@ export default {
           const spreadsheetId=String(body?.spreadsheetId||current.spreadsheetId).trim();
           const catalogGid=String(body?.catalogGid||current.catalogGid).trim();
           const cacheSeconds=Math.max(15,Math.min(600,Number(body?.cacheSeconds)||current.cacheSeconds));
-          if(!/^[A-Za-z0-9_-]{20,}$/.test(spreadsheetId)||!/^\\d+$/.test(catalogGid))return json({error:"Проверьте ID таблицы и GID листа"},400);
+          if(!/^[A-Za-z0-9_-]{20,}$/.test(spreadsheetId)||!/^\d+$/.test(catalogGid))return json({error:"Проверьте ID таблицы и GID листа"},400);
           await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,cacheSeconds},staff.id);
           await caches.default.delete(new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"}));
           await logSystem(env,"info","catalog","Изменены настройки источника каталога",{spreadsheetId,catalogGid,cacheSeconds});
