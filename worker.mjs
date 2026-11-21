@@ -311,11 +311,20 @@ async function getSlots(env,date,method){
   }
   return result;
 }
+async function getCatalogConfig(env){
+  const saved=await getSetting(env,"catalog_config",{});
+  return {
+    spreadsheetId:String(saved.spreadsheetId||env.GOOGLE_SHEET_ID||"1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk"),
+    catalogGid:String(saved.catalogGid||env.GOOGLE_CATALOG_GID||"782461029"),
+    cacheSeconds:Math.max(15,Math.min(600,Number(saved.cacheSeconds)||45))
+  };
+}
 async function syncCatalog(env){
   const id=randomId(),started=now();
   await run(env,"INSERT INTO sync_runs(id,status,started_at) VALUES(?,?,?)",[id,"running",started]);
   try{
-    const payload=await loadCatalog({spreadsheetId:env.GOOGLE_SHEET_ID,catalogGid:env.GOOGLE_CATALOG_GID});
+    const catalogConfig=await getCatalogConfig(env);
+    const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid});
     const details={fields:payload.fields,source:payload.source};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
       [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
@@ -351,13 +360,14 @@ async function catalogResponse(request,env,ctx){
   const cache=caches.default;
   const cacheKey=new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"});
   const force=new URL(request.url).searchParams.has("refresh");
+  const catalogConfig=await getCatalogConfig(env);
   if(!force){
     const cached=await cache.match(cacheKey);
     if(cached)return cached;
   }
   try{
     const payload=publicCatalog(await syncCatalog(env));
-    const response=json({...payload,version:VERSION},200,{"Cache-Control":"public, max-age=45","X-Catalog-Source":"sheets"});
+    const response=json({...payload,version:VERSION},200,{"Cache-Control":"public, max-age="+catalogConfig.cacheSeconds,"X-Catalog-Source":"sheets"});
     ctx.waitUntil(cache.put(cacheKey,response.clone()).catch(error=>logSystem(env,"warning","cache","Не удалось сохранить кеш каталога",{error:String(error)})));
     return response;
   }catch(error){
@@ -716,6 +726,19 @@ export default {
           if(body?.telegramId!==undefined){await run(env,"UPDATE staff SET telegram_id=? WHERE id=?",[String(body.telegramId||"").trim()||null,staffMatch[1]]);}
           if(body?.active!==undefined){await run(env,"UPDATE staff SET active=? WHERE id=?",[body.active===false?0:1,staffMatch[1]]);if(body.active===false)await run(env,"DELETE FROM sessions WHERE staff_id=?",[staffMatch[1]]);}
           return json({success:true});
+        }
+        if(path==="/api/admin/sync-settings"&&request.method==="GET")return json(await getCatalogConfig(env));
+        if(path==="/api/admin/sync-settings"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          const current=await getCatalogConfig(env);
+          const spreadsheetId=String(body?.spreadsheetId||current.spreadsheetId).trim();
+          const catalogGid=String(body?.catalogGid||current.catalogGid).trim();
+          const cacheSeconds=Math.max(15,Math.min(600,Number(body?.cacheSeconds)||current.cacheSeconds));
+          if(!/^[A-Za-z0-9_-]{20,}$/.test(spreadsheetId)||!/^\\d+$/.test(catalogGid))return json({error:"Проверьте ID таблицы и GID листа"},400);
+          await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,cacheSeconds},staff.id);
+          await caches.default.delete(new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"}));
+          await logSystem(env,"info","catalog","Изменены настройки источника каталога",{spreadsheetId,catalogGid,cacheSeconds});
+          return json({success:true,settings:{spreadsheetId,catalogGid,cacheSeconds}});
         }
         if(path==="/api/admin/sync"&&request.method==="POST"){
           const payload=await syncCatalog(env);
