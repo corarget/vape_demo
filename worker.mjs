@@ -553,7 +553,7 @@ async function sourceCategories(env){
   const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
   let categories=[];
   try{categories=JSON.parse(latest?.details_json||"{}").categories||[];}catch{}
-  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||"✦"),sortOrder:index});
+  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||""),sortOrder:index});
 }
 async function categorySettings(env){
   const [source,saved]=await Promise.all([sourceCategories(env),getSetting(env,"category_config",{})]);
