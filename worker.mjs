@@ -155,7 +155,7 @@ function customerOrder(order){
     id:order.id,number:order.number,status:order.status,statusLabel:STATUS_LABELS[order.status]||order.status,
     customerName:order.customer_name,deliveryMethod:order.delivery_method,address:order.address,
     slotDate:order.slot_date,slotTime:order.slot_time,comment:order.comment,total:order.total,
-    currency:order.currency,paymentMethod:order.payment_method,paymentStatus:order.payment_status,
+    currency:order.currency,deliveryFee:Number(order.delivery_fee||0),paymentMethod:order.payment_method,paymentStatus:order.payment_status,
     createdAt:order.created_at,updatedAt:order.updated_at,
     items:order.items.map(item=>({name:item.product_name,brand:item.manufacturer,variant:item.option_label,quantity:item.quantity,unitPrice:item.unit_price,lineTotal:item.line_total})),
     events:order.events.map(event=>({type:event.event_type,status:event.to_status,message:event.message,createdAt:event.created_at}))
@@ -421,9 +421,10 @@ async function createOrder(request,env){
       unitPrice:option.price,lineTotal
     });
   }
+  const itemSubtotal=total;
+  if(itemSubtotal<Math.max(0,Number(config.minOrder)||0))return json({error:"Минимальная сумма заказа: "+(Number(config.minOrder)/100).toFixed(2)+" BYN"},400);
   const deliveryFee=method==="delivery"?Math.max(0,Number(config.deliveryFee)||0):0;
-  total+=deliveryFee;
-  if(total<Math.max(0,Number(config.minOrder)||0))return json({error:"Минимальная сумма заказа: "+(Number(config.minOrder)/100).toFixed(2)+" BYN"},400);
+  total=itemSubtotal+deliveryFee;
 
   let telegramUser=null;
   if(env.BOT_TOKEN)telegramUser=await verifyTelegramInitData(body.telegramInitData,env.BOT_TOKEN);
@@ -433,8 +434,8 @@ async function createOrder(request,env){
   const orderNumber=Number(numberResult.meta?.last_row_id||Date.now());
   const capacity=Number(config.slotCapacity)||4;
   const statements=[
-    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,customer_name,phone,delivery_method,address,slot_date,slot_time,comment,status,total,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND delivery_method=? AND status NOT IN ('cancelled','rejected')) < ?")
-      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,name,phone,method,address,slotDate,slotTime,comment,String(total),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
+    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,customer_name,phone,delivery_method,address,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND delivery_method=? AND status NOT IN ('cancelled','rejected')) < ?")
+      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,name,phone,method,address,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
     ...items.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,item.productId,item.productKey,item.sku,item.productName,item.manufacturer,item.optionLabel,JSON.stringify(item.attributes),String(item.quantity),String(item.unitPrice),String(item.lineTotal),orderId)),
     env.DB.prepare("INSERT INTO order_events(order_id,actor_role,event_type,to_status,message,metadata_json,created_at) SELECT ?,'customer','created','new','Заказ оформлен',?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
