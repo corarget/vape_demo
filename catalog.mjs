@@ -46,7 +46,7 @@ const FIELD_LABELS = {
   is_new:"Новинка"
 };
 
-function normalizeHeader(value) {
+export function normalizeHeader(value) {
   const normalized=String(value??"").replace(/^\uFEFF/,"").trim().toLowerCase()
     .replace(/[\s\-./]+/g,"_").replace(/[^\p{L}\p{N}_]/gu,"");
   return HEADER_ALIASES[normalized]||normalized;
@@ -118,12 +118,13 @@ export function parseCSV(text){
   return rows;
 }
 
-export function parseCatalogCSV(csvText){
+export function parseCatalogCSV(csvText,{columnMapping={}}={}){
   if(!csvText||/^\s*</.test(csvText))throw new Error("Google Sheets вернул не CSV. Проверьте доступ к таблице");
   const rows=parseCSV(csvText);
   const rawHeaders=rows.shift();
   if(!rawHeaders?.length)throw new Error("В листе Catalog нет строки заголовков");
-  const headers=rawHeaders.map(normalizeHeader);
+  const mapping=new Map(Object.entries(columnMapping||{}).filter(([,source])=>String(source||"").trim()).map(([field,source])=>[String(source).trim().toLocaleLowerCase("ru"),field]));
+  const headers=rawHeaders.map(raw=>mapping.get(String(raw??"").trim().toLocaleLowerCase("ru"))||normalizeHeader(raw));
   const headerSet=new Set(headers);
   for(const required of ["product_key","name","category","price_byn"]){
     if(!headerSet.has(required))throw new Error("В листе Catalog отсутствует обязательный столбец: "+required);
@@ -253,7 +254,8 @@ export function parseCatalogCSV(csvText){
 
 export async function loadCatalog({
   spreadsheetId=DEFAULT_SHEET_ID,
-  catalogGid=DEFAULT_CATALOG_GID
+  catalogGid=DEFAULT_CATALOG_GID,
+  columnMapping={}
 }={}){
   const url="https://docs.google.com/spreadsheets/d/"+encodeURIComponent(spreadsheetId)+
     "/export?format=csv&gid="+encodeURIComponent(catalogGid);
@@ -262,7 +264,7 @@ export async function loadCatalog({
     signal:AbortSignal.timeout(15000)
   });
   if(!response.ok)throw new Error("Google Sheets вернул HTTP "+response.status);
-  const parsed=parseCatalogCSV(await response.text());
+  const parsed=parseCatalogCSV(await response.text(),{columnMapping});
   return {
     source:"google-sheets",
     updatedAt:new Date().toISOString(),

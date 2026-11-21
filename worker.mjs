@@ -1,4 +1,4 @@
-import { loadCatalog } from "./catalog.mjs";
+import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
@@ -16,6 +16,9 @@ const DEFAULT_CONFIG = {
   timezone:"Europe/Minsk",currency:"BYN",storeName:"VIOLET SHOP",
   pickupEnabled:true,deliveryEnabled:true,slotMinutes:60,leadMinutes:60,
   daysAhead:7,slotCapacity:4,minOrder:0,deliveryFee:0,address:"",phone:"",
+  brandTagline:"",logoUrl:"",heroTitle:"Каталог",heroSubtitle:"Выберите то, что вам нужно",
+  theme:{accent:"#a855f7",accent2:"#d946ef",background:"#08080b",panel:"#181820"},
+  defaultSort:"featured",analyticsEnabled:true,
   weeklyHours:{
     mon:{open:"10:00",close:"21:00",closed:false},
     tue:{open:"10:00",close:"21:00",closed:false},
@@ -111,7 +114,7 @@ async function setSetting(env,key,value,updatedBy="system"){
 }
 async function getConfig(env){
   const saved=await getSetting(env,"store_config",{});
-  return {...DEFAULT_CONFIG,...saved,weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
+  return {...DEFAULT_CONFIG,...saved,theme:{...DEFAULT_CONFIG.theme,...(saved?.theme||{})},weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
 }
 async function getStaff(request,env){
   const token=parseCookie(request,COOKIE);
@@ -316,7 +319,8 @@ async function getCatalogConfig(env){
   return {
     spreadsheetId:String(saved.spreadsheetId||env.GOOGLE_SHEET_ID||"1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk"),
     catalogGid:String(saved.catalogGid||env.GOOGLE_CATALOG_GID||"782461029"),
-    cacheSeconds:Math.max(15,Math.min(600,Number(saved.cacheSeconds)||45))
+    cacheSeconds:Math.max(15,Math.min(600,Number(saved.cacheSeconds)||45)),
+    columnMapping:saved.columnMapping&&typeof saved.columnMapping==="object"?saved.columnMapping:{}
   };
 }
 async function syncCatalog(env){
@@ -324,8 +328,8 @@ async function syncCatalog(env){
   await run(env,"INSERT INTO sync_runs(id,status,started_at) VALUES(?,?,?)",[id,"running",started]);
   try{
     const catalogConfig=await getCatalogConfig(env);
-    const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid});
-    const details={fields:payload.fields,source:payload.source};
+    const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
+    const details={fields:payload.fields,source:payload.source,categories:[...new Set(payload.products.map(product=>product.category).filter(Boolean))]};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
       [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
     await logSystem(env,"info","catalog","Каталог синхронизирован",{
@@ -348,7 +352,7 @@ function publicCatalog(payload){
       manufacturer:product.manufacturer,brand:product.brand,image:product.image,
       description:product.description,available:product.available,
       price:product.price,priceMin:product.priceMin,priceMax:product.priceMax,
-      popularity:product.popularity,sortOrder:product.sortOrder,attributes:product.attributes,
+      popularity:product.popularity,analyticsScore:product.analyticsScore||0,views30d:product.views30d||0,cartAdds30d:product.cartAdds30d||0,orders30d:product.orders30d||0,sortOrder:product.sortOrder,attributes:product.attributes,
       options:product.options.map(option=>({
         variantId:option.variantId,label:option.label,available:option.available,
         price:option.price,attributes:option.attributes
@@ -367,6 +371,15 @@ async function catalogResponse(request,env,ctx){
   }
   try{
     const payload=publicCatalog(await syncCatalog(env));
+    try{
+      const since=new Date(Date.now()-30*86400000).toISOString();
+      const signals=await all(env,"SELECT product_id,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cart_adds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? GROUP BY product_id",[since]);
+      const signalMap=new Map(signals.map(row=>[row.product_id,{views:Number(row.views||0),cartAdds:Number(row.cart_adds||0),orders:Number(row.orders||0)}]));
+      payload.products=payload.products.map(product=>{
+        const signal=signalMap.get(product.id)||{views:0,cartAdds:0,orders:0};
+        return {...product,views30d:signal.views,cartAdds30d:signal.cartAdds,orders30d:signal.orders,analyticsScore:signal.views+signal.cartAdds*4+signal.orders*12};
+      });
+    }catch(error){await logSystem(env,"warning","analytics","Не удалось рассчитать популярность каталога",{error:String(error)});}
     const response=json({...payload,version:VERSION},200,{"Cache-Control":"public, max-age="+catalogConfig.cacheSeconds,"X-Catalog-Source":"sheets"});
     ctx.waitUntil(cache.put(cacheKey,response.clone()).catch(error=>logSystem(env,"warning","cache","Не удалось сохранить кеш каталога",{error:String(error)})));
     return response;
@@ -403,7 +416,7 @@ async function createOrder(request,env){
   if(!Array.isArray(body.items)||body.items.length===0||body.items.length>40)return json({error:"Корзина пуста или содержит слишком много позиций"},400);
 
   let catalog;
-  try{catalog=await loadCatalog({spreadsheetId:env.GOOGLE_SHEET_ID,catalogGid:env.GOOGLE_CATALOG_GID});}
+  try{const catalogConfig=await getCatalogConfig(env);catalog=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});}
   catch(error){await logSystem(env,"error","orders","Не удалось проверить каталог при оформлении заказа",{error:String(error)});return json({error:"Не удалось проверить наличие товаров. Попробуйте позже"},503);}
   const products=new Map(catalog.products.map(product=>[product.id,product]));
   const items=[];let total=0;
@@ -416,7 +429,7 @@ async function createOrder(request,env){
     total+=lineTotal;
     items.push({
       productId:product.id,productKey:option.productKey,sku:option.sku,
-      productName:product.name,manufacturer:product.manufacturer,
+      productName:product.name,manufacturer:product.manufacturer,category:product.category,
       optionLabel:option.label,attributes:option.attributes,quantity,
       unitPrice:option.price,lineTotal
     });
@@ -439,7 +452,9 @@ async function createOrder(request,env){
     ...items.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,item.productId,item.productKey,item.sku,item.productName,item.manufacturer,item.optionLabel,JSON.stringify(item.attributes),String(item.quantity),String(item.unitPrice),String(item.lineTotal),orderId)),
     env.DB.prepare("INSERT INTO order_events(order_id,actor_role,event_type,to_status,message,metadata_json,created_at) SELECT ?,'customer','created','new','Заказ оформлен',?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
-      .bind(orderId,JSON.stringify({deliveryMethod:method,slotDate,slotTime}),createdAt,orderId)
+      .bind(orderId,JSON.stringify({deliveryMethod:method,slotDate,slotTime}),createdAt,orderId),
+    ...items.map(item=>env.DB.prepare("INSERT INTO analytics_events(event_type,product_id,product_name,category,brand,visitor_hash,created_at) SELECT 'order_created',?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
+      .bind(item.productId,item.productName,item.category,item.manufacturer,customerKeyHash,createdAt,orderId))
   ];
   let result;
   try{result=await env.DB.batch(statements);}
@@ -537,7 +552,10 @@ async function publicSettings(env){
   return {
     storeName:c.storeName,currency:c.currency,pickupEnabled:c.pickupEnabled,
     deliveryEnabled:c.deliveryEnabled,deliveryFee:c.deliveryFee,minOrder:c.minOrder,
-    address:c.address,phone:c.phone,daysAhead:c.daysAhead
+    address:c.address,phone:c.phone,daysAhead:c.daysAhead,
+    brandTagline:c.brandTagline||"",logoUrl:c.logoUrl||"",heroTitle:c.heroTitle||"Каталог",heroSubtitle:c.heroSubtitle||"",
+    theme:c.theme||DEFAULT_CONFIG.theme,defaultSort:c.defaultSort||"featured",analyticsEnabled:c.analyticsEnabled!==false,
+    categories:await getSetting(env,"category_config",{})
   };
 }
 async function telegramWebhook(request,env){
@@ -677,7 +695,7 @@ export default {
           if(!body||typeof body!=="object")return json({error:"Некорректные настройки"},400);
           const current=await getConfig(env);
           const next={...current};
-          const allowed=["storeName","currency","pickupEnabled","deliveryEnabled","slotMinutes","leadMinutes","daysAhead","slotCapacity","minOrder","deliveryFee","address","phone","weeklyHours"];
+          const allowed=["storeName","currency","pickupEnabled","deliveryEnabled","slotMinutes","leadMinutes","daysAhead","slotCapacity","minOrder","deliveryFee","address","phone","weeklyHours","brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"];
           for(const key of allowed)if(body[key]!==undefined)next[key]=body[key];
           next.slotMinutes=Math.max(15,Math.min(240,Number(next.slotMinutes)||60));
           next.leadMinutes=Math.max(0,Math.min(1440,Number(next.leadMinutes)||0));
@@ -685,6 +703,17 @@ export default {
           next.slotCapacity=Math.max(1,Math.min(100,Number(next.slotCapacity)||4));
           next.minOrder=Math.max(0,Number(next.minOrder)||0);
           next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
+          next.storeName=String(next.storeName||"Магазин").trim().slice(0,80);
+          next.brandTagline=String(next.brandTagline||"").trim().slice(0,120);
+          next.logoUrl=String(next.logoUrl||"").trim().slice(0,500);
+          next.heroTitle=String(next.heroTitle||"Каталог").trim().slice(0,80);
+          next.heroSubtitle=String(next.heroSubtitle||"").trim().slice(0,180);
+          const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""));
+          const theme={...DEFAULT_CONFIG.theme,...(current.theme||{}),...(body.theme||{})};
+          for(const key of Object.keys(DEFAULT_CONFIG.theme))if(!validColor(theme[key]))theme[key]=DEFAULT_CONFIG.theme[key];
+          next.theme=theme;
+          if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
+          next.analyticsEnabled=next.analyticsEnabled!==false;
           await setSetting(env,"store_config",next,staff.id);
           await logSystem(env,"info","settings","Настройки магазина обновлены",{staffId:staff.id});
           return json({success:true,settings:next});
