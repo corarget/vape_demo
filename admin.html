@@ -87,6 +87,7 @@
         <div class="panel"><div class="panel-head"><div><h2>Синхронизация каталога</h2><p>Источник данных — Google Sheets, лист Catalog</p></div><span class="pill" id="sync-state">Не проверено</span></div><div id="catalog-stats" class="grid metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div><button class="btn primary" id="sync-now">↻ Синхронизировать сейчас</button><div class="small muted" style="margin-top:10px">Синхронизация не изменяет исходную таблицу. Витрина читает данные и нормализует варианты в товарные линейки.</div></div>
         <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
       </div>
+      <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Источник и кеширование</h2><p>Настройки подключения к таблице, без изменения самой таблицы</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Google Sheets ID<input id="sync-sheet-id" required></label><label>GID листа Catalog<input id="sync-gid" inputmode="numeric" required></label><label>Кеш каталога, секунд<input id="sync-cache" type="number" min="15" max="600" step="5" required></label><div class="full"><button class="btn primary" type="submit">Сохранить настройки синхронизации</button></div></form></div>
       <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
     </section>
 
@@ -269,12 +270,14 @@ $("invite-form").onsubmit=async e=>{
  }catch(error){toast(error.message);}
 };
 async function loadCatalog(){
- const [runs]=await Promise.all([api("/api/admin/sync-runs")]);
+ const [runs,settings]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings")]);
  const latest=runs.runs[0];
  $("sync-state").textContent=latest?.status==="success"?"Синхронизирован":latest?.status==="error"?"Ошибка":"Ожидает проверки";
  $("catalog-stats").innerHTML=[["Строк в источнике",latest?.source_rows??"—"],["Карточек",latest?.product_families??"—"],["Вариантов",latest?.variants??"—"],["Последний запуск",latest?.finished_at?new Date(latest.finished_at).toLocaleString("ru-BY"):"—"]].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong style="font-size:1.1rem">'+x[1]+'</strong></div>').join("");
+ $("sync-sheet-id").value=settings.spreadsheetId;$("sync-gid").value=settings.catalogGid;$("sync-cache").value=settings.cacheSeconds;
  $("sync-history").innerHTML=runs.runs.length?'<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Статус</th><th>Строк</th><th>Карточек</th><th>Вариантов</th><th>Ошибка</th></tr></thead><tbody>'+runs.runs.map(r=>'<tr><td>'+new Date(r.started_at).toLocaleString("ru-BY")+'</td><td>'+statusPill(r.status==="success"?"completed":r.status==="error"?"rejected":"new")+'</td><td>'+(r.source_rows??"—")+'</td><td>'+(r.product_families??"—")+'</td><td>'+(r.variants??"—")+'</td><td>'+esc(r.error||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">История появится после первого запуска</div>';
 }
+$("sync-settings-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/sync-settings",{method:"PUT",body:JSON.stringify({spreadsheetId:$("sync-sheet-id").value,catalogGid:$("sync-gid").value,cacheSeconds:Number($("sync-cache").value)})});toast("Настройки синхронизации сохранены");await loadCatalog();}catch(error){toast(error.message);}};
 $("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="Синхронизация…";try{const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast("Обновлено: "+d.summary.productFamilies+" карточек, "+d.summary.variants+" вариантов");await loadCatalog();}catch(error){toast(error.message);await loadCatalog();}finally{b.disabled=false;b.textContent="↻ Синхронизировать сейчас";}};
 async function loadLogs(){
  const level=$("log-filter").value;
