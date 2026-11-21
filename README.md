@@ -1,6 +1,6 @@
 # VIOLET SHOP
 
-Telegram Mini App-витрина и операционная панель магазина. Рынок: Беларусь, валюта BYN, расписание Europe/Minsk.
+White-label движок магазина: Telegram Mini App-витрина, операционная панель и клиентская конфигурация. Текущий production-магазин использует BYN и Europe/Minsk; новые копии настраиваются отдельно.
 
 ## Production
 
@@ -20,10 +20,9 @@ Telegram Mini App-витрина и операционная панель маг
 
 ## Google Sheets catalog
 
-Spreadsheet: [Copy of PPrice](https://docs.google.com/spreadsheets/d/1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk/edit)  
-Sheet: `Catalog`, gid `782461029`.
+Источник Google Sheets задаётся в `/admin → Каталог и синхронизация`. Для новой копии нет привязки к таблице предыдущего магазина: менеджер подключает свою таблицу, выбирает GID листа, проверяет заголовки и настраивает сопоставление столбцов.
 
-Importer maps columns by header name, not by column letter. Current columns include `product_key`, `sku`, `category`, `name`, `option_label`, `price_byn`, `image_url`, `available`, `active`, `manufacturer`, `strength_mg`, `resistance_ohm`, `component_type`, and `color`.
+Importer maps columns by header name and supports a saved CSV template plus manual field mapping. The canonical columns include `product_key`, `sku`, `category`, `name`, `option_label`, `price_byn`, `image_url`, `available`, `active`, `manufacturer`, `strength_mg`, `resistance_ohm`, `component_type`, and `color`.
 
 ### Product families and variants
 
@@ -43,7 +42,7 @@ New public attributes can be added using known field names or a `public_` / `dis
 
 ## Customer flow
 
-1. Browse families, search, filter by category and brand, sort by brand / price / name.
+1. Browse families, search, filter by category and brand, sort by analytics / brand / price / name.
 2. Choose a flavour/variant. Unavailable variants are disabled.
 3. Add variants to the cart.
 4. Enter name and phone, choose pickup or delivery, date and available time slot.
@@ -80,6 +79,24 @@ Staff sessions use random, hashed server-side session identifiers in HttpOnly, S
 
 Initial schedule values are placeholders (10:00–21:00 daily, 60-minute slots, 60-minute lead, 4 orders per slot). Set the real store schedule in `/admin → Слоты и график`.
 
+## Analytics
+
+The storefront records anonymous events: product views, add-to-cart actions, unavailable-variant clicks, category/brand filters, searches, checkout starts and completed order items. Visitor tokens are hashed before storage; email-like and phone-like search strings are discarded. Managers can inspect 7/30/90-day totals, top products, search terms and daily activity from `/admin → Аналитика`.
+
+The 30-day product score is calculated as views + 4 × cart additions + 12 × ordered items. It is exposed to the storefront as an analytics sorting signal and can be selected as the default sort strategy.
+
+## White-label configuration
+
+The admin can change the store name, tagline, logo URL, hero copy, theme colors and default sorting without editing source code. Category keys continue to come from the source sheet; managers can customize each category's public label, image URL, icon, visibility and order.
+
+A CSV template can be attached to the catalog setup. The original file is stored with the template metadata in D1; headers and column mappings are reusable. The admin can preview live Google Sheets headers, map them to canonical fields, and download the attached template.
+
+Use `/admin → Брендинг и копирование` to export or import a configuration JSON. The transfer file includes store presentation, category overrides and catalog-template metadata. It excludes the source spreadsheet ID, orders, staff accounts, sessions, customer tokens and bot secrets. Connect the new client's own sheet after importing.
+
+For each customer, deploy a separate Worker and D1 database. Give the client's operator access by creating a one-time manager invitation in `/admin → Команда`. Do not share the developer's Cloudflare or GitHub credentials.
+
+See [docs/WHITE_LABEL_SETUP.md](docs/WHITE_LABEL_SETUP.md) for the repeatable client handoff procedure.
+
 ## Sync, logs and diagnostics
 
 - Public catalog is cached for 45 seconds.
@@ -111,7 +128,7 @@ Database: `violet-shop-db`
 Database ID: `a8aaafe7-93ff-43f0-892e-3c22d1d37ad5`  
 Jurisdiction: EU; primary region: Eastern Europe.
 
-Schema source: `migrations/0001_init.sql`.
+Schema sources: `migrations/0001_init.sql` and `migrations/0002_analytics.sql`.
 
 ## Development and deployment
 
