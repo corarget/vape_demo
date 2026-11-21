@@ -144,7 +144,7 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
     if(!productKey||!parseBoolean(row.active,true))return;
     activeRows++;
     const categoryKey=clean(row.category)||"Другое";
-    const categoryEntry=categories.get(categoryKey)||{key:categoryKey,label:categoryKey,image:"",icon:"✦"};
+    const categoryEntry=categories.get(categoryKey)||{key:categoryKey,label:categoryKey,image:"",icon:""};
     if(clean(row.category_label))categoryEntry.label=clean(row.category_label);
     if(!categoryEntry.image&&row.category_image_url)categoryEntry.image=safeImageUrl(row.category_image_url);
     if(clean(row.category_icon))categoryEntry.icon=clean(row.category_icon).slice(0,8);

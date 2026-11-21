@@ -553,7 +553,7 @@ async function sourceCategories(env){
   const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
   let categories=[];
   try{categories=JSON.parse(latest?.details_json||"{}").categories||[];}catch{}
-  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"✦",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||"✦"),sortOrder:index});
+  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||"✦"),sortOrder:index});
 }
 async function categorySettings(env){
   const [source,saved]=await Promise.all([sourceCategories(env),getSetting(env,"category_config",{})]);
@@ -722,10 +722,10 @@ export default {
           for(const [index,item] of body.categories.entries()){
             const key=String(item?.key||"").trim().slice(0,100);
             if(!key)continue;
-            const source=sourceMap.get(key)||{label:key,image:"",icon:"✦"};
+            const source=sourceMap.get(key)||{label:key,image:"",icon:""};
             const label=String(item.label||source.label||key).trim().slice(0,80);
             const image=String(item.image||"").trim().slice(0,500);
-            const icon=String(item.icon||source.icon||"✦").trim().slice(0,8);
+            const icon=String(item.icon||source.icon||"").trim().slice(0,8);
             const override={};
             if(label!==source.label)override.label=label;
             if(image!==source.image)override.image=/^https:\/\//i.test(image)?image:"";
