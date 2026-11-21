@@ -1,68 +1,126 @@
 # VIOLET SHOP
 
-Демонстрационная Telegram Mini App-витрина для розничного магазина в Беларуси.
+Telegram Mini App-витрина и операционная панель магазина. Рынок: Беларусь, валюта BYN, расписание Europe/Minsk.
 
-## Архитектура
+## Production
 
-- `index.html` — интерфейс Telegram Mini App.
-- `site.mjs` — HTML как строковый модуль для Worker.
-- `catalog.mjs` — общий модуль импорта и нормализации Google Sheets CSV.
-- `server.mjs` — локальный сервер для разработки.
-- `worker.mjs` — Cloudflare Worker: API каталога, кеширование и выдача Mini App.
+- Mini App: https://violet-shop-demo.platondran.workers.dev/
+- Manager panel: https://violet-shop-demo.platondran.workers.dev/admin
+- Courier panel: https://violet-shop-demo.platondran.workers.dev/courier
+- Health: https://violet-shop-demo.platondran.workers.dev/api/health
 
-Production Worker: `violet-shop-demo`  
-URL: https://violet-shop-demo.platondran.workers.dev
+## Architecture
 
-## Google Sheets
+- `index.html` / `site.mjs` — покупательская витрина.
+- `admin.html` / `admin.mjs` — менеджерский пульт и интерфейс курьера.
+- `catalog.mjs` — CSV import, normalization and product-family grouping.
+- `worker.mjs` — API, auth, order lifecycle, slot booking, Telegram webhook.
+- Cloudflare D1 (`violet-shop-db`) — orders, order items, staff, sessions, schedule, logs and settings.
+- Google Sheets — source of truth for product catalog only.
 
-Источник: [таблица каталога](https://docs.google.com/spreadsheets/d/1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk/edit)  
-Лист: `Catalog`, `gid=782461029`.
+## Google Sheets catalog
 
-Текущие заголовки:
+Spreadsheet: [Copy of PPrice](https://docs.google.com/spreadsheets/d/1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk/edit)  
+Sheet: `Catalog`, gid `782461029`.
 
-- `product_key` — общий идентификатор товара;
-- `sku` — артикул варианта;
-- `category` — категория;
-- `name` — название;
-- `option_label` — подпись варианта;
-- `price_byn` — цена в BYN;
-- `image_url` — HTTPS-ссылка на фотографию;
-- `available` — наличие;
-- `active` — показывать ли строку.
+Importer maps columns by header name, not by column letter. Current columns include `product_key`, `sku`, `category`, `name`, `option_label`, `price_byn`, `image_url`, `available`, `active`, `manufacturer`, `strength_mg`, `resistance_ohm`, `component_type`, and `color`.
 
-Строки с одинаковым `product_key` объединяются в одну карточку. Варианты сортируются по наличию, у каждого варианта сохраняются собственные SKU, цена и дополнительные публичные характеристики. Товары без доступных вариантов остаются в каталоге в конце списка.
+### Product families and variants
 
-### Новые поля
+The current sheet has one unique `product_key` per row, so grouping only by `product_key` would leave every flavour in a separate card.
 
-Импорт привязан к названиям заголовков, а не к буквам столбцов: столбцы можно переставлять и добавлять.
+A storefront card is grouped by:
+- category;
+- manufacturer / brand;
+- product-line name;
+- component type (when present).
 
-- `description`, `sort_order` и `popularity` поддерживаются как стандартные необязательные поля.
-- Известные безопасные характеристики (`brand`, `manufacturer`, `flavor`, `volume_ml`, `strength`, `color`, `size`, `material`, `weight`, `warranty`, `tags` и др.) попадают в карточку товара.
-- Любое новое поле с префиксом `public_` или `display_` будет показано в характеристиках. Например, `public_country` или `display_capacity`.
-- Неизвестные поля без такого префикса не отправляются в публичный API. Это защищает внутренние данные магазина (закупочные цены, поставщиков, остатки для учёта и заметки менеджеров) от случайной публикации.
+Rows in the same family become selectable variants. Variant attributes such as flavour, strength, resistance and colour remain attached to the variant. If one line has multiple strengths, strength is appended to the option label. Internal `product_key` and `sku` are retained for order records and manager views but are not rendered in the customer UI.
 
-Значения `available` и `active` понимают TRUE/FALSE, 1/0, yes/no и русские варианты. Пустой `active` трактуется как TRUE; пустой `available` — как FALSE.
+This groups, for example, all 51 rows of Tasty Lab's “Рик и Морти на замерзоне” line into one product card while keeping other Tasty Lab lines separate.
 
-Worker читает CSV-экспорт таблицы. Поэтому таблица должна быть доступна на чтение по ссылке. Если каталог должен оставаться закрытым, потребуется подключить Google Service Account и хранить его учётные данные как секрет Worker — не в исходниках.
+New public attributes can be added using known field names or a `public_` / `display_` prefix. Unknown unprefixed columns are not exposed to the customer API.
 
-## Локальный запуск
+## Customer flow
+
+1. Browse families, search, filter by category and brand, sort by brand / price / name.
+2. Choose a flavour/variant. Unavailable variants are disabled.
+3. Add variants to the cart.
+4. Enter name and phone, choose pickup or delivery, date and available time slot.
+5. The Worker rechecks availability and price against the current sheet before creating an order.
+6. Order history is fetched from D1 using a private random customer token stored in the browser.
+
+## Order workflow
+
+- `new` → `confirmed` / `rejected` / `cancelled`
+- `confirmed` → `preparing`
+- `preparing` → `ready`
+- Pickup: `ready` → `completed`
+- Delivery: `ready` → `assigned` → `picked_up` → `on_the_way` → `delivered` → `completed`
+
+Managers confirm/reject orders, move them through preparation, assign or reassign couriers and inspect event history. Couriers see only their assigned jobs and can update pickup / en-route / delivered states. Customers see status and event updates in their order history.
+
+## Manager and courier access
+
+Open `/admin` or `/courier`.
+
+The first login uses a one-time owner bootstrap code provided separately at deployment. Enter the code and the owner's display name. The code is stored only as a SHA-256 hash in D1 and is invalidated after the first successful owner login.
+
+Managers create one-time staff invitations from the Team section. Invitations expire after 48 hours and can create manager or courier accounts. A Telegram ID can be attached to an invitation or edited in the Team section for bot notifications.
+
+Staff sessions use random, hashed server-side session identifiers in HttpOnly, Secure, SameSite cookies. Customer routes never expose manager functions.
+
+## Schedule and slots
+
+- Weekly opening/closing times for each weekday.
+- Slot duration, lead time, booking horizon and capacity.
+- Pickup and delivery can be enabled independently.
+- Managers can block full days or selected time ranges for pickup, delivery or both.
+- The Worker checks capacity again during order insertion, so two buyers cannot successfully reserve the final slot simultaneously.
+
+Initial schedule values are placeholders (10:00–21:00 daily, 60-minute slots, 60-minute lead, 4 orders per slot). Set the real store schedule in `/admin → Слоты и график`.
+
+## Sync, logs and diagnostics
+
+- Public catalog is cached for 45 seconds.
+- Manager can force a sync from `/admin → Каталог и синхронизация`.
+- Every sync creates a D1 run record with row, family and variant counts.
+- API, auth, Telegram and catalog errors are written to `system_logs`.
+- `GET /api/health` checks Worker and D1 availability.
+
+## Telegram integration
+
+The code supports:
+- manager notification on new orders;
+- confirm / reject callback buttons;
+- customer status notifications (when the customer opened the bot and Telegram initData is verified);
+- courier assignment notifications;
+- webhook callback handling.
+
+To activate it:
+1. Add the bot token as a Cloudflare Worker secret named `BOT_TOKEN` (never commit it).
+2. Open `/admin → Telegram`, enter the manager chat ID and save.
+3. Press “Настроить webhook”.
+4. Add Telegram IDs for managers and couriers in the Team section.
+
+Without `BOT_TOKEN`, orders and manager/courier workflows still work in the Mini App panels, but bot notifications and Telegram callback actions remain inactive.
+
+## Cloudflare D1
+
+Database: `violet-shop-db`  
+Database ID: `a8aaafe7-93ff-43f0-892e-3c22d1d37ad5`  
+Jurisdiction: EU; primary region: Eastern Europe.
+
+Schema source: `migrations/0001_init.sql`.
+
+## Development and deployment
+
+Requires Node.js and Wrangler.
 
 ```bash
-node server.mjs
+npm install
+npm run dev
+npm run deploy
 ```
 
-Откройте http://127.0.0.1:3000.
-
-## API
-
-- `GET /api/health` — проверка Worker.
-- `GET /api/catalog` — каталог из Google Sheets.
-- `GET /api/catalog?refresh=1` — принудительное обновление кеша.
-
-Каталог кешируется на 60 секунд. При ошибке синхронизации API возвращает 502, а интерфейс показывает резервный демонстрационный каталог.
-
-## Заказы и Telegram
-
-Корзина, история заказов и панель менеджера пока остаются демонстрационными и хранятся в браузере. Для реальной обработки заказов нужно подключить серверное хранилище, Telegram Bot API, проверку `Telegram.WebApp.initData` и настроить токен бота с ID чата менеджеров. Эти секреты нельзя помещать в `index.html` или GitHub.
-
-Telegram Web App SDK подключён. HTTPS URL Worker можно указать в настройках Mini App через BotFather.
+Do not commit Cloudflare API tokens, bot tokens, owner bootstrap codes or customer session tokens.

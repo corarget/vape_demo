@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "violet-shop-demo",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-21",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "GOOGLE_SHEET_ID": "1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk",
+    "GOOGLE_CATALOG_GID": "782461029"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "violet-shop-db",
+      "database_id": "a8aaafe7-93ff-43f0-892e-3c22d1d37ad5",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
