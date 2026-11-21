@@ -42,6 +42,9 @@
         <button data-page="schedule"><span>◷</span>Слоты и график</button>
         <button data-page="team"><span>♙</span>Команда</button>
         <button data-page="catalog"><span>▦</span>Каталог и синхронизация</button>
+        <button data-page="categories"><span>▤</span>Категории</button>
+        <button data-page="analytics"><span>⌁</span>Аналитика</button>
+        <button data-page="branding"><span>✦</span>Брендинг и копирование</button>
         <button data-page="logs"><span>≋</span>Логи и ошибки</button>
         <button data-page="settings"><span>⚙</span>Настройки</button>
         <button data-page="telegram"><span>➤</span>Telegram</button>
@@ -87,8 +90,20 @@
         <div class="panel"><div class="panel-head"><div><h2>Синхронизация каталога</h2><p>Источник данных — Google Sheets, лист Catalog</p></div><span class="pill" id="sync-state">Не проверено</span></div><div id="catalog-stats" class="grid metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div><button class="btn primary" id="sync-now">↻ Синхронизировать сейчас</button><div class="small muted" style="margin-top:10px">Синхронизация не изменяет исходную таблицу. Витрина читает данные и нормализует варианты в товарные линейки.</div></div>
         <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
       </div>
-      <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Источник и кеширование</h2><p>Настройки подключения к таблице, без изменения самой таблицы</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Google Sheets ID<input id="sync-sheet-id" required></label><label>GID листа Catalog<input id="sync-gid" inputmode="numeric" required></label><label>Кеш каталога, секунд<input id="sync-cache" type="number" min="15" max="600" step="5" required></label><div class="full"><button class="btn primary" type="submit">Сохранить настройки синхронизации</button></div></form></div>
+      <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Источник и кеширование</h2><p>Настройки подключения к таблице, без изменения самой таблицы</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Ссылка на Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></label><label class="full">ID таблицы<input id="sync-sheet-id" required></label><label>GID листа<input id="sync-gid" inputmode="numeric" required></label><label>Кеш каталога, секунд<input id="sync-cache" type="number" min="15" max="600" step="5" required></label><div class="full"><button class="btn primary" type="submit">Сохранить подключение</button> <button class="btn" id="preview-sheet" type="button">Проверить таблицу</button></div></form></div>
+      <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Шаблон и сопоставление столбцов</h2><p>Можно прикрепить CSV-шаблон или проверить заголовки подключённой таблицы. Данные источника не изменяются.</p></div></div><div class="form-grid"><label class="full">Прикрепить шаблон CSV<input id="catalog-template-file" type="file" accept=".csv,text/csv"></label><div class="full actions"><button class="btn" id="attach-template" type="button">Сохранить шаблон</button><button class="btn" id="download-template" type="button">Скачать пустой шаблон</button><span id="template-info" class="muted small"></span></div><div id="column-mapping" class="full form-grid"></div><div class="full"><button class="btn" id="save-template" type="button">Сохранить сопоставление столбцов</button></div></div></div>
       <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
+    </section>
+
+    <section id="page-categories" class="section">
+      <div class="panel"><div class="panel-head"><div><h2>Категории витрины</h2><p>Названия, изображения, порядок и видимость. Исходные категории автоматически подтягиваются из подключённой таблицы.</p></div><button class="btn" id="categories-reload">Обновить из таблицы</button></div><div id="categories-list" class="grid"></div><div class="actions"><button class="btn primary" id="save-categories">Сохранить категории</button></div></div>
+    </section>
+
+    <section id="page-analytics" class="section">
+      <div class="toolbar"><select id="analytics-days"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select><button class="btn" id="analytics-reload">Обновить аналитику</button></div>
+      <div class="grid metrics" id="analytics-metrics"></div>
+      <div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Популярные товары</h2><p>Просмотры, добавления и оформленные заказы</p></div></div><div id="analytics-products"></div></div><div class="panel"><div class="panel-head"><div><h2>Поисковые запросы</h2><p>Что покупатели пытаются найти</p></div></div><div id="analytics-searches"></div></div></div>
+      <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>Динамика по дням</h2><p>Просмотры карточек, корзина и заказы</p></div></div><div id="analytics-daily"></div></div>
     </section>
 
     <section id="page-logs" class="section">
@@ -104,6 +119,22 @@
         <label class="field-row"><input id="cfg-pickup" type="checkbox"> Самовывоз включён</label><label class="field-row"><input id="cfg-delivery" type="checkbox"> Доставка включена</label>
         <div class="full"><button class="btn primary" type="submit">Сохранить настройки</button></div>
       </form></div>
+    </section>
+
+    <section id="page-branding" class="section">
+      <div class="grid two">
+        <div class="panel"><div class="panel-head"><div><h2>Индивидуальность магазина</h2><p>Внешний вид витрины без изменения кода</p></div></div><form id="branding-form" class="form-grid">
+          <label class="full">Короткое описание / слоган<input id="brand-tagline" maxlength="120" placeholder="Например: тщательно отобранные товары"></label>
+          <label class="full">URL логотипа<input id="brand-logo" type="url" placeholder="https://…"></label>
+          <label>Заголовок главной<input id="brand-hero-title" maxlength="80"></label><label>Текст под заголовком<input id="brand-hero-subtitle" maxlength="180"></label>
+          <label>Основной цвет<input id="brand-accent" type="color"></label><label>Вторичный цвет<input id="brand-accent2" type="color"></label>
+          <label>Фон<input id="brand-background" type="color"></label><label>Цвет карточек<input id="brand-panel" type="color"></label>
+          <label class="full">Сортировка по умолчанию<select id="brand-default-sort"><option value="featured">Рекомендованные</option><option value="analytics">Популярные по аналитике</option><option value="price-asc">Сначала дешевле</option><option value="price-desc">Сначала дороже</option><option value="name">По названию</option><option value="brand">По бренду</option></select></label>
+          <label class="field-row full"><input id="brand-analytics" type="checkbox"> Собирать обезличенную аналитику витрины</label>
+          <div class="full"><button class="btn primary" type="submit">Сохранить оформление</button></div>
+        </form></div>
+        <div class="panel"><div class="panel-head"><div><h2>Передача и перенос магазина</h2><p>Настройки можно переносить между копиями проекта</p></div></div><div class="config-note">Экспорт содержит оформление, категории и сопоставление столбцов. Заказы, сотрудники, пароли, токены и ID исходной таблицы не экспортируются.</div><div class="actions"><button class="btn primary" id="export-config">Экспортировать настройки</button><label class="btn" for="import-config-file">Импортировать настройки</label><input id="import-config-file" type="file" accept=".json,application/json" hidden></div><div class="small muted" style="margin-top:10px">Для нового клиента создаётся отдельная копия Worker и базы данных. Затем клиент подключает свою таблицу и получает доступ менеджера через одноразовое приглашение.</div></div>
+      </div>
     </section>
 
     <section id="page-telegram" class="section">
