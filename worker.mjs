@@ -558,6 +558,37 @@ async function publicSettings(env){
     categories:await getSetting(env,"category_config",{})
   };
 }
+async function recordAnalyticsEvent(request,env){
+  const body=await bodyJson(request);
+  if(!body)return json({error:"Некорректное событие"},400);
+  const allowed=new Set(["product_view","add_to_cart","variant_unavailable_click","search","category_filter","brand_filter","checkout_start","order_created"]);
+  const eventType=String(body.eventType||"");
+  if(!allowed.has(eventType))return json({error:"Неизвестный тип события"},400);
+  const token=String(body.visitorToken||"").slice(0,200);
+  const visitorHash=token.length>=16?await sha256(token):null;
+  let query=String(body.query||"").trim().slice(0,120);
+  if(/@|\d{7,}/.test(query))query="";
+  await run(env,"INSERT INTO analytics_events(event_type,product_id,product_name,category,brand,query_text,visitor_hash,created_at) VALUES(?,?,?,?,?,?,?,?)",[
+    eventType,String(body.productId||"").slice(0,500)||null,
+    String(body.productName||"").slice(0,180)||null,
+    String(body.category||"").slice(0,100)||null,
+    String(body.brand||"").slice(0,100)||null,
+    query||null,visitorHash,now()
+  ]);
+  return json({success:true});
+}
+async function adminAnalytics(env,days){
+  const since=new Date(Date.now()-days*86400000).toISOString();
+  const [events,topProducts,searches,daily,visitors]=await Promise.all([
+    all(env,"SELECT event_type,COUNT(*) AS count FROM analytics_events WHERE created_at>=? GROUP BY event_type",[since]),
+    all(env,"SELECT product_id,MAX(product_name) AS name,MAX(category) AS category,MAX(brand) AS brand,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cart_adds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? AND product_id IS NOT NULL GROUP BY product_id ORDER BY (SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END)+SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END)*4+SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END)*12) DESC LIMIT 12",[since]),
+    all(env,"SELECT query_text,COUNT(*) AS count FROM analytics_events WHERE created_at>=? AND event_type='search' AND query_text IS NOT NULL GROUP BY query_text ORDER BY count DESC LIMIT 12",[since]),
+    all(env,"SELECT substr(created_at,1,10) AS day,COUNT(*) AS events,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cart_adds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? GROUP BY substr(created_at,1,10) ORDER BY day",[since]),
+    first(env,"SELECT COUNT(DISTINCT visitor_hash) AS count FROM analytics_events WHERE created_at>=? AND visitor_hash IS NOT NULL",[since])
+  ]);
+  const counts=Object.fromEntries(events.map(row=>[row.event_type,Number(row.count||0)]));
+  return {days,totals:{views:counts.product_view||0,cartAdds:counts.add_to_cart||0,orders:counts.order_created||0,searches:counts.search||0,checkouts:counts.checkout_start||0,uniqueVisitors:Number(visitors?.count||0)},events:counts,topProducts:topProducts.map(row=>({...row,score:Number(row.views||0)+Number(row.cart_adds||0)*4+Number(row.orders||0)*12})),searches,daily};
+}
 async function telegramWebhook(request,env){
   if(!env.BOT_TOKEN)return json({ok:true});
   const secret=await getSetting(env,"telegram_webhook_secret","");
@@ -595,6 +626,7 @@ export default {
       }
       if(path==="/api/catalog"&&request.method==="GET")return await catalogResponse(request,env,ctx);
       if(path==="/api/settings/public"&&request.method==="GET")return json(await publicSettings(env));
+      if(path==="/api/analytics/event"&&request.method==="POST")return await recordAnalyticsEvent(request,env);
       if(path==="/api/slots"&&request.method==="GET"){
         const date=url.searchParams.get("date")||"";
         const method=url.searchParams.get("method")||"pickup";
@@ -658,6 +690,91 @@ export default {
 
       if(path.startsWith("/api/admin/")){
         if(!adminOk)return unauthorized();
+        if(path==="/api/admin/analytics"&&request.method==="GET"){
+          const days=Math.max(7,Math.min(90,Number(url.searchParams.get("days"))||30));
+          return json(await adminAnalytics(env,days));
+        }
+        if(path==="/api/admin/categories"&&request.method==="GET"){
+          const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
+          let sourceCategories=[];
+          try{sourceCategories=JSON.parse(latest?.details_json||"{}").categories||[];}catch{}
+          const saved=await getSetting(env,"category_config",{});
+          return json({categories:sourceCategories.map((key,index)=>({key,...(saved[key]||{}),label:saved[key]?.label||key,active:saved[key]?.active!==false,sortOrder:saved[key]?.sortOrder??index}))});
+        }
+        if(path==="/api/admin/categories"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          if(!Array.isArray(body?.categories)||body.categories.length>200)return json({error:"Некорректный список категорий"},400);
+          const config={};
+          for(const [index,item] of body.categories.entries()){
+            const key=String(item?.key||"").trim().slice(0,100);
+            if(!key)continue;
+            const image=String(item.image||"").trim().slice(0,500);
+            config[key]={label:String(item.label||key).trim().slice(0,80),icon:String(item.icon||"✦").trim().slice(0,8),image:/^https:\/\//i.test(image)?image:"",active:item.active!==false,sortOrder:Math.max(0,Math.min(999,Number(item.sortOrder)||index))};
+          }
+          await setSetting(env,"category_config",config,staff.id);
+          await logSystem(env,"info","catalog","Обновлены настройки категорий",{count:Object.keys(config).length,staffId:staff.id});
+          return json({success:true,categories:config});
+        }
+        if(path==="/api/admin/catalog-preview"&&request.method==="GET"){
+          const config=await getCatalogConfig(env);
+          const url="https://docs.google.com/spreadsheets/d/"+encodeURIComponent(config.spreadsheetId)+"/export?format=csv&gid="+encodeURIComponent(config.catalogGid);
+          const response=await fetch(url,{headers:{Accept:"text/csv,text/plain;q=0.9,*/*;q=0.1"},signal:AbortSignal.timeout(12000)});
+          if(!response.ok)return json({error:"Google Sheets вернул HTTP "+response.status},502);
+          const rows=parseCSV(await response.text());
+          if(!rows.length)return json({error:"Таблица пустая"},400);
+          return json({headers:rows[0].map(value=>String(value||"").trim()),sample:rows[1]||[],rowCount:Math.max(0,rows.length-1)});
+        }
+        if(path==="/api/admin/catalog-template"&&request.method==="GET"){
+          return json(await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}}));
+        }
+        if(path==="/api/admin/catalog-template"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          if(!Array.isArray(body?.headers)||body.headers.length>100)return json({error:"Шаблон должен содержать не более 100 столбцов"},400);
+          const headers=body.headers.map(value=>String(value||"").trim().slice(0,100)).filter(Boolean);
+          const columnMapping={};
+          for(const [field,source] of Object.entries(body.columnMapping||{})){
+            if(!/^[a-z][a-z0-9_]{1,40}$/.test(field))continue;
+            if(headers.includes(String(source)))columnMapping[field]=String(source);
+          }
+          const template={name:String(body.name||"Шаблон каталога.csv").slice(0,120),headers,columnMapping,updatedAt:now()};
+          const catalog=await getCatalogConfig(env);
+          await setSetting(env,"catalog_template",template,staff.id);
+          await setSetting(env,"catalog_config",{...catalog,columnMapping},staff.id);
+          await logSystem(env,"info","catalog","Обновлён шаблон и сопоставление столбцов",{headers:headers.length,mapped:Object.keys(columnMapping).length});
+          return json({success:true,template});
+        }
+        if(path==="/api/admin/config/export"&&request.method==="GET"){
+          const config=await getConfig(env);
+          const template=await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}});
+          return json({schemaVersion:1,exportedAt:now(),store:config,categories:await getSetting(env,"category_config",{}),catalogTemplate:template});
+        }
+        if(path==="/api/admin/config/import"&&request.method==="POST"){
+          const body=await bodyJson(request);
+          if(!body||body.schemaVersion!==1)return json({error:"Неподдерживаемая версия файла настроек"},400);
+          const current=await getConfig(env);
+          const imported=body.store&&typeof body.store==="object"?body.store:{};
+          const allowed=["storeName","currency","pickupEnabled","deliveryEnabled","minOrder","deliveryFee","address","phone","weeklyHours","brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled","slotMinutes","leadMinutes","daysAhead","slotCapacity"];
+          const next={...current};
+          for(const key of allowed)if(imported[key]!==undefined)next[key]=imported[key];
+          next.storeName=String(next.storeName||"Магазин").trim().slice(0,80);
+          next.theme={...DEFAULT_CONFIG.theme,...(next.theme||{})};
+          const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""));
+          for(const key of Object.keys(DEFAULT_CONFIG.theme))if(!validColor(next.theme[key]))next.theme[key]=DEFAULT_CONFIG.theme[key];
+          next.defaultSort=["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort)?next.defaultSort:"featured";
+          next.minOrder=Math.max(0,Number(next.minOrder)||0);next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
+          await setSetting(env,"store_config",next,staff.id);
+          if(body.categories&&typeof body.categories==="object")await setSetting(env,"category_config",body.categories,staff.id);
+          if(body.catalogTemplate&&Array.isArray(body.catalogTemplate.headers)){
+            const headers=body.catalogTemplate.headers.slice(0,100).map(value=>String(value).slice(0,100));
+            const mapping={};
+            for(const [field,source] of Object.entries(body.catalogTemplate.columnMapping||{}))if(headers.includes(String(source)))mapping[field]=String(source);
+            await setSetting(env,"catalog_template",{name:String(body.catalogTemplate.name||"Шаблон каталога").slice(0,120),headers,columnMapping:mapping,updatedAt:now()},staff.id);
+            const catalog=await getCatalogConfig(env);
+            await setSetting(env,"catalog_config",{...catalog,columnMapping:mapping},staff.id);
+          }
+          await logSystem(env,"info","settings","Импортирована конфигурация магазина",{staffId:staff.id});
+          return json({success:true});
+        }
         if(path==="/api/admin/dashboard"&&request.method==="GET")return json(await dashboard(env));
         if(path==="/api/admin/orders"&&request.method==="GET"){
           const status=url.searchParams.get("status")||"";
@@ -769,11 +886,12 @@ export default {
           const spreadsheetId=String(body?.spreadsheetId||current.spreadsheetId).trim();
           const catalogGid=String(body?.catalogGid||current.catalogGid).trim();
           const cacheSeconds=Math.max(15,Math.min(600,Number(body?.cacheSeconds)||current.cacheSeconds));
+          const columnMapping=body?.columnMapping&&typeof body.columnMapping==="object"?body.columnMapping:current.columnMapping||{};
           if(!/^[A-Za-z0-9_-]{20,}$/.test(spreadsheetId)||!/^\d+$/.test(catalogGid))return json({error:"Проверьте ID таблицы и GID листа"},400);
-          await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,cacheSeconds},staff.id);
+          await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,cacheSeconds,columnMapping},staff.id);
           await caches.default.delete(new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"}));
           await logSystem(env,"info","catalog","Изменены настройки источника каталога",{spreadsheetId,catalogGid,cacheSeconds});
-          return json({success:true,settings:{spreadsheetId,catalogGid,cacheSeconds}});
+          return json({success:true,settings:{spreadsheetId,catalogGid,cacheSeconds,columnMapping}});
         }
         if(path==="/api/admin/sync"&&request.method==="POST"){
           const payload=await syncCatalog(env);
