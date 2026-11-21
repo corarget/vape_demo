@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS orders (
   comment TEXT,
   status TEXT NOT NULL DEFAULT 'new',
   total INTEGER NOT NULL,
+  delivery_fee INTEGER NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'BYN',
   payment_method TEXT NOT NULL DEFAULT 'upon_receipt',
   payment_status TEXT NOT NULL DEFAULT 'unpaid',

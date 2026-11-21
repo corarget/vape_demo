@@ -58,7 +58,7 @@ New public attributes can be added using known field names or a `public_` / `dis
 - Pickup: `ready` → `completed`
 - Delivery: `ready` → `assigned` → `picked_up` → `on_the_way` → `delivered` → `completed`
 
-Managers confirm/reject orders, move them through preparation, assign or reassign couriers and inspect event history. Couriers see only their assigned jobs and can update pickup / en-route / delivered states. Customers see status and event updates in their order history.
+Managers confirm/reject orders, move them through preparation, assign or reassign couriers, update payment status and inspect event history. Couriers see only their assigned jobs and can update pickup / en-route / delivered states. Customers see status and event updates in their order history.
 
 ## Manager and courier access
 
