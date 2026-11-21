@@ -5,6 +5,8 @@ const HEADER_ALIASES = {
   product_id:"product_key", productid:"product_key", id:"product_key",
   sku_id:"sku", variant_sku:"sku", article:"sku", артикул:"sku",
   category_name:"category", категория:"category",
+  category_title:"category_label", category_display_name:"category_label", category_label_ru:"category_label",
+  category_image:"category_image_url", category_photo:"category_image_url", category_icon_emoji:"category_icon",
   product_name:"name", title:"name", название:"name", товар:"name",
   variant:"option_label", variant_name:"option_label", option:"option_label",
   flavor:"option_label", taste:"option_label", вкус:"option_label",
@@ -22,7 +24,7 @@ const HEADER_ALIASES = {
 };
 
 const CORE_FIELDS = new Set([
-  "product_key","sku","category","name","option_label","price_byn","available",
+  "product_key","sku","category","category_label","category_image_url","category_icon","name","option_label","price_byn","available",
   "active","image_url","description","sort_order","popularity","manufacturer",
   "strength_mg","resistance_ohm","component_type","color"
 ]);
@@ -134,12 +136,19 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
   const families=new Map();
   const allFields=new Map();
   let activeRows=0;
+  const categories=new Map();
   rows.forEach((values,rowIndex)=>{
     const row={};
     headers.forEach((header,columnIndex)=>{if(header)row[header]=clean(values[columnIndex]);});
     const productKey=clean(row.product_key)||clean(row.sku);
     if(!productKey||!parseBoolean(row.active,true))return;
     activeRows++;
+    const categoryKey=clean(row.category)||"Другое";
+    const categoryEntry=categories.get(categoryKey)||{key:categoryKey,label:categoryKey,image:"",icon:"✦"};
+    if(clean(row.category_label))categoryEntry.label=clean(row.category_label);
+    if(!categoryEntry.image&&row.category_image_url)categoryEntry.image=safeImageUrl(row.category_image_url);
+    if(clean(row.category_icon))categoryEntry.icon=clean(row.category_icon).slice(0,8);
+    categories.set(categoryKey,categoryEntry);
 
     const key=familyKey(row);
     const price=parsePrice(row.price_byn);
@@ -246,6 +255,7 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
   return {
     products,
     fields:[...allFields.entries()].map(([key,label])=>({key,label})),
+    categories:[...categories.values()],
     sourceRows:rows.length,
     activeRows,
     productFamilies:products.length,
@@ -274,6 +284,7 @@ export async function loadCatalog({
     productFamilies:parsed.productFamilies,
     variants:parsed.variants,
     fields:parsed.fields,
+    categories:parsed.categories,
     products:parsed.products
   };
 }

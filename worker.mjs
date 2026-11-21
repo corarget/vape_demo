@@ -330,7 +330,7 @@ async function syncCatalog(env){
     const catalogConfig=await getCatalogConfig(env);
     if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
     const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
-    const details={fields:payload.fields,source:payload.source,categories:[...new Set(payload.products.map(product=>product.category).filter(Boolean))]};
+    const details={fields:payload.fields,source:payload.source,categories:payload.categories||[...new Set(payload.products.map(product=>product.category).filter(Boolean))].map(key=>({key,label:key,image:"",icon:"✦"}))};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
       [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
     await logSystem(env,"info","catalog","Каталог синхронизирован",{
@@ -549,6 +549,21 @@ async function staffLogin(request,env){
     return json({error:"Не удалось выполнить вход"},500);
   }
 }
+async function sourceCategories(env){
+  const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
+  let categories=[];
+  try{categories=JSON.parse(latest?.details_json||"{}").categories||[];}catch{}
+  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"✦",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||"✦"),sortOrder:index});
+}
+async function categorySettings(env){
+  const [source,saved]=await Promise.all([sourceCategories(env),getSetting(env,"category_config",{})]);
+  const result={};
+  source.forEach((category,index)=>{
+    const override=saved[category.key]||{};
+    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,active:override.active!==false,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
+  });
+  return result;
+}
 async function publicSettings(env){
   const c=await getConfig(env);
   return {
@@ -557,7 +572,7 @@ async function publicSettings(env){
     address:c.address,phone:c.phone,daysAhead:c.daysAhead,
     brandTagline:c.brandTagline||"",logoUrl:c.logoUrl||"",heroTitle:c.heroTitle||"Каталог",heroSubtitle:c.heroSubtitle||"",
     theme:c.theme||DEFAULT_CONFIG.theme,defaultSort:c.defaultSort||"featured",analyticsEnabled:c.analyticsEnabled!==false,
-    categories:await getSetting(env,"category_config",{})
+    categories:await categorySettings(env)
   };
 }
 async function recordAnalyticsEvent(request,env){
@@ -697,21 +712,28 @@ export default {
           return json(await adminAnalytics(env,days));
         }
         if(path==="/api/admin/categories"&&request.method==="GET"){
-          const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
-          let sourceCategories=[];
-          try{sourceCategories=JSON.parse(latest?.details_json||"{}").categories||[];}catch{}
-          const saved=await getSetting(env,"category_config",{});
-          return json({categories:sourceCategories.map((key,index)=>({key,...(saved[key]||{}),label:saved[key]?.label||key,active:saved[key]?.active!==false,sortOrder:saved[key]?.sortOrder??index}))});
+          return json({categories:Object.values(await categorySettings(env))});
         }
         if(path==="/api/admin/categories"&&request.method==="PUT"){
           const body=await bodyJson(request);
           if(!Array.isArray(body?.categories)||body.categories.length>200)return json({error:"Некорректный список категорий"},400);
+          const sourceMap=new Map((await sourceCategories(env)).map(category=>[category.key,category]));
           const config={};
           for(const [index,item] of body.categories.entries()){
             const key=String(item?.key||"").trim().slice(0,100);
             if(!key)continue;
+            const source=sourceMap.get(key)||{label:key,image:"",icon:"✦"};
+            const label=String(item.label||source.label||key).trim().slice(0,80);
             const image=String(item.image||"").trim().slice(0,500);
-            config[key]={label:String(item.label||key).trim().slice(0,80),icon:String(item.icon||"✦").trim().slice(0,8),image:/^https:\/\//i.test(image)?image:"",active:item.active!==false,sortOrder:Math.max(0,Math.min(999,Number(item.sortOrder)||index))};
+            const icon=String(item.icon||source.icon||"✦").trim().slice(0,8);
+            const override={};
+            if(label!==source.label)override.label=label;
+            if(image!==source.image)override.image=/^https:\/\//i.test(image)?image:"";
+            if(icon!==source.icon)override.icon=icon;
+            if(item.active===false)override.active=false;
+            const sortOrder=Math.max(0,Math.min(999,Number(item.sortOrder)||index));
+            if(sortOrder!==source.sortOrder)override.sortOrder=sortOrder;
+            config[key]=override;
           }
           await setSetting(env,"category_config",config,staff.id);
           await logSystem(env,"info","catalog","Обновлены настройки категорий",{count:Object.keys(config).length,staffId:staff.id});
