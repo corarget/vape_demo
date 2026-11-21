@@ -2,7 +2,7 @@ import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
-const VERSION = "2.0.0";
+const VERSION = "2.1.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
 const STATUS_LABELS = {
