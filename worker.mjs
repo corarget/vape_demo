@@ -596,8 +596,13 @@ export default {
       }
       if(path==="/api/orders"&&request.method==="GET"){
         const hash=await verifyCustomerToken(request);
-        if(!hash)return json({error:"Сессия покупателя не найдена"},401);
-        const orders=await all(env,"SELECT id FROM orders WHERE customer_key_hash=? ORDER BY created_at DESC LIMIT 50",[hash]);
+        const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(request.headers.get("X-Telegram-Init-Data")||"",env.BOT_TOKEN):null;
+        if(!hash&&!telegramUser)return json({error:"Сессия покупателя не найдена"},401);
+        const orders=hash&&telegramUser
+          ?await all(env,"SELECT id FROM orders WHERE customer_key_hash=? OR telegram_user_id=? ORDER BY created_at DESC LIMIT 50",[hash,String(telegramUser.id)])
+          :hash
+            ?await all(env,"SELECT id FROM orders WHERE customer_key_hash=? ORDER BY created_at DESC LIMIT 50",[hash])
+            :await all(env,"SELECT id FROM orders WHERE telegram_user_id=? ORDER BY created_at DESC LIMIT 50",[String(telegramUser.id)]);
         const detailed=await Promise.all(orders.map(row=>loadOrder(env,row.id)));
         return json({orders:detailed.filter(Boolean).map(customerOrder)});
       }
