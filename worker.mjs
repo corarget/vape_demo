@@ -731,7 +731,7 @@ export default {
             if(image!==source.image)override.image=/^https:\/\//i.test(image)?image:"";
             if(icon!==source.icon)override.icon=icon;
             if(item.active===false)override.active=false;
-            const sortOrder=Math.max(0,Math.min(999,Number(item.sortOrder)||index));
+            const rawSortOrder=Number(item.sortOrder);const sortOrder=Math.max(0,Math.min(999,Number.isFinite(rawSortOrder)?rawSortOrder:index));
             if(sortOrder!==source.sortOrder)override.sortOrder=sortOrder;
             config[key]=override;
           }
