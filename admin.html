@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#09080d">
+<title>VIOLET SHOP — управление</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{font-family:"Space Grotesk",system-ui,sans-serif;color:#f7f4ff;background:#09080d;--bg:#09080d;--panel:#14121a;--panel2:#1b1722;--line:#332b3d;--muted:#a29aac;--violet:#a855f7;--pink:#d946ef;--good:#70d6a2;--warn:#f2c879;--bad:#ff7f9b;--safe:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg)}body{background:radial-gradient(circle at 90% -8%,#672a8d30,transparent 30rem),var(--bg)}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--pink);outline-offset:2px}input,select,textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;background:#0f0d13;padding:11px 12px;color:#fff}textarea{min-height:82px;resize:vertical}label{display:grid;gap:7px;color:#c9c1d2;font-size:.82rem}.muted{color:var(--muted)}.small{font-size:.76rem}.hidden{display:none!important}
+.shell{max-width:1440px;margin:auto;min-height:100vh;display:grid;grid-template-columns:230px minmax(0,1fr)}.side{position:sticky;top:0;height:100vh;padding:24px 16px;border-right:1px solid var(--line);background:#0c0a10d9;display:flex;flex-direction:column;gap:24px}.logo{padding:0 10px;font-size:1.25rem;font-weight:700;letter-spacing:.12em}.logo b{color:var(--pink);text-shadow:0 0 18px #d946ef88}.side-label{padding:0 10px;color:#716a7b;font-size:.66rem;letter-spacing:.16em;text-transform:uppercase}.nav{display:grid;gap:5px}.nav button{display:flex;align-items:center;gap:12px;padding:12px 11px;border:1px solid transparent;border-radius:12px;background:transparent;color:#b9b0c4;text-align:left;font-size:.87rem}.nav button span{width:20px;text-align:center;font-size:1.1rem}.nav button.active{background:#291a35;border-color:#5a3470;color:#fff;box-shadow:inset 3px 0 var(--pink)}.side-foot{margin-top:auto;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}.main{min-width:0;padding:24px clamp(16px,3vw,42px) 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:26px}.top h1{font-size:clamp(1.5rem,3vw,2.2rem);letter-spacing:-.04em}.top-right{display:flex;align-items:center;gap:10px}.pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line);border-radius:99px;background:#17131d;color:#c7bdcf;font-size:.72rem}.dot{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 12px #70d6a2}.btn{border:1px solid var(--line);border-radius:12px;background:#211a29;padding:10px 13px;font-size:.82rem;font-weight:600}.btn.primary{border-color:#a855f7;background:linear-gradient(100deg,#842bd0,#c735d8);box-shadow:0 6px 22px #a855f733}.btn.danger{border-color:#703447;background:#361b29;color:#ffb2c1}.btn.ghost{background:transparent}.btn:disabled{opacity:.45;cursor:not-allowed}.grid{display:grid;gap:14px}.metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}.metric,.panel{min-width:0;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,#1a1620,#100e14);padding:17px}.metric small{display:block;color:var(--muted);font-size:.76rem}.metric strong{display:block;margin-top:8px;font-size:1.8rem;letter-spacing:-.05em}.metric .sub{margin-top:4px;color:#81798a;font-size:.7rem}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}.panel-head h2{font-size:1.05rem}.panel-head p{margin-top:3px;color:var(--muted);font-size:.75rem}.two{grid-template-columns:minmax(0,1.35fr) minmax(280px,.8fr)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:.82rem}th{text-align:left;color:#8f879a;font-size:.7rem;font-weight:500;padding:10px;border-bottom:1px solid var(--line)}td{padding:12px 10px;border-bottom:1px solid #292330;white-space:nowrap}tbody tr{cursor:pointer}tbody tr:hover{background:#ffffff08}.status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:99px;background:#2b2432;color:#d9c9eb;font-size:.68rem}.status.new{background:#34243c;color:#e3b8ff}.status.confirmed,.status.preparing{background:#242b42;color:#b6c9ff}.status.ready,.status.delivered,.status.completed{background:#183529;color:#9be5bb}.status.assigned,.status.picked_up,.status.on_the_way{background:#3a2d1d;color:#f2d09a}.status.rejected,.status.cancelled{background:#3a202a;color:#ffacbd}.empty{padding:28px;border:1px dashed var(--line);border-radius:15px;color:var(--muted);text-align:center}.section{display:none}.section.active{display:block}.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:14px}.toolbar select{width:auto;min-width:150px}.order-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.9fr);gap:14px}.order-list{display:grid;gap:9px;align-content:start}.order-card{padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--panel);cursor:pointer}.order-card.selected{border-color:#a855f7;box-shadow:0 0 0 1px #a855f744}.order-card-top{display:flex;justify-content:space-between;gap:12px}.order-card p{margin-top:7px;color:var(--muted);font-size:.76rem}.detail-box{position:sticky;top:16px;align-self:start}.detail-box h2{font-size:1.25rem}.detail-box .info{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}.info div{padding:10px;border:1px solid var(--line);border-radius:12px;background:#0f0d13;min-width:0}.info small{display:block;color:var(--muted);font-size:.67rem}.info strong{display:block;margin-top:4px;overflow-wrap:anywhere;font-size:.85rem}.items{display:grid;gap:8px;margin:14px 0}.item{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:.82rem}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.form-grid .full{grid-column:1/-1}.field-row{display:flex;align-items:center;gap:10px}.field-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--pink)}.hours{display:grid;gap:8px}.hour-row{display:grid;grid-template-columns:70px 70px minmax(90px,1fr) minmax(90px,1fr);gap:8px;align-items:center;padding:9px;border:1px solid var(--line);border-radius:12px;background:#100e14}.hour-row .day{font-size:.8rem}.hour-row input[type=time]{padding:8px}.hour-row .closed{display:flex;align-items:center;gap:5px;font-size:.7rem}.hour-row .closed input{width:16px}.log-list{display:grid;gap:8px}.log{display:grid;grid-template-columns:90px 72px minmax(0,1fr);gap:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:#121017;font-size:.78rem}.log time{color:var(--muted)}.log.error{border-color:#663347}.log.warning{border-color:#65512f}.invite-code{margin-top:12px;padding:14px;border:1px solid #70488a;border-radius:13px;background:#281b32;overflow-wrap:anywhere}.invite-code code{font-size:1.05rem;color:#f0c8ff;letter-spacing:.08em}.toast{position:fixed;right:20px;bottom:20px;z-index:20;max-width:min(420px,calc(100% - 40px));padding:12px 16px;border:1px solid #624279;border-radius:13px;background:#21162b;box-shadow:0 10px 40px #0009;font-size:.82rem}.login{width:min(440px,calc(100% - 28px));margin:10vh auto;padding:26px;border:1px solid #4a3659;border-radius:22px;background:linear-gradient(145deg,#1b1422,#100e14);box-shadow:0 22px 80px #0008}.login h1{margin:8px 0;font-size:1.8rem}.login p{margin-bottom:18px;color:var(--muted);font-size:.85rem;line-height:1.5}.login form{display:grid;gap:13px}.mobile-nav{display:none}.courier-card{padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);margin-bottom:10px}.courier-card h3{margin:8px 0}.courier-card p{margin:6px 0;color:var(--muted);font-size:.82rem}.config-note{padding:12px;border:1px solid #57436b;border-radius:12px;background:#21182b;color:#cdb9df;font-size:.78rem;line-height:1.5}
+@media(max-width:950px){.shell{grid-template-columns:190px minmax(0,1fr)}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.two{grid-template-columns:1fr}.order-layout{grid-template-columns:1fr}.detail-box{position:static}}
+@media(max-width:650px){.shell{display:block}.side{display:none}.main{padding:18px 13px calc(92px + var(--safe))}.top{margin-bottom:18px}.top h1{font-size:1.45rem}.metrics{gap:8px}.metric{padding:13px}.metric strong{font-size:1.5rem}.metric small{font-size:.68rem}.mobile-nav{position:fixed;left:10px;right:10px;bottom:calc(9px + var(--safe));z-index:15;display:flex;gap:3px;padding:6px;border:1px solid var(--line);border-radius:17px;background:#17131eeF;backdrop-filter:blur(18px);overflow-x:auto}.mobile-nav button{flex:1;min-width:56px;border:0;border-radius:11px;padding:8px 4px;background:transparent;color:#a99fb3;font-size:.63rem}.mobile-nav button span{display:block;margin-bottom:3px;font-size:1.1rem}.mobile-nav button.active{background:#30203b;color:#f4d9ff}.form-grid{grid-template-columns:1fr}.form-grid .full{grid-column:auto}.hour-row{grid-template-columns:58px 1fr 1fr}.hour-row .closed{grid-column:1/-1}.log{grid-template-columns:72px 60px minmax(0,1fr);gap:7px;font-size:.7rem}.toolbar select{flex:1;min-width:120px}.info{grid-template-columns:1fr 1fr!important}}
+</style>
+</head>
+<body>
+<div id="login-view" class="login">
+  <div class="logo">VIOLET<b>SHOP</b></div>
+  <div class="pill" style="margin-top:18px"><span class="dot"></span> Защищённый доступ</div>
+  <h1>Пульт управления</h1>
+  <p>Войдите по одноразовому коду владельца или приглашению сотрудника. Покупатели не имеют доступа к этой панели.</p>
+  <form id="login-form">
+    <label>Имя для первой настройки<input id="login-name" autocomplete="name" placeholder="Имя владельца"></label>
+    <label>Код доступа<input id="login-code" type="password" autocomplete="one-time-code" placeholder="Вставьте код" required></label>
+    <button class="btn primary" type="submit">Войти в систему</button>
+    <div id="login-error" class="small" style="color:var(--bad)"></div>
+  </form>
+  <p class="small" style="margin:18px 0 0">Сотрудник? Используйте персональный код приглашения, выданный менеджером.</p>
+</div>
+
+<div id="app-view" class="shell hidden">
+  <aside class="side">
+    <div class="logo">VIOLET<b>SHOP</b></div>
+    <div>
+      <div class="side-label">Управление</div>
+      <nav class="nav" id="side-nav">
+        <button data-page="overview" class="active"><span>◫</span>Обзор</button>
+        <button data-page="orders"><span>▣</span>Заказы</button>
+        <button data-page="schedule"><span>◷</span>Слоты и график</button>
+        <button data-page="team"><span>♙</span>Команда</button>
+        <button data-page="catalog"><span>▦</span>Каталог и синхронизация</button>
+        <button data-page="logs"><span>≋</span>Логи и ошибки</button>
+        <button data-page="settings"><span>⚙</span>Настройки</button>
+        <button data-page="telegram"><span>➤</span>Telegram</button>
+      </nav>
+    </div>
+    <div class="side-foot"><div id="staff-name" style="font-weight:600"></div><div id="staff-role" class="muted small" style="margin-top:4px"></div><button class="btn ghost" style="width:100%;margin-top:12px" id="logout">Выйти</button></div>
+  </aside>
+  <main class="main">
+    <header class="top">
+      <div><div class="pill"><span class="dot"></span> Магазин онлайн</div><h1 id="page-title" style="margin-top:10px">Обзор</h1></div>
+      <div class="top-right"><span class="pill" id="role-pill">Сотрудник</span><button class="btn ghost" id="refresh">↻ Обновить</button></div>
+    </header>
+
+    <section id="page-overview" class="section active">
+      <div class="grid metrics" id="metrics"></div>
+      <div class="grid two">
+        <div class="panel"><div class="panel-head"><div><h2>Последние заказы</h2><p>Живая очередь магазина</p></div><button class="btn" data-goto="orders">Все заказы</button></div><div class="table-wrap" id="latest-orders"></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Состояние системы</h2><p>Синхронизация и ошибки</p></div></div><div id="system-health"></div></div>
+      </div>
+    </section>
+
+    <section id="page-orders" class="section">
+      <div class="toolbar"><select id="order-filter"><option value="">Все заказы</option><option value="new">Новые</option><option value="confirmed">Подтверждены</option><option value="preparing">Собираются</option><option value="ready">Готовы</option><option value="assigned">У курьера</option><option value="on_the_way">В пути</option><option value="delivered">Доставлены</option><option value="cancelled">Отменены</option><option value="rejected">Отклонены</option></select><button class="btn" id="orders-reload">Обновить очередь</button></div>
+      <div class="order-layout"><div class="order-list" id="order-list"></div><div class="panel detail-box" id="order-detail"><div class="empty">Выберите заказ, чтобы посмотреть детали и изменить статус</div></div></div>
+    </section>
+
+    <section id="page-schedule" class="section">
+      <div class="grid two">
+        <div class="panel"><div class="panel-head"><div><h2>График работы</h2><p>Слоты автоматически строятся по этому расписанию</p></div></div><div id="hours-editor" class="hours"></div><div class="form-grid" style="margin-top:15px"><label>Длина слота, минут<input id="cfg-slot" type="number" min="15" max="240" step="15"></label><label>За сколько минут закрывать запись<input id="cfg-lead" type="number" min="0" max="1440" step="15"></label><label>На сколько дней вперёд<input id="cfg-days" type="number" min="1" max="30"></label><label>Заказов на слот<input id="cfg-capacity" type="number" min="1" max="100"></label></div><button class="btn primary" id="save-hours" style="margin-top:15px">Сохранить расписание</button></div>
+        <div class="panel"><div class="panel-head"><div><h2>Исключения и выходные</h2><p>Закрыть день или отдельный интервал</p></div></div><form id="block-form" class="grid"><label>Дата<input id="block-date" type="date" required></label><div class="form-grid"><label>С<input id="block-start" type="time" value="00:00" required></label><label>До<input id="block-end" type="time" value="23:59" required></label></div><label>Канал<select id="block-method"><option value="all">Весь магазин</option><option value="pickup">Самовывоз</option><option value="delivery">Доставка</option></select></label><label>Причина<input id="block-reason" placeholder="Выходной, инвентаризация…"></label><button class="btn primary" type="submit">Добавить ограничение</button></form><div id="blocks-list" style="margin-top:16px"></div></div>
+      </div>
+    </section>
+
+    <section id="page-team" class="section">
+      <div class="grid two">
+        <div class="panel"><div class="panel-head"><div><h2>Команда магазина</h2><p>Менеджеры и курьеры с отдельными правами</p></div><button class="btn" id="team-reload">Обновить</button></div><div id="team-list"></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Пригласить сотрудника</h2><p>Одноразовый код действует 48 часов</p></div></div><form id="invite-form" class="grid"><label>Имя сотрудника<input id="invite-name" required placeholder="Например, Алексей"></label><label>Роль<select id="invite-role"><option value="courier">Курьер</option><option value="manager">Менеджер</option></select></label><label>Telegram ID (необязательно)<input id="invite-telegram" inputmode="numeric" placeholder="Для уведомлений"></label><button class="btn primary" type="submit">Создать приглашение</button></form><div id="invite-result"></div></div>
+      </div>
+    </section>
+
+    <section id="page-catalog" class="section">
+      <div class="grid two">
+        <div class="panel"><div class="panel-head"><div><h2>Синхронизация каталога</h2><p>Источник данных — Google Sheets, лист Catalog</p></div><span class="pill" id="sync-state">Не проверено</span></div><div id="catalog-stats" class="grid metrics" style="grid-template-columns:repeat(2,minmax(0,1fr))"></div><button class="btn primary" id="sync-now">↻ Синхронизировать сейчас</button><div class="small muted" style="margin-top:10px">Синхронизация не изменяет исходную таблицу. Витрина читает данные и нормализует варианты в товарные линейки.</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
+      </div>
+      <div class="panel" style="margin-top:14px"><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
+    </section>
+
+    <section id="page-logs" class="section">
+      <div class="toolbar"><select id="log-filter"><option value="">Все уровни</option><option value="error">Ошибки</option><option value="warning">Предупреждения</option><option value="info">Информация</option></select><button class="btn" id="logs-reload">Обновить логи</button></div>
+      <div class="panel"><div class="panel-head"><div><h2>Системные события</h2><p>Заказы, каталог, авторизация, расписание и API</p></div></div><div id="logs-list" class="log-list"></div></div>
+    </section>
+
+    <section id="page-settings" class="section">
+      <div class="panel"><div class="panel-head"><div><h2>Настройки магазина</h2><p>Контактная информация, способы получения и правила оформления</p></div></div><form id="settings-form" class="form-grid">
+        <label>Название магазина<input id="cfg-name"></label><label>Телефон магазина<input id="cfg-phone"></label>
+        <label class="full">Адрес самовывоза<input id="cfg-address"></label>
+        <label>Минимальная сумма, BYN<input id="cfg-min" type="number" min="0" step="0.01"></label><label>Стоимость доставки, BYN<input id="cfg-fee" type="number" min="0" step="0.01"></label>
+        <label class="field-row"><input id="cfg-pickup" type="checkbox"> Самовывоз включён</label><label class="field-row"><input id="cfg-delivery" type="checkbox"> Доставка включена</label>
+        <div class="full"><button class="btn primary" type="submit">Сохранить настройки</button></div>
+      </form></div>
+    </section>
+
+    <section id="page-telegram" class="section">
+      <div class="grid two">
+        <div class="panel"><div class="panel-head"><div><h2>Telegram Bot API</h2><p>Уведомления и быстрые действия по заказам</p></div><span class="pill" id="bot-state">Не подключён</span></div><label>Telegram ID чата менеджеров<input id="manager-chat" placeholder="-100…"></label><button class="btn primary" id="save-telegram" style="margin-top:12px">Сохранить чат</button><button class="btn" id="setup-webhook" style="margin-top:8px">Настроить webhook</button><div class="config-note" style="margin-top:14px">Токен бота не хранится в интерфейсе и не попадает в базу заказов. Добавьте <b>BOT_TOKEN</b> в Cloudflare → Worker → Settings → Variables and Secrets как Secret. После этого нажмите «Настроить webhook».</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Что будет автоматизировано</h2><p>После подключения бота</p></div></div><div class="items"><div class="item"><span>Новый заказ менеджеру</span><b>✓</b></div><div class="item"><span>Подтверждение / отклонение из Telegram</span><b>✓</b></div><div class="item"><span>Назначение курьера и уведомление</span><b>✓</b></div><div class="item"><span>Обновление статуса покупателю</span><b>✓</b></div></div><p class="muted small">Чтобы получать сообщения от бота, покупатель должен хотя бы один раз открыть чат с ботом. Для уведомлений курьера укажите его Telegram ID при создании приглашения.</p></div>
+      </div>
+    </section>
+
+    <section id="page-courier" class="section"><div class="panel"><div class="panel-head"><div><h2>Мои доставки</h2><p>Назначенные вам заказы</p></div><button class="btn" id="courier-refresh">Обновить</button></div><div id="courier-list"></div></div></section>
+  </main>
+</div>
+<nav id="mobile-nav" class="mobile-nav hidden"></nav>
+<div id="toast" class="toast hidden"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const state={staff:null,page:"overview",orders:[],selectedOrder:null,config:null,staffList:[]};
+const titles={overview:"Обзор",orders:"Заказы",schedule:"Слоты и график",team:"Команда",catalog:"Каталог и синхронизация",logs:"Логи и ошибки",settings:"Настройки магазина",telegram:"Telegram",courier:"Мои доставки"};
+const labels={new:"Новый",confirmed:"Подтверждён",preparing:"Готовится",ready:"Готов",assigned:"Назначен курьер",picked_up:"Забран",on_the_way:"В пути",delivered:"Доставлен",completed:"Завершён",cancelled:"Отменён",rejected:"Отклонён"};
+const pages=[["overview","◫","Обзор"],["orders","▣","Заказы"],["schedule","◷","Слоты"],["team","♙","Команда"],["catalog","▦","Каталог"],["logs","≋","Логи"],["settings","⚙","Настройки"],["telegram","➤","Telegram"]];
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function money(v){return (Number(v||0)/100).toFixed(2).replace(".",",")+" BYN";}
+function toast(message){$("toast").textContent=message;$("toast").classList.remove("hidden");setTimeout(()=>$("toast").classList.add("hidden"),3200);}
+async function api(path,options={}){
+ const response=await fetch(path,{credentials:"same-origin",...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
+ const data=await response.json().catch(()=>({error:"Некорректный ответ сервера"}));
+ if(!response.ok)throw new Error(data.error||"Ошибка запроса");
+ return data;
+}
+function setPage(page){
+ state.page=page;
+ document.querySelectorAll(".section").forEach(section=>section.classList.toggle("active",section.id==="page-"+page));
+ document.querySelectorAll("[data-page]").forEach(button=>button.classList.toggle("active",button.dataset.page===page));
+ $("page-title").textContent=titles[page]||"Панель";
+ $("mobile-nav").querySelectorAll("button").forEach(button=>button.classList.toggle("active",button.dataset.page===page));
+ history.replaceState(null,"",page==="overview"?"/admin":"/admin#"+page);
+ loadPage(page);
+}
+function navForRole(){
+ const courier=state.staff.role==="courier";
+ $("side-nav").querySelectorAll("[data-page]").forEach(button=>button.classList.toggle("hidden",courier));
+ $("mobile-nav").innerHTML=courier?'<button data-page="courier"><span>▣</span>Доставки</button>':'<button data-page="overview"><span>◫</span>Обзор</button><button data-page="orders"><span>▣</span>Заказы</button><button data-page="schedule"><span>◷</span>Слоты</button><button data-page="catalog"><span>▦</span>Каталог</button>';
+ $("mobile-nav").classList.remove("hidden");
+ $("mobile-nav").querySelectorAll("[data-page]").forEach(button=>button.onclick=()=>setPage(button.dataset.page));
+ if(courier)setPage("courier");
+}
+async function boot(){
+ try{
+  const data=await api("/api/staff/session");
+  state.staff=data.staff;
+  $("login-view").classList.add("hidden");$("app-view").classList.remove("hidden");
+  $("staff-name").textContent=state.staff.name;$("staff-role").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
+  $("role-pill").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
+  navForRole();
+  if(state.staff.role!=="courier")setPage(location.hash.slice(1)||"overview");
+ }catch{$("login-view").classList.remove("hidden");$("app-view").classList.add("hidden");$("mobile-nav").classList.add("hidden");}
+}
+$("login-form").onsubmit=async e=>{
+ e.preventDefault();$("login-error").textContent="";
+ try{
+  await api("/api/staff/login",{method:"POST",body:JSON.stringify({code:$("login-code").value,displayName:$("login-name").value})});
+  $("login-code").value="";await boot();
+ }catch(error){$("login-error").textContent=error.message;}
+};
+$("logout").onclick=async()=>{await api("/api/staff/logout",{method:"POST",body:"{}"});location.href="/admin";};
+$("refresh").onclick=()=>loadPage(state.page);
+$("side-nav").querySelectorAll("[data-page]").forEach(button=>button.onclick=()=>setPage(button.dataset.page));
+document.querySelectorAll("[data-goto]").forEach(button=>button.onclick=()=>setPage(button.dataset.goto));
+async function loadPage(page){
+ if(!state.staff)return;
+ try{
+  if(page==="overview")await loadDashboard();
+  if(page==="orders")await loadOrders();
+  if(page==="schedule")await loadSchedule();
+  if(page==="team")await loadTeam();
+  if(page==="catalog")await loadCatalog();
+  if(page==="logs")await loadLogs();
+  if(page==="settings")await loadSettings();
+  if(page==="telegram")await loadTelegram();
+  if(page==="courier")await loadCourier();
+ }catch(error){toast(error.message);}
+}
+function statusPill(status){return '<span class="status '+esc(status)+'">'+esc(labels[status]||status)+'</span>';}
+async function loadDashboard(){
+ const d=await api("/api/admin/dashboard");
+ const active=Number(d.counts.new||0)+Number(d.counts.confirmed||0)+Number(d.counts.preparing||0)+Number(d.counts.ready||0)+Number(d.counts.assigned||0)+Number(d.counts.picked_up||0)+Number(d.counts.on_the_way||0);
+ $("metrics").innerHTML=[
+  ["Новые",d.counts.new||0,"Требуют реакции"],
+  ["В работе",active,"Все активные статусы"],
+  ["Заказы сегодня",d.todayOrders,"По Минску"],
+  ["Выручка",money(d.revenue),"Завершённые заказы"]
+ ].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong>'+x[1]+'</strong><div class="sub">'+x[2]+'</div></div>').join("");
+ $("latest-orders").innerHTML=d.latest.length?'<table><thead><tr><th>Заказ</th><th>Покупатель</th><th>Статус</th><th>Сумма</th></tr></thead><tbody>'+d.latest.map(o=>'<tr data-order="'+esc(o.id)+'"><td>#'+esc(o.number)+'</td><td>'+esc(o.customer_name)+'</td><td>'+statusPill(o.status)+'</td><td>'+money(o.total)+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">Заказов пока нет</div>';
+ $("latest-orders").querySelectorAll("[data-order]").forEach(row=>row.onclick=()=>{setPage("orders");setTimeout(()=>selectOrder(row.dataset.order),150);});
+ $("system-health").innerHTML='<div class="items"><div class="item"><span>Каталог</span><b>'+(d.sync?.status==="success"?"Синхронизирован":"Проверить")+'</b></div><div class="item"><span>Последняя синхронизация</span><b>'+(d.sync?.finished_at?new Date(d.sync.finished_at).toLocaleString("ru-BY"):"—")+'</b></div><div class="item"><span>Ошибки за 24 часа</span><b style="color:'+(d.errors24h?"var(--bad)":"var(--good)")+'">'+d.errors24h+'</b></div><div class="item"><span>Активные заказы</span><b>'+active+'</b></div></div><button class="btn" data-goto="logs" style="width:100%">Открыть журнал событий</button>';
+ $("system-health").querySelector("[data-goto]").onclick=()=>setPage("logs");
+}
+async function loadOrders(){
+ if(!state.staffList.length){const team=await api("/api/admin/staff");state.staffList=team.staff;}
+ const status=$("order-filter").value;
+ const data=await api("/api/admin/orders"+(status?"?status="+encodeURIComponent(status):""));
+ state.orders=data.orders;
+ $("order-list").innerHTML=state.orders.length?state.orders.map(o=>'<div class="order-card '+(state.selectedOrder===o.id?"selected":"")+'" data-id="'+esc(o.id)+'"><div class="order-card-top"><b>Заказ #'+esc(o.number)+'</b>'+statusPill(o.status)+'</div><p>'+esc(o.customer_name)+' · '+esc(o.phone)+'</p><p>'+(o.deliveryMethod==="delivery"?"Доставка":"Самовывоз")+' · '+esc(o.slotDate)+' '+esc(o.slotTime)+'</p><p><b>'+money(o.total)+'</b></p></div>').join(""):'<div class="empty">Заказов с таким статусом нет</div>';
+ $("order-list").querySelectorAll("[data-id]").forEach(card=>card.onclick=()=>selectOrder(card.dataset.id));
+ if(state.selectedOrder&&state.orders.some(o=>o.id===state.selectedOrder))renderOrderDetail(state.orders.find(o=>o.id===state.selectedOrder));
+ else $("order-detail").innerHTML='<div class="empty">Выберите заказ, чтобы посмотреть детали и изменить статус</div>';
+}
+async function selectOrder(id){state.selectedOrder=id;await loadOrders();}
+function renderOrderDetail(o){
+ const items=o.items||[];
+ let actions="";
+ const buttons={
+  new:[["confirmed","Подтвердить","primary"],["rejected","Отклонить","danger"]],
+  confirmed:[["preparing","Начать сборку","primary"],["cancelled","Отменить","danger"]],
+  preparing:[["ready","Заказ готов","primary"],["cancelled","Отменить","danger"]],
+  ready:o.deliveryMethod==="delivery"?[]:[["completed","Выдан покупателю","primary"]]
+ };
+ for(const [status,label,style] of(buttons[o.status]||[]))actions+='<button class="btn '+style+'" data-status="'+status+'">'+label+'</button>';
+ if(o.status==="ready"&&o.deliveryMethod==="delivery"){
+  actions+='<select id="assign-courier" style="max-width:190px"><option value="">Выбрать курьера</option>'+state.staffList.filter(s=>s.role==="courier"&&s.active).map(s=>'<option value="'+esc(s.id)+'">'+esc(s.display_name)+'</option>').join("")+'</select><button class="btn primary" data-status="assigned">Назначить</button>';
+ }
+ $("order-detail").innerHTML='<div class="panel-head"><div><div class="muted small">ЗАКАЗ #'+esc(o.number)+'</div><h2 style="margin-top:5px">'+esc(o.customerName)+'</h2></div>'+statusPill(o.status)+'</div><div class="info"><div><small>Телефон</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong></div><div><small>Получение</small><strong>'+(o.deliveryMethod==="delivery"?"Доставка":"Самовывоз")+'</strong></div><div><small>Дата и время</small><strong>'+esc(o.slotDate)+' '+esc(o.slotTime)+'</strong></div><div><small>Сумма</small><strong>'+money(o.total)+'</strong></div><div class="full"><small>Адрес</small><strong>'+esc(o.address||"Самовывоз")+'</strong></div><div><small>Оплата</small><strong>'+esc(o.paymentMethod)+'</strong></div><div><small>Курьер</small><strong>'+esc(o.courierName||"Не назначен")+'</strong></div></div><h3>Состав заказа</h3><div class="items">'+items.map(item=>'<div class="item"><span><b>'+esc(item.product_name)+'</b><br><span class="muted">'+esc(item.option_label)+' · SKU '+esc(item.sku)+'</span><br><span class="muted">× '+item.quantity+'</span></span><b>'+money(item.line_total)+'</b></div>').join("")+'</div>'+(o.comment?'<p class="muted">Комментарий: '+esc(o.comment)+'</p>':'')+'<div class="actions">'+actions+'</div><h3 style="margin-top:22px">История</h3><div class="items">'+(o.events||[]).map(e=>'<div class="item"><span>'+esc(e.message||labels[e.to_status]||e.event_type)+'</span><small class="muted">'+new Date(e.created_at).toLocaleString("ru-BY")+'</small></div>').join("")+'</div>';
+ $("order-detail").querySelectorAll("[data-status]").forEach(button=>button.onclick=async()=>{
+  let courierId=null;if(button.dataset.status==="assigned")courierId=$("assign-courier")?.value;
+  try{await api("/api/admin/orders/"+encodeURIComponent(o.id),{method:"PATCH",body:JSON.stringify({status:button.dataset.status,courierId})});toast("Статус заказа обновлён");await loadOrders();}catch(error){toast(error.message);}
+ });
+}
+$("order-filter").onchange=()=>{state.selectedOrder=null;loadOrders();};
+$("orders-reload").onclick=()=>loadOrders();
+async function loadSchedule(){
+ const [config,blocks]=await Promise.all([api("/api/admin/settings"),api("/api/admin/slot-blocks")]);
+ state.config=config;
+ const days=[["mon","Пн"],["tue","Вт"],["wed","Ср"],["thu","Чт"],["fri","Пт"],["sat","Сб"],["sun","Вс"]];
+ $("hours-editor").innerHTML=days.map(([key,label])=>{const h=config.weeklyHours[key]||{};return '<div class="hour-row" data-day="'+key+'"><span class="day">'+label+'</span><label class="closed"><input type="checkbox" class="day-closed" '+(h.closed?"checked":"")+'> Выходной</label><input type="time" class="day-open" value="'+esc(h.open||"10:00")+'"><input type="time" class="day-close" value="'+esc(h.close||"21:00")+'"></div>';}).join("");
+ $("cfg-slot").value=config.slotMinutes;$("cfg-lead").value=config.leadMinutes;$("cfg-days").value=config.daysAhead;$("cfg-capacity").value=config.slotCapacity;
+ $("blocks-list").innerHTML=blocks.blocks.length?blocks.blocks.map(b=>'<div class="item"><span><b>'+esc(b.slot_date)+'</b> · '+esc(b.start_time)+'–'+esc(b.end_time)+'<br><small class="muted">'+esc(b.reason||"Закрыто")+' · '+esc(b.method)+'</small></span><button class="btn danger" data-delete-block="'+esc(b.id)+'">Удалить</button></div>').join(""):'<div class="empty">Исключений нет</div>';
+ $("blocks-list").querySelectorAll("[data-delete-block]").forEach(button=>button.onclick=async()=>{await api("/api/admin/slot-blocks/"+button.dataset.deleteBlock,{method:"DELETE"});await loadSchedule();toast("Ограничение удалено");});
+}
+$("save-hours").onclick=async()=>{
+ const weeklyHours={};
+ document.querySelectorAll(".hour-row").forEach(row=>weeklyHours[row.dataset.day]={closed:row.querySelector(".day-closed").checked,open:row.querySelector(".day-open").value,close:row.querySelector(".day-close").value});
+ try{await api("/api/admin/settings",{method:"PUT",body:JSON.stringify({weeklyHours,slotMinutes:Number($("cfg-slot").value),leadMinutes:Number($("cfg-lead").value),daysAhead:Number($("cfg-days").value),slotCapacity:Number($("cfg-capacity").value)})});toast("Расписание сохранено");}catch(error){toast(error.message);}
+};
+$("block-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/slot-blocks",{method:"POST",body:JSON.stringify({date:$("block-date").value,startTime:$("block-start").value,endTime:$("block-end").value,method:$("block-method").value,reason:$("block-reason").value})});$("block-reason").value="";await loadSchedule();toast("Ограничение добавлено");}catch(error){toast(error.message);}};
+async function loadTeam(){
+ const d=await api("/api/admin/staff");state.staffList=d.staff;
+ $("team-list").innerHTML=d.staff.length?d.staff.map(s=>'<div class="panel" style="margin:8px 0;padding:12px"><div class="row"><span><b>'+esc(s.display_name)+'</b><br><small class="muted">'+esc(s.role)+'</small></span>'+(s.active?'<span class="status delivered">Активен</span>':'<span class="status cancelled">Отключён</span>')+'</div><div class="row" style="margin-top:10px"><input data-staff-telegram="'+esc(s.id)+'" value="'+esc(s.telegram_id||"")+'" placeholder="Telegram ID для уведомлений"><button class="btn" data-save-telegram="'+esc(s.id)+'">Сохранить ID</button><button class="btn '+(s.active?"danger":"")+'" data-toggle-staff="'+esc(s.id)+'" data-active="'+s.active+'">'+(s.active?"Отключить":"Включить")+'</button></div></div>').join(""):'<div class="empty">Команда пока не добавлена</div>';
+ $("team-list").querySelectorAll("[data-toggle-staff]").forEach(button=>button.onclick=async()=>{await api("/api/admin/staff/"+button.dataset.toggleStaff,{method:"PATCH",body:JSON.stringify({active:button.dataset.active!=="1"})});await loadTeam();});
+ $("team-list").querySelectorAll("[data-save-telegram]").forEach(button=>button.onclick=async()=>{const input=[...$("team-list").querySelectorAll("[data-staff-telegram]")].find(el=>el.dataset.staffTelegram===button.dataset.saveTelegram);await api("/api/admin/staff/"+button.dataset.saveTelegram,{method:"PATCH",body:JSON.stringify({telegramId:input?.value||""})});toast("Telegram ID сохранён");});
+}
+$("team-reload").onclick=loadTeam;
+$("invite-form").onsubmit=async e=>{
+ e.preventDefault();$("invite-result").innerHTML="";
+ try{
+  const d=await api("/api/admin/invites",{method:"POST",body:JSON.stringify({displayName:$("invite-name").value,role:$("invite-role").value,telegramId:$("invite-telegram").value})});
+  $("invite-result").innerHTML='<div class="invite-code"><div class="small">Одноразовый код для '+esc(d.invite.displayName)+'</div><code>'+esc(d.invite.code)+'</code><button class="btn" id="copy-invite" style="margin-top:10px">Скопировать код</button><div class="small muted" style="margin-top:7px">Действует до '+new Date(d.invite.expiresAt).toLocaleString("ru-BY")+'</div></div>';
+  $("copy-invite").onclick=()=>navigator.clipboard.writeText(d.invite.code).then(()=>toast("Код скопирован"));
+  $("invite-name").value="";$("invite-telegram").value="";await loadTeam();
+ }catch(error){toast(error.message);}
+};
+async function loadCatalog(){
+ const [runs]=await Promise.all([api("/api/admin/sync-runs")]);
+ const latest=runs.runs[0];
+ $("sync-state").textContent=latest?.status==="success"?"Синхронизирован":latest?.status==="error"?"Ошибка":"Ожидает проверки";
+ $("catalog-stats").innerHTML=[["Строк в источнике",latest?.source_rows??"—"],["Карточек",latest?.product_families??"—"],["Вариантов",latest?.variants??"—"],["Последний запуск",latest?.finished_at?new Date(latest.finished_at).toLocaleString("ru-BY"):"—"]].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong style="font-size:1.1rem">'+x[1]+'</strong></div>').join("");
+ $("sync-history").innerHTML=runs.runs.length?'<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Статус</th><th>Строк</th><th>Карточек</th><th>Вариантов</th><th>Ошибка</th></tr></thead><tbody>'+runs.runs.map(r=>'<tr><td>'+new Date(r.started_at).toLocaleString("ru-BY")+'</td><td>'+statusPill(r.status==="success"?"completed":r.status==="error"?"rejected":"new")+'</td><td>'+(r.source_rows??"—")+'</td><td>'+(r.product_families??"—")+'</td><td>'+(r.variants??"—")+'</td><td>'+esc(r.error||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">История появится после первого запуска</div>';
+}
+$("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="Синхронизация…";try{const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast("Обновлено: "+d.summary.productFamilies+" карточек, "+d.summary.variants+" вариантов");await loadCatalog();}catch(error){toast(error.message);await loadCatalog();}finally{b.disabled=false;b.textContent="↻ Синхронизировать сейчас";}};
+async function loadLogs(){
+ const level=$("log-filter").value;
+ const d=await api("/api/admin/logs"+(level?"?level="+level:""));
+ $("logs-list").innerHTML=d.logs.length?d.logs.map(l=>'<div class="log '+esc(l.level)+'"><time>'+new Date(l.created_at).toLocaleString("ru-BY")+'</time><b>'+esc(l.level.toUpperCase())+'</b><div><b>'+esc(l.area)+'</b><br>'+esc(l.message)+(l.details_json&&l.details_json!=="{}"?'<pre class="muted" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 0">'+esc(l.details_json)+'</pre>':'')+'</div></div>').join(""):'<div class="empty">Событий пока нет</div>';
+}
+$("log-filter").onchange=loadLogs;$("logs-reload").onclick=loadLogs;
+async function loadSettings(){
+ const c=await api("/api/admin/settings");state.config=c;
+ $("cfg-name").value=c.storeName||"";$("cfg-phone").value=c.phone||"";$("cfg-address").value=c.address||"";
+ $("cfg-min").value=(Number(c.minOrder||0)/100).toFixed(2);$("cfg-fee").value=(Number(c.deliveryFee||0)/100).toFixed(2);
+ $("cfg-pickup").checked=!!c.pickupEnabled;$("cfg-delivery").checked=!!c.deliveryEnabled;
+}
+$("settings-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/settings",{method:"PUT",body:JSON.stringify({storeName:$("cfg-name").value,phone:$("cfg-phone").value,address:$("cfg-address").value,minOrder:Math.round(Number($("cfg-min").value||0)*100),deliveryFee:Math.round(Number($("cfg-fee").value||0)*100),pickupEnabled:$("cfg-pickup").checked,deliveryEnabled:$("cfg-delivery").checked})});toast("Настройки магазина сохранены");}catch(error){toast(error.message);}};
+async function loadTelegram(){
+ const d=await api("/api/admin/integrations");
+ $("bot-state").textContent=d.botConfigured?"BOT_TOKEN подключён":"Нужен BOT_TOKEN";
+ $("manager-chat").value=d.managerChatId||"";
+ $("setup-webhook").textContent=d.webhookConfigured?"Обновить webhook":"Настроить webhook";
+}
+$("save-telegram").onclick=async()=>{try{await api("/api/admin/integrations",{method:"PUT",body:JSON.stringify({managerChatId:$("manager-chat").value})});toast("ID чата сохранён");}catch(error){toast(error.message);}};
+$("setup-webhook").onclick=async()=>{try{await api("/api/admin/integrations/webhook",{method:"POST",body:"{}"});toast("Webhook Telegram настроен");await loadTelegram();}catch(error){toast(error.message);}};
+async function loadCourier(){
+ const d=await api("/api/courier/orders");
+ $("courier-list").innerHTML=d.orders.length?d.orders.map(o=>{
+  let buttons="";
+  if(o.status==="assigned")buttons='<button class="btn primary" data-courier-status="picked_up">Забрал заказ</button>';
+  if(o.status==="picked_up")buttons='<button class="btn primary" data-courier-status="on_the_way">Выехал</button>';
+  if(o.status==="on_the_way")buttons='<button class="btn primary" data-courier-status="delivered">Доставлено</button>';
+  return '<div class="courier-card" data-courier-order="'+esc(o.id)+'"><div class="order-card-top"><b>Заказ #'+esc(o.number)+'</b>'+statusPill(o.status)+'</div><h3>'+esc(o.customerName)+'</h3><p><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></p><p>'+esc(o.address||"")+'</p><p>'+esc(o.slotDate)+' · '+esc(o.slotTime)+' · '+money(o.total)+'</p>'+buttons+'</div>';
+ }).join(""):'<div class="empty">Активных доставок пока нет</div>';
+ $("courier-list").querySelectorAll("[data-courier-status]").forEach(button=>button.onclick=async()=>{const id=button.closest("[data-courier-order]").dataset.courierOrder;try{await api("/api/courier/orders/"+id,{method:"PATCH",body:JSON.stringify({status:button.dataset.courierStatus})});toast("Статус доставки обновлён");await loadCourier();}catch(error){toast(error.message);}});
+}
+$("courier-refresh").onclick=loadCourier;
+boot();
+</script>
+</body>
+</html>
