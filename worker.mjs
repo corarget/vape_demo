@@ -523,7 +523,8 @@ async function staffLogin(request,env){
   if(code.length<12||code.length>128)return json({error:"Введите код доступа"},400);
   const codeHash=await sha256(code);
   const bootstrapUsed=await getSetting(env,"bootstrap_used",false);
-  const bootstrapHash=await getSetting(env,"bootstrap_hash","");
+  const storedBootstrapHash=await getSetting(env,"bootstrap_hash","");
+  const bootstrapHash=storedBootstrapHash||(env.BOOTSTRAP_CODE?await sha256(env.BOOTSTRAP_CODE):"");
   let staffId=randomId(),role="manager",displayName=String(body.displayName||"").trim().slice(0,80),telegramId="";
   if(!bootstrapUsed&&bootstrapHash&&safeEqual(codeHash,bootstrapHash)){
     if(displayName.length<2)return json({error:"Укажите имя владельца"},400);
