@@ -777,7 +777,9 @@ export default {
             const headers=body.catalogTemplate.headers.slice(0,100).map(value=>String(value).slice(0,100));
             const mapping={};
             for(const [field,source] of Object.entries(body.catalogTemplate.columnMapping||{}))if(headers.includes(String(source)))mapping[field]=String(source);
-            await setSetting(env,"catalog_template",{name:String(body.catalogTemplate.name||"Шаблон каталога").slice(0,120),headers,columnMapping:mapping,updatedAt:now()},staff.id);
+            const templateContent=typeof body.catalogTemplate.content==="string"?body.catalogTemplate.content:"";
+            if(templateContent.length>50000)return json({error:"Файл шаблона в конфигурации слишком большой"},413);
+            await setSetting(env,"catalog_template",{name:String(body.catalogTemplate.name||"Шаблон каталога").slice(0,120),headers,columnMapping:mapping,content:templateContent,updatedAt:now()},staff.id);
             const catalog=await getCatalogConfig(env);
             await setSetting(env,"catalog_config",{...catalog,columnMapping:mapping},staff.id);
           }
