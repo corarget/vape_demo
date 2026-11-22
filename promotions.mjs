@@ -19,7 +19,8 @@ export function promotionGiftOptions(products, rule){
   return products.filter(product=>product.category==="Жидкости"&&(!brand||product.manufacturer.toLowerCase()===brand))
     .flatMap(product=>product.options.filter(option=>{
       const strength=Number(String(option.attributes?.strength_mg??"").replace(",", "."));
-      return option.available&&option.price>0&&Number.isFinite(strength)&&strength>0&&!/(?:^|\s)0\s*мг(?:\s|$)/iu.test(product.name);
+      const saltMarked=/(?:salt|солев)/iu.test([product.name,option.label,option.attributes?.nicotine_type,option.attributes?.liquid_type].filter(Boolean).join(" "));
+      return option.available&&option.price>0&&(saltMarked||(Number.isFinite(strength)&&strength>=20))&&!/(?:^|\s)0\s*мг(?:\s|$)/iu.test(product.name);
     }).map(option=>({product,option})));
 }
 
