@@ -221,7 +221,7 @@ function customerOrder(order){
 function adminOrder(order){
   return {
     ...customerOrder(order),
-    phone:order.phone,courierId:order.courier_id,courierName:order.courier_name,
+    telegramUsername:order.telegram_username||"",courierId:order.courier_id,courierName:order.courier_name,
     managerId:order.manager_id,cancelReason:order.cancel_reason,
     items:order.items.map(item=>({...item,attributes:JSON.parse(item.attributes_json||"{}")})),
     events:order.events
@@ -269,7 +269,7 @@ async function notifyOrder(env,order,status="new"){
     const lines=order.items.map(item=>"• "+escapeTelegram(item.product_name)+" / "+escapeTelegram(item.option_label)+" × "+item.quantity).join("\n");
     const message="<b>Новый заказ #"+order.number+"</b>\n"+
       "Покупатель: "+escapeTelegram(order.customer_name)+"\n"+
-      "Телефон: "+escapeTelegram(order.phone)+"\n"+
+      (order.telegram_username?"Telegram: @"+escapeTelegram(order.telegram_username)+"\n":"")+
       "Способ: "+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[order.fulfillment_method||order.delivery_method]||"Самовывоз")+"\n"+
       "Время: "+order.slot_date+" "+order.slot_time+"\n"+
       (order.address?"Адрес: "+escapeTelegram(order.address)+"\n":"")+
@@ -286,7 +286,7 @@ async function notifyOrder(env,order,status="new"){
       const courier=await first(env,"SELECT telegram_id,display_name FROM staff WHERE id=?",[order.courier_id]);
       if(courier?.telegram_id&&status==="assigned"){
         await sendTelegram(env,courier.telegram_id,"<b>Новая доставка #"+order.number+"</b>\n"+
-          "Клиент: "+escapeTelegram(order.customer_name)+"\nТелефон: "+escapeTelegram(order.phone)+
+          "Клиент: "+escapeTelegram(order.customer_name)+
           "\nАдрес: "+escapeTelegram(order.address||"")+"\nВремя: "+order.slot_date+" "+order.slot_time);
       }
     }
@@ -454,8 +454,7 @@ async function createOrder(request,env){
   if(!body)return json({error:"Некорректные данные заказа"},400);
   const customerKeyHash=await verifyCustomerToken(request,body);
   if(!customerKeyHash)return json({error:"Не удалось подтвердить сессию покупателя"},400);
-  const name=String(body.customerName||"").trim().slice(0,100);
-  const phone=String(body.phone||"").trim().slice(0,40);
+  const submittedName=String(body.customerName||"").trim().slice(0,100);
   const method=["metro","pickup","delivery"].includes(body.deliveryMethod)?body.deliveryMethod:"metro";
   const storageMethod=method==="delivery"?"delivery":"pickup";
   const address=String(body.address||"").trim().slice(0,300);
@@ -464,7 +463,6 @@ async function createOrder(request,env){
   const slotTime=String(body.slotTime||"");
   const comment=String(body.comment||"").trim().slice(0,500);
   const paymentMethod=["cash","card","online"].includes(body.paymentMethod)?body.paymentMethod:"upon_receipt";
-  if(name.length<2||phone.length<6)return json({error:"Укажите имя и корректный номер телефона"},400);
   if(method==="delivery"&&address.length<5)return json({error:"Укажите адрес доставки"},400);
   const config=await getConfig(env);
   if(method==="delivery"&&!config.deliveryEnabled)return json({error:"Доставка на дом сейчас недоступна"},409);
@@ -502,13 +500,16 @@ async function createOrder(request,env){
   let telegramUser=null;
   if(env.BOT_TOKEN)telegramUser=await verifyTelegramInitData(body.telegramInitData,env.BOT_TOKEN);
   const telegramUserId=telegramUser?String(telegramUser.id):null;
+  const telegramUsername=String(telegramUser?.username||"").replace(/^@/,"").slice(0,80);
+  const verifiedName=[telegramUser?.first_name,telegramUser?.last_name].filter(Boolean).join(" ").trim();
+  const name=(verifiedName||submittedName||"Покупатель Telegram").slice(0,100);
   const orderId=randomId(),createdAt=now();
   const numberResult=await run(env,"INSERT INTO order_numbers(created_at) VALUES(?)",[createdAt]);
   const orderNumber=Number(numberResult.meta?.last_row_id||Date.now());
   const capacity=Number(config.slotCapacity)||4;
   const statements=[
-    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,customer_name,phone,delivery_method,address,fulfillment_method,doorbell,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND COALESCE(fulfillment_method,delivery_method)=? AND status NOT IN ('cancelled','rejected')) < ?")
-      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,name,phone,storageMethod,address,method,doorbell,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
+    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,telegram_username,customer_name,phone,delivery_method,address,fulfillment_method,doorbell,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND COALESCE(fulfillment_method,delivery_method)=? AND status NOT IN ('cancelled','rejected')) < ?")
+      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,telegramUsername||null,name,"",storageMethod,address,method,doorbell,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
     ...items.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,item.productId,item.productKey,item.sku,item.productName,item.manufacturer,item.optionLabel,JSON.stringify(item.attributes),String(item.quantity),String(item.unitPrice),String(item.lineTotal),orderId)),
     env.DB.prepare("INSERT INTO order_events(order_id,actor_role,event_type,to_status,message,metadata_json,created_at) SELECT ?,'customer','created','new','Заказ оформлен',?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")

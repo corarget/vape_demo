@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "embed": "node scripts/embed-html.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "db:migrate": "wrangler d1 migrations apply violet-shop-db --remote",

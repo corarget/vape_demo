@@ -45,9 +45,21 @@ New public attributes can be added using known field names or a `public_` / `dis
 1. Browse families, search across the store, filter by category and brand, sort by analytics / brand / price / name. Search supports Russian/Latin transliteration, keyboard-layout mistakes, spelling errors and ranked fallback suggestions.
 2. Choose a flavour/variant. Unavailable variants are visually de-emphasized; selecting one explains that it is temporarily unavailable and does not add it to the cart.
 3. Add variants to the cart.
-4. Enter name and phone, choose metro handoff, pickup or (if enabled) home delivery, date and an available app-generated time slot.
+4. The checkout takes the customer's identity from Telegram; no phone field is shown. The customer chooses metro handoff, pickup or (if enabled) home delivery, date and an available app-generated time slot.
 5. The Worker rechecks availability and price against the current sheet before creating an order.
-6. Order history is fetched from D1 using a private random customer token stored in the browser.
+6. Order history is fetched from D1 using both the verified Telegram identity and a private random customer token stored in the browser.
+7. After submission the customer sees what happens next: store confirmation, preparation, readiness, courier handoff (for delivery) and completion. Status changes are mirrored in the Mini App and sent through the Telegram bot when it is configured.
+
+### Customer journey after checkout
+
+- `new`: the order is recorded and the store receives a Telegram/admin notification. The customer can still cancel it.
+- `confirmed`: stock and the selected slot have been accepted by the store.
+- `preparing`: staff are collecting the order. The customer can no longer self-cancel; a manager handles exceptions.
+- `ready`: pickup/metro orders can be handed over. Delivery orders are ready for courier assignment.
+- `assigned` → `picked_up` → `on_the_way`: the courier sees only their assigned delivery, its address, slot and order total, and reports each step from the courier panel.
+- `delivered` → `completed`: the manager closes the order after delivery. Every transition is written to the event history.
+
+The phone number is intentionally not collected. The verified Telegram user ID is the primary customer identifier; username is stored only when Telegram provides it. Customer, manager and courier communication should use bot notifications and order status updates.
 
 ## Order workflow
 
