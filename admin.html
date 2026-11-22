@@ -7,7 +7,7 @@
 <title>VIOLET SHOP — управление</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=Caveat:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Golos+Text:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=PT+Sans:wght@400;700&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{font-family:"Golos Text",system-ui,sans-serif;color:#f7f4ff;background:#09080d;--bg:#09080d;--panel:#14121a;--panel2:#1b1722;--line:#332b3d;--muted:#a29aac;--violet:#a855f7;--pink:#d946ef;--good:#70d6a2;--warn:#f2c879;--bad:#ff7f9b;--safe:env(safe-area-inset-bottom,0px)}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg)}body{background:#F6F2EA}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--pink);outline-offset:2px}input,select,textarea{width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;background:#EEE8DE;padding:12px 12px;color:#302A24}textarea{min-height:82px;resize:vertical}label{display:grid;gap:8px;color:#c9c1d2;font-size:.82rem}.muted{color:var(--muted)}.small{font-size:.76rem}.hidden{display:none!important}
@@ -59,6 +59,53 @@ a,.link,.accent{color:#80664D}
 .log-details{white-space:pre-wrap;overflow-wrap:anywhere;margin:8px 0 0}
 .analytics-bar{display:block;width:100%;min-height:2px;border-radius:7px 7px 0 0;background:#A17D59}
 .analytics-bar.h-0{height:2%}.analytics-bar.h-1{height:2%}.analytics-bar.h-2{height:2%}.analytics-bar.h-3{height:3%}.analytics-bar.h-4{height:4%}.analytics-bar.h-5{height:5%}.analytics-bar.h-6{height:6%}.analytics-bar.h-7{height:7%}.analytics-bar.h-8{height:8%}.analytics-bar.h-9{height:9%}.analytics-bar.h-10{height:10%}.analytics-bar.h-11{height:11%}.analytics-bar.h-12{height:12%}.analytics-bar.h-13{height:13%}.analytics-bar.h-14{height:14%}.analytics-bar.h-15{height:15%}.analytics-bar.h-16{height:16%}.analytics-bar.h-17{height:17%}.analytics-bar.h-18{height:18%}.analytics-bar.h-19{height:19%}.analytics-bar.h-20{height:20%}.analytics-bar.h-21{height:21%}.analytics-bar.h-22{height:22%}.analytics-bar.h-23{height:23%}.analytics-bar.h-24{height:24%}.analytics-bar.h-25{height:25%}.analytics-bar.h-26{height:26%}.analytics-bar.h-27{height:27%}.analytics-bar.h-28{height:28%}.analytics-bar.h-29{height:29%}.analytics-bar.h-30{height:30%}.analytics-bar.h-31{height:31%}.analytics-bar.h-32{height:32%}.analytics-bar.h-33{height:33%}.analytics-bar.h-34{height:34%}.analytics-bar.h-35{height:35%}.analytics-bar.h-36{height:36%}.analytics-bar.h-37{height:37%}.analytics-bar.h-38{height:38%}.analytics-bar.h-39{height:39%}.analytics-bar.h-40{height:40%}.analytics-bar.h-41{height:41%}.analytics-bar.h-42{height:42%}.analytics-bar.h-43{height:43%}.analytics-bar.h-44{height:44%}.analytics-bar.h-45{height:45%}.analytics-bar.h-46{height:46%}.analytics-bar.h-47{height:47%}.analytics-bar.h-48{height:48%}.analytics-bar.h-49{height:49%}.analytics-bar.h-50{height:50%}.analytics-bar.h-51{height:51%}.analytics-bar.h-52{height:52%}.analytics-bar.h-53{height:53%}.analytics-bar.h-54{height:54%}.analytics-bar.h-55{height:55%}.analytics-bar.h-56{height:56%}.analytics-bar.h-57{height:57%}.analytics-bar.h-58{height:58%}.analytics-bar.h-59{height:59%}.analytics-bar.h-60{height:60%}.analytics-bar.h-61{height:61%}.analytics-bar.h-62{height:62%}.analytics-bar.h-63{height:63%}.analytics-bar.h-64{height:64%}.analytics-bar.h-65{height:65%}.analytics-bar.h-66{height:66%}.analytics-bar.h-67{height:67%}.analytics-bar.h-68{height:68%}.analytics-bar.h-69{height:69%}.analytics-bar.h-70{height:70%}.analytics-bar.h-71{height:71%}.analytics-bar.h-72{height:72%}.analytics-bar.h-73{height:73%}.analytics-bar.h-74{height:74%}.analytics-bar.h-75{height:75%}.analytics-bar.h-76{height:76%}.analytics-bar.h-77{height:77%}.analytics-bar.h-78{height:78%}.analytics-bar.h-79{height:79%}.analytics-bar.h-80{height:80%}.analytics-bar.h-81{height:81%}.analytics-bar.h-82{height:82%}.analytics-bar.h-83{height:83%}.analytics-bar.h-84{height:84%}.analytics-bar.h-85{height:85%}.analytics-bar.h-86{height:86%}.analytics-bar.h-87{height:87%}.analytics-bar.h-88{height:88%}.analytics-bar.h-89{height:89%}.analytics-bar.h-90{height:90%}.analytics-bar.h-91{height:91%}.analytics-bar.h-92{height:92%}.analytics-bar.h-93{height:93%}.analytics-bar.h-94{height:94%}.analytics-bar.h-95{height:95%}.analytics-bar.h-96{height:96%}.analytics-bar.h-97{height:97%}.analytics-bar.h-98{height:98%}.analytics-bar.h-99{height:99%}.analytics-bar.h-100{height:100%}
+
+/* Graphite interface */
+:root{color-scheme:dark;color:#E8ECE8;background:#0E1011;--bg:#0E1011;--panel:#191D1F;--panel2:#24292B;--line:#363D3F;--muted:#A0AAA4;--violet:#B7D86B;--pink:#D2E69A}
+html,body{background:#0E1011!important;color:#E8ECE8}
+body,.shell,.main{background:#0E1011;color:#E8ECE8}
+.side{background:#141819;border-color:#303739}
+.panel,.metric,.config-note,.invite-code,.team-card,.courier-card{background:#191D1F;border-color:#363D3F;color:#E8ECE8}
+.metric small,.muted,.panel-head p,.small{color:#A0AAA4}
+input,select,textarea{background:#111516;border-color:#363D3F;color:#E8ECE8;color-scheme:dark}
+input::placeholder,textarea::placeholder{color:#77817B}
+.btn{background:#22282A;border-color:#3A4445;color:#E8ECE8}
+.btn.primary{background:#B7D86B;border-color:#B7D86B;color:#151A10;box-shadow:none}
+.btn.danger{background:#382326;border-color:#76454A;color:#F0B5B7}
+.nav button{color:#AAB2AC}
+.nav button.active{background:#252C2C;border-color:#B7D86B;color:#D2E69A;box-shadow:none}
+.logo b,.top .pill,.status.new{color:#B7D86B}
+.logo b{text-shadow:none}
+.top{border-color:#303739}
+.pill{background:#202627;border-color:#3A4445;color:#D6DDD7}
+.config-note{background:#202627;border-color:#363D3F}
+.status{border-color:#3A4445}
+table th,table td{border-color:#363D3F}
+.empty{border-color:#3A4445;color:#A0AAA4}
+.login{background:#0E1011;color:#E8ECE8}
+.login .pill{background:#202627;color:#D2E69A}
+.login input{background:#111516}
+.login-details{margin-top:16px;border-top:1px solid #363D3F;padding-top:12px}
+.login-details summary,.advanced-settings summary{cursor:pointer;font-weight:700;color:#D2E69A}
+.login-details form{margin-top:12px}
+.permission-panel{border:1px solid #363D3F;border-radius:14px;padding:12px;min-width:0}
+.permission-panel legend{padding:0 6px;font-weight:700;color:#D2E69A}
+.permission-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px}
+.permission-grid label{display:flex;align-items:center;gap:8px;min-width:0;font-size:.82rem;color:#D7DDD8}
+.permission-grid input{width:16px;height:16px;accent-color:#B7D86B;flex:0 0 auto}
+.permission-editor{margin-top:12px;border-top:1px solid #363D3F;padding-top:10px}
+.permission-editor summary{cursor:pointer;color:#D2E69A;font-weight:600}
+.permission-editor .permission-grid{margin-top:10px}
+.advanced-settings{margin-top:16px}
+.advanced-settings>summary{font-size:1rem}
+.advanced-settings>p{margin-top:8px}
+.theme-form{margin-top:16px}
+.theme-preview{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px;border:1px solid var(--preview-line,#363D3F);border-radius:16px;background:var(--preview-panel,#191D1F);color:var(--preview-text,#E8ECE8)}
+.theme-preview small{display:block;color:var(--preview-muted,#A0AAA4);letter-spacing:.1em}
+.theme-preview strong{display:block;margin-top:8px;color:var(--preview-accent,#B7D86B);font-size:1.2rem}
+.theme-preview p{margin-top:4px;color:var(--preview-muted,#A0AAA4);font-size:.82rem}
+.theme-preview button{border:0;border-radius:10px;padding:10px 14px;background:var(--preview-accent,#B7D86B);color:#151A10;font-weight:700;white-space:nowrap}
+@media(max-width:720px){.permission-grid{grid-template-columns:1fr}.theme-preview{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -67,13 +114,24 @@ a,.link,.accent{color:#80664D}
   <div class="pill login-pill"><span class="dot"></span> Защищённый доступ</div>
   <h1>Пульт управления</h1>
   <p>Войдите по одноразовому коду владельца или приглашению сотрудника. Покупатели не имеют доступа к этой панели.</p>
-  <form id="login-form">
-    <label>Имя для первой настройки<input id="login-name" autocomplete="name" placeholder="Имя владельца"></label>
-    <label>Код доступа<input id="login-code" type="password" autocomplete="one-time-code" placeholder="Вставьте код" required></label>
-    <button class="btn primary" type="submit">Войти в систему</button>
-    <div id="login-error" class="small login-error"></div>
-  </form>
-  <p class="small login-help">Сотрудник? Используйте персональный код приглашения, выданный менеджером.</p>
+  <div id="demo-login-panel" hidden>
+    <form id="demo-login-form" class="grid">
+      <label>Логин<input id="demo-username" autocomplete="username" value="admin" required></label>
+      <label>Пароль<input id="demo-password" type="password" autocomplete="current-password" placeholder="admin" required></label>
+      <button class="btn primary" type="submit">Войти</button>
+      <div id="demo-login-error" class="small login-error"></div>
+    </form>
+  </div>
+  <details id="code-login-details" class="login-details">
+    <summary>Войти по коду приглашения</summary>
+    <form id="login-form">
+      <label>Имя для первой настройки<input id="login-name" autocomplete="name" placeholder="Имя владельца"></label>
+      <label>Код доступа<input id="login-code" type="password" autocomplete="one-time-code" placeholder="Вставьте код" required></label>
+      <button class="btn primary" type="submit">Войти по коду</button>
+      <div id="login-error" class="small login-error"></div>
+    </form>
+    <p class="small login-help">Для сотрудников используйте персональный код приглашения от владельца магазина.</p>
+  </details>
 </div>
 
 <div id="app-view" class="shell hidden">
@@ -126,7 +184,28 @@ a,.link,.accent{color:#80664D}
     <section id="page-team" class="section">
       <div class="grid two">
         <div class="panel"><div class="panel-head"><div><h2>Команда магазина</h2><p>Менеджеры и курьеры с отдельными правами</p></div><button class="btn" id="team-reload">Обновить</button></div><div id="team-list"></div></div>
-        <div class="panel"><div class="panel-head"><div><h2>Пригласить сотрудника</h2><p>Одноразовый код действует 48 часов</p></div></div><form id="invite-form" class="grid"><label>Имя сотрудника<input id="invite-name" required placeholder="Например, Алексей"></label><label>Роль<select id="invite-role"><option value="courier">Курьер</option><option value="manager">Менеджер</option></select></label><label>Telegram ID (необязательно)<input id="invite-telegram" inputmode="numeric" placeholder="Для уведомлений"></label><button class="btn primary" type="submit">Создать приглашение</button></form><div id="invite-result"></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Пригласить сотрудника</h2><p>Одноразовый код действует 48 часов</p></div></div><form id="invite-form" class="grid"><label>Имя сотрудника<input id="invite-name" required placeholder="Например, Алексей"></label><label>Роль<select id="invite-role"><option value="courier">Курьер</option><option value="manager">Менеджер</option></select></label><label>Telegram ID (необязательно)<input id="invite-telegram" inputmode="numeric" placeholder="Для уведомлений"></label>
+          <fieldset id="invite-permissions" class="permission-panel">
+            <legend>Доступы менеджера</legend>
+            <div class="permission-grid">
+              <label><input type="checkbox" data-invite-permission="overview" checked>Обзор</label>
+              <label><input type="checkbox" data-invite-permission="orders" checked>Просмотр заказов</label>
+              <label><input type="checkbox" data-invite-permission="orders.manage" checked>Изменение заказов</label>
+              <label><input type="checkbox" data-invite-permission="schedule" checked>Расписание и слоты</label>
+              <label><input type="checkbox" data-invite-permission="catalog" checked>Просмотр каталога</label>
+              <label><input type="checkbox" data-invite-permission="catalog.manage" checked>Управление каталогом</label>
+              <label><input type="checkbox" data-invite-permission="categories" >Просмотр категорий</label>
+              <label><input type="checkbox" data-invite-permission="categories.manage" >Изменение категорий</label>
+              <label><input type="checkbox" data-invite-permission="analytics" >Аналитика</label>
+              <label><input type="checkbox" data-invite-permission="branding" >Просмотр оформления</label>
+              <label><input type="checkbox" data-invite-permission="branding.manage" >Изменение оформления</label>
+              <label><input type="checkbox" data-invite-permission="settings" >Настройки магазина</label>
+              <label><input type="checkbox" data-invite-permission="logs" >Системные логи</label>
+              <label><input type="checkbox" data-invite-permission="telegram" >Telegram и уведомления</label>
+            </div>
+            <p class="small muted">Права можно изменить позже. Курьеру доступны только назначенные доставки.</p>
+          </fieldset>
+          <button class="btn primary" type="submit">Создать приглашение</button></form><div id="invite-result"></div></div>
       </div>
     </section>
 
@@ -172,13 +251,38 @@ a,.link,.accent{color:#80664D}
           <label class="full">Короткое описание / слоган<input id="brand-tagline" maxlength="120" placeholder="Например: тщательно отобранные товары"></label>
           <label class="full">URL логотипа<input id="brand-logo" type="url" placeholder="https://…"></label>
           <label>Заголовок главной<input id="brand-hero-title" maxlength="80"></label><label>Текст под заголовком<input id="brand-hero-subtitle" maxlength="180"></label>
-          <label>Основной цвет<input id="brand-accent" type="color"></label><label>Вторичный цвет<input id="brand-accent2" type="color"></label>
-          <label>Фон<input id="brand-background" type="color"></label><label>Цвет карточек<input id="brand-panel" type="color"></label>
+          <div class="full muted">Подробная настройка цветов, акцентов и шрифтов находится в свёрнутом разделе ниже.</div>
           <label class="full">Сортировка по умолчанию<select id="brand-default-sort"><option value="featured">Рекомендованные</option><option value="analytics">Популярные по аналитике</option><option value="price-asc">Сначала дешевле</option><option value="price-desc">Сначала дороже</option><option value="name">По названию</option><option value="brand">По бренду</option></select></label>
           <label class="field-row full"><input id="brand-analytics" type="checkbox"> Собирать обезличенную аналитику витрины</label>
           <div class="full"><button class="btn primary" type="submit">Сохранить оформление</button></div>
         </form></div>
         <div class="panel"><div class="panel-head"><div><h2>Передача и перенос магазина</h2><p>Настройки можно переносить между копиями проекта</p></div></div><div class="config-note">Экспорт содержит оформление, категории и сопоставление столбцов. Заказы, сотрудники, пароли, токены и ID исходной таблицы не экспортируются.</div><div class="actions"><button class="btn primary" id="export-config">Экспортировать настройки</button><label class="btn" for="import-config-file">Импортировать настройки</label><input id="import-config-file" type="file" accept=".json,application/json" hidden></div><div class="small muted mt-8">Для нового клиента создаётся отдельная копия Worker и базы данных. Затем клиент подключает свою таблицу и получает доступ менеджера через одноразовое приглашение.</div></div>
+      <details id="advanced-ui-settings" class="panel advanced-settings">
+        <summary>Расширенная настройка интерфейса</summary>
+        <p class="muted">Здесь можно отдельно настроить шрифты, фон, поверхности, текст и акценты. Эти параметры не влияют на данные каталога.</p>
+        <form id="ui-theme-form" class="form-grid theme-form">
+          <label>Шрифт текста<select id="ui-font-family"><option>Golos Text</option><option>Manrope</option><option>Rubik</option><option>PT Sans</option></select></label>
+          <label>Шрифт заголовков<select id="ui-heading-font"><option>Golos Text</option><option>Manrope</option><option>Rubik</option><option>PT Sans</option></select></label>
+          <label>Основной акцент<input id="ui-accent" type="color"></label>
+          <label>Дополнительный акцент<input id="ui-accent2" type="color"></label>
+          <label>Фон страницы<input id="ui-background" type="color"></label>
+          <label>Основная поверхность<input id="ui-panel" type="color"></label>
+          <label>Вторичная поверхность<input id="ui-panel2" type="color"></label>
+          <label>Основной текст<input id="ui-text" type="color"></label>
+          <label>Вторичный текст<input id="ui-muted" type="color"></label>
+          <label>Границы и разделители<input id="ui-line" type="color"></label>
+          <div class="full">
+            <div id="ui-theme-preview" class="theme-preview">
+              <div><small>ПРЕДПРОСМОТР</small><strong>Каталог магазина</strong><p>Так будут выглядеть заголовки, текст и основные элементы витрины.</p></div>
+              <button type="button">Кнопка действия</button>
+            </div>
+          </div>
+          <div class="full actions">
+            <button class="btn primary" type="submit">Сохранить интерфейс</button>
+            <button class="btn" type="button" id="ui-theme-reset">Вернуть настройки по умолчанию</button>
+          </div>
+        </form>
+      </details>
       </div>
     </section>
 
@@ -201,6 +305,11 @@ const state={staff:null,page:"overview",orders:[],selectedOrder:null,config:null
 const titles={overview:"Обзор",orders:"Заказы",schedule:"Слоты и график",team:"Команда",catalog:"Каталог и синхронизация",categories:"Категории витрины",analytics:"Аналитика",branding:"Брендинг и копирование",logs:"Логи и ошибки",settings:"Настройки магазина",telegram:"Telegram",courier:"Мои доставки"};
 const labels={new:"Новый",confirmed:"Подтверждён",preparing:"Готовится",ready:"Готов",assigned:"Назначен курьер",picked_up:"Забран",on_the_way:"В пути",delivered:"Доставлен",completed:"Завершён",cancelled:"Отменён",rejected:"Отклонён"};
 const pages=[["overview","◫","Обзор"],["orders","▣","Заказы"],["schedule","◷","Слоты"],["team","♙","Команда"],["catalog","▦","Каталог"],["categories","▤","Категории"],["analytics","⌁","Аналитика"],["branding","✦","Брендинг"],["logs","≋","Логи"],["settings","⚙","Настройки"],["telegram","➤","Telegram"]];
+const PERMISSION_OPTIONS=[{"key":"overview","label":"Обзор"},{"key":"orders","label":"Просмотр заказов"},{"key":"orders.manage","label":"Изменение заказов"},{"key":"schedule","label":"Расписание и слоты"},{"key":"catalog","label":"Просмотр каталога"},{"key":"catalog.manage","label":"Управление каталогом"},{"key":"categories","label":"Просмотр категорий"},{"key":"categories.manage","label":"Изменение категорий"},{"key":"analytics","label":"Аналитика"},{"key":"branding","label":"Просмотр оформления"},{"key":"branding.manage","label":"Изменение оформления"},{"key":"settings","label":"Настройки магазина"},{"key":"logs","label":"Системные логи"},{"key":"telegram","label":"Telegram и уведомления"}];
+const PAGE_PERMISSIONS={overview:"overview",orders:"orders",schedule:"schedule",team:"team",catalog:"catalog",categories:"categories",analytics:"analytics",branding:"branding",logs:"logs",settings:"settings",telegram:"telegram"};
+function canPermission(permission){return state.staff?.role==="owner"||!!state.staff?.permissions?.includes(permission);}
+function canOpenPage(page){return page==="courier"?state.staff?.role==="courier":!!PAGE_PERMISSIONS[page]&&canPermission(PAGE_PERMISSIONS[page]);}
+function permissionChecks(selected,attribute){return PERMISSION_OPTIONS.map(item=>'<label><input type="checkbox" '+attribute+'="'+esc(item.key)+'" '+(selected.includes(item.key)?"checked":"")+'> '+esc(item.label)+'</label>').join("");}
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function money(v){return (Number(v||0)/100).toFixed(2).replace(".",",")+" BYN";}
 function toast(message){$("toast").textContent=message;$("toast").classList.remove("hidden");setTimeout(()=>$("toast").classList.add("hidden"),3200);}
@@ -211,6 +320,7 @@ async function api(path,options={}){
  return data;
 }
 function setPage(page){
+ if(!canOpenPage(page)){const fallback=pages.find(([key])=>canOpenPage(key))?.[0];if(fallback&&fallback!==page)return setPage(fallback);return;}
  state.page=page;
  document.querySelectorAll(".section").forEach(section=>section.classList.toggle("active",section.id==="page-"+page));
  document.querySelectorAll("[data-page]").forEach(button=>button.classList.toggle("active",button.dataset.page===page));
@@ -221,12 +331,25 @@ function setPage(page){
 }
 function navForRole(){
  const courier=state.staff.role==="courier";
- $("side-nav").querySelectorAll("[data-page]").forEach(button=>button.classList.toggle("hidden",courier));
- $("mobile-nav").innerHTML=courier?'<button data-page="courier"><span>▣</span>Доставки</button>':'<button data-page="overview"><span>◫</span>Обзор</button><button data-page="orders"><span>▣</span>Заказы</button><button data-page="catalog"><span>▦</span>Каталог</button><button data-page="categories"><span>▤</span>Категории</button><button data-page="analytics"><span>⌁</span>Аналитика</button><button data-page="branding"><span>✦</span>Бренд</button>';
+ $("side-nav").querySelectorAll("[data-page]").forEach(button=>button.classList.toggle("hidden",!canOpenPage(button.dataset.page)));
+ const visible=courier?[["courier","▣","Доставки"]]:pages.filter(([page])=>canOpenPage(page));
+ $("mobile-nav").innerHTML=visible.map(([page,icon,label])=>'<button data-page="'+page+'"><span>'+icon+'</span>'+label+'</button>').join("");
  $("mobile-nav").classList.remove("hidden");
  $("mobile-nav").querySelectorAll("[data-page]").forEach(button=>button.onclick=()=>setPage(button.dataset.page));
  if(courier)setPage("courier");
 }
+async function loadLoginOptions(){
+ try{
+  const options=await api("/api/staff/login-options");
+  $("demo-login-panel").hidden=!options.demoLoginEnabled;
+  $("code-login-details").open=!options.demoLoginEnabled;
+ }catch{$("code-login-details").open=true;}
+}
+$("demo-login-form").onsubmit=async e=>{
+ e.preventDefault();$("demo-login-error").textContent="";
+ try{await api("/api/staff/demo-login",{method:"POST",body:JSON.stringify({username:$("demo-username").value,password:$("demo-password").value})});$("demo-password").value="";await boot();}
+ catch(error){$("demo-login-error").textContent=error.message;}
+};
 async function boot(){
  try{
   const data=await api("/api/staff/session");
@@ -235,7 +358,7 @@ async function boot(){
   $("staff-name").textContent=state.staff.name;$("staff-role").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
   $("role-pill").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
   navForRole();
-  if(state.staff.role!=="courier")setPage(location.hash.slice(1)||"overview");
+  if(state.staff.role!=="courier"){const firstPage=pages.find(([page])=>canOpenPage(page))?.[0]||"overview";setPage(canOpenPage(location.hash.slice(1))?location.hash.slice(1):firstPage);}
  }catch{$("login-view").classList.remove("hidden");$("app-view").classList.add("hidden");$("mobile-nav").classList.add("hidden");}
 }
 $("login-form").onsubmit=async e=>{
@@ -334,15 +457,28 @@ $("save-hours").onclick=async()=>{
 $("block-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/slot-blocks",{method:"POST",body:JSON.stringify({date:$("block-date").value,startTime:$("block-start").value,endTime:$("block-end").value,method:$("block-method").value,reason:$("block-reason").value})});$("block-reason").value="";await loadSchedule();toast("Ограничение добавлено");}catch(error){toast(error.message);}};
 async function loadTeam(){
  const d=await api("/api/admin/staff");state.staffList=d.staff;
- $("team-list").innerHTML=d.staff.length?d.staff.map(s=>'<div class="panel team-card"><div class="row"><span><b>'+esc(s.display_name)+'</b><br><small class="muted">'+esc(s.role)+'</small></span>'+(s.active?'<span class="status delivered">Активен</span>':'<span class="status cancelled">Отключён</span>')+'</div><div class="row mt-8"><input data-staff-telegram="'+esc(s.id)+'" value="'+esc(s.telegram_id||"")+'" placeholder="Telegram ID для уведомлений"><button class="btn" data-save-telegram="'+esc(s.id)+'">Сохранить ID</button><button class="btn '+(s.active?"danger":"")+'" data-toggle-staff="'+esc(s.id)+'" data-active="'+s.active+'">'+(s.active?"Отключить":"Включить")+'</button></div></div>').join(""):'<div class="empty">Команда пока не добавлена</div>';
+ $("team-list").innerHTML=d.staff.length?d.staff.map(s=>{
+  const permissionContent=s.role==="owner"?'<div class="small muted mt-8">Полный доступ владельца</div>':s.role==="courier"?'<div class="small muted mt-8">Доступ только к назначенным доставкам</div>':'<details class="permission-editor"><summary>Настроить разрешения</summary><div class="permission-grid">'+permissionChecks(s.permissions||[],"data-staff-permission")+'</div><button class="btn mt-8" type="button" data-save-permissions="'+esc(s.id)+'">Сохранить права</button></details>';
+  return '<div class="panel team-card" data-staff-card="'+esc(s.id)+'"><div class="row"><span><b>'+esc(s.display_name)+'</b><br><small class="muted">'+esc(s.role==="owner"?"Владелец":s.role==="manager"?"Менеджер":"Курьер")+'</small></span>'+(s.active?'<span class="status delivered">Активен</span>':'<span class="status cancelled">Отключён</span>')+'</div>'+permissionContent+'<div class="row mt-8"><input data-staff-telegram="'+esc(s.id)+'" value="'+esc(s.telegram_id||"")+'" placeholder="Telegram ID для уведомлений"><button class="btn" data-save-telegram="'+esc(s.id)+'">Сохранить ID</button><button class="btn '+(s.active?"danger":"")+'" data-toggle-staff="'+esc(s.id)+'" data-active="'+s.active+'">'+(s.active?"Отключить":"Включить")+'</button></div></div>';
+ }).join(""):'<div class="empty">Команда пока не добавлена</div>';
  $("team-list").querySelectorAll("[data-toggle-staff]").forEach(button=>button.onclick=async()=>{await api("/api/admin/staff/"+button.dataset.toggleStaff,{method:"PATCH",body:JSON.stringify({active:button.dataset.active!=="1"})});await loadTeam();});
  $("team-list").querySelectorAll("[data-save-telegram]").forEach(button=>button.onclick=async()=>{const input=[...$("team-list").querySelectorAll("[data-staff-telegram]")].find(el=>el.dataset.staffTelegram===button.dataset.saveTelegram);await api("/api/admin/staff/"+button.dataset.saveTelegram,{method:"PATCH",body:JSON.stringify({telegramId:input?.value||""})});toast("Telegram ID сохранён");});
+ $("team-list").querySelectorAll("[data-save-permissions]").forEach(button=>button.onclick=async()=>{
+  const card=button.closest("[data-staff-card]");
+  const permissions=[...card.querySelectorAll("[data-staff-permission]")].filter(input=>input.checked).map(input=>input.dataset.staffPermission);
+  if(!permissions.length){toast("Выберите хотя бы одно разрешение");return;}
+  try{await api("/api/admin/staff/"+button.dataset.savePermissions,{method:"PATCH",body:JSON.stringify({permissions})});toast("Права обновлены. Сотруднику нужно войти заново.");await loadTeam();}catch(error){toast(error.message);}
+ });
 }
 $("team-reload").onclick=loadTeam;
+$("invite-role").onchange=()=>{$("invite-permissions").hidden=$("invite-role").value==="courier";};
 $("invite-form").onsubmit=async e=>{
  e.preventDefault();$("invite-result").innerHTML="";
  try{
-  const d=await api("/api/admin/invites",{method:"POST",body:JSON.stringify({displayName:$("invite-name").value,role:$("invite-role").value,telegramId:$("invite-telegram").value})});
+  const role=$("invite-role").value;
+  const permissions=[...$("invite-permissions").querySelectorAll("[data-invite-permission]")].filter(input=>input.checked).map(input=>input.dataset.invitePermission);
+  if(role==="manager"&&!permissions.length){toast("Выберите хотя бы одно разрешение");return;}
+  const d=await api("/api/admin/invites",{method:"POST",body:JSON.stringify({displayName:$("invite-name").value,role,telegramId:$("invite-telegram").value,permissions})});
   $("invite-result").innerHTML='<div class="invite-code"><div class="small">Одноразовый код для '+esc(d.invite.displayName)+'</div><code>'+esc(d.invite.code)+'</code><button class="btn mt-8" id="copy-invite">Скопировать код</button><div class="small muted mt-8">Действует до '+new Date(d.invite.expiresAt).toLocaleString("ru-BY")+'</div></div>';
   $("copy-invite").onclick=()=>navigator.clipboard.writeText(d.invite.code).then(()=>toast("Код скопирован"));
   $("invite-name").value="";$("invite-telegram").value="";await loadTeam();
@@ -437,15 +573,21 @@ async function loadAnalytics(){
  $("analytics-daily").innerHTML=data.daily.length?'<div class="analytics-bars">'+data.daily.map(day=>'<div class="analytics-day"><div class="analytics-stack"><span class="analytics-bar h-'+Math.round(Math.max(2,Math.min(100,Number(day.views||0)/max*100)))+'"></span></div><b>'+day.views+'</b><small>'+esc(day.day.slice(5))+'</small></div>').join("")+'</div><div class="muted small">Высота столбца отражает просмотры карточек. Добавления в корзину: '+data.totals.cartAdds+' · Заказы: '+data.totals.orders+'</div>':'<div class="empty">Динамика появится после первых событий</div>';
 }
 $("analytics-days").onchange=loadAnalytics;$("analytics-reload").onclick=loadAnalytics;
+const DEFAULT_UI_THEME={accent:"#B7D86B",accent2:"#D2E69A",background:"#0E1011",panel:"#191D1F",panel2:"#24292B",text:"#E8ECE8",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Golos Text",headingFontFamily:"Golos Text"};
+function uiThemeFromForm(){return {accent:$("ui-accent").value,accent2:$("ui-accent2").value,background:$("ui-background").value,panel:$("ui-panel").value,panel2:$("ui-panel2").value,text:$("ui-text").value,muted:$("ui-muted").value,line:$("ui-line").value,fontFamily:$("ui-font-family").value,headingFontFamily:$("ui-heading-font").value};}
+function fillUiTheme(theme={}){const value={...DEFAULT_UI_THEME,...theme};for(const [key,id] of Object.entries({accent:"ui-accent",accent2:"ui-accent2",background:"ui-background",panel:"ui-panel",panel2:"ui-panel2",text:"ui-text",muted:"ui-muted",line:"ui-line",fontFamily:"ui-font-family",headingFontFamily:"ui-heading-font"}))$(id).value=value[key];updateThemePreview();}
+function updateThemePreview(){const theme=uiThemeFromForm(),preview=$("ui-theme-preview");for(const [key,value] of Object.entries({"--preview-accent":theme.accent,"--preview-panel":theme.panel,"--preview-text":theme.text,"--preview-muted":theme.muted,"--preview-line":theme.line}))preview.style.setProperty(key,value);preview.style.fontFamily='"'+theme.fontFamily+'",sans-serif';preview.querySelector("strong").style.fontFamily='"'+theme.headingFontFamily+'",sans-serif';}
 async function loadBranding(){
- const config=await api("/api/admin/settings");state.config=config;
+ const config=await api("/api/admin/branding");state.config=config;
  $("brand-tagline").value=config.brandTagline||"";$("brand-logo").value=config.logoUrl||"";
  $("brand-hero-title").value=config.heroTitle||"Каталог";$("brand-hero-subtitle").value=config.heroSubtitle||"";
- $("brand-accent").value=config.theme?.accent||"#a855f7";$("brand-accent2").value=config.theme?.accent2||"#d946ef";
- $("brand-background").value=config.theme?.background||"#08080b";$("brand-panel").value=config.theme?.panel||"#181820";
  $("brand-default-sort").value=config.defaultSort||"featured";$("brand-analytics").checked=config.analyticsEnabled!==false;
+ fillUiTheme(config.theme||DEFAULT_UI_THEME);
 }
-$("branding-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/settings",{method:"PUT",body:JSON.stringify({brandTagline:$("brand-tagline").value,logoUrl:$("brand-logo").value,heroTitle:$("brand-hero-title").value,heroSubtitle:$("brand-hero-subtitle").value,theme:{accent:$("brand-accent").value,accent2:$("brand-accent2").value,background:$("brand-background").value,panel:$("brand-panel").value},defaultSort:$("brand-default-sort").value,analyticsEnabled:$("brand-analytics").checked})});toast("Оформление сохранено");}catch(error){toast(error.message);}};
+$("branding-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/branding",{method:"PUT",body:JSON.stringify({brandTagline:$("brand-tagline").value,logoUrl:$("brand-logo").value,heroTitle:$("brand-hero-title").value,heroSubtitle:$("brand-hero-subtitle").value,defaultSort:$("brand-default-sort").value,analyticsEnabled:$("brand-analytics").checked})});toast("Оформление сохранено");}catch(error){toast(error.message);}};
+$("ui-theme-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/branding",{method:"PUT",body:JSON.stringify({theme:uiThemeFromForm()})});toast("Интерфейс сохранён");}catch(error){toast(error.message);}};
+$("ui-theme-form").querySelectorAll("input,select").forEach(input=>input.addEventListener("input",updateThemePreview));
+$("ui-theme-reset").onclick=()=>fillUiTheme(DEFAULT_UI_THEME);
 $("export-config").onclick=async()=>{try{const config=await api("/api/admin/config/export");const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="store-config.json";link.click();URL.revokeObjectURL(link.href);toast("Файл настроек подготовлен");}catch(error){toast(error.message);}};
 $("import-config-file").onchange=async()=>{const file=$("import-config-file").files?.[0];if(!file)return;try{const config=JSON.parse(await file.text());if(!confirm("Импортировать оформление, категории и сопоставление таблицы? Текущие настройки этих разделов будут заменены."))return;await api("/api/admin/config/import",{method:"POST",body:JSON.stringify(config)});toast("Настройки импортированы. Подключение к Google Sheets сохранено отдельно.");await loadBranding();await loadSettings();await loadCategories();await loadCatalog();}catch(error){toast(error.message);}finally{$("import-config-file").value="";}};
 
@@ -482,6 +624,7 @@ async function loadCourier(){
  $("courier-list").querySelectorAll("[data-courier-status]").forEach(button=>button.onclick=async()=>{const id=button.closest("[data-courier-order]").dataset.courierOrder;try{await api("/api/courier/orders/"+id,{method:"PATCH",body:JSON.stringify({status:button.dataset.courierStatus})});toast("Статус доставки обновлён");await loadCourier();}catch(error){toast(error.message);}});
 }
 $("courier-refresh").onclick=loadCourier;
+loadLoginOptions();
 boot();
 </script>
 </body>
