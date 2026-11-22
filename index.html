@@ -150,6 +150,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline-color:var(
 .notice{color:var(--accent)}
 input,select,textarea{border-color:var(--line)}
 .cart-thumb{border-radius:14px}
+.promo-old-price{display:block;margin-top:4px;color:var(--muted);font-size:.82rem;text-decoration:line-through}
 @media(min-width:760px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){
  .app{padding-inline:12px}
@@ -374,16 +375,31 @@ const statusLabel={submitted:'Новый',confirmed:'Подтверждён',com
 function orderPanel(order,manager=false){const panel=document.createElement('div');panel.className='panel';panel.innerHTML='<div class="row"><strong>Заказ №'+escapeHTML(order.number)+'</strong><span class="stock">'+escapeHTML(statusLabel[order.status]||order.status)+'</span></div><p class="muted">'+order.items.map(item=>escapeHTML(cleanUiText(item.name))+(item.selectedOption?' · '+escapeHTML(item.selectedOption):'')+' × '+Number(item.qty||0)).join(', ')+'</p><div class="row"><span class="muted">'+escapeHTML(order.date)+'</span><strong>'+money(order.total)+'</strong></div>';if(manager&&(order.status==='submitted'||order.status==='confirmed')){const actions=document.createElement('div');actions.className='manager-actions';if(order.status==='submitted')actions.innerHTML='<button data-status="confirmed">Подтвердить</button><button data-status="rejected">Отклонить</button>';else actions.innerHTML='<button data-status="completed">Выдан</button>';actions.querySelectorAll('button').forEach(button=>button.onclick=()=>{order.status=button.dataset.status;save();renderOrders();renderManager();});panel.append(actions)}return panel;}
 async function renderOrders(){const token=customerToken();try{const response=await fetch('/api/orders',{headers:{'X-Customer-Token':token,'X-Telegram-Init-Data':telegram?.initData||''}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить заказы');const orders=data.orders||[];if(!orders.length){$('orders').innerHTML='<div class="empty">Заказов пока нет</div>';return;}const labels={new:'Новый',confirmed:'Подтверждён',preparing:'Собирается',ready:'Готов к получению',assigned:'Назначен курьер',picked_up:'У курьера',on_the_way:'В пути',delivered:'Доставлен',completed:'Завершён',cancelled:'Отменён',rejected:'Отклонён'};$('orders').innerHTML=[...orders].map(order=>'<div class="panel"><div class="row"><strong>Заказ №'+escapeHTML(order.number)+'</strong><span class="stock">'+escapeHTML(labels[order.status]||order.status)+'</span></div><p class="muted order-time">'+escapeHTML(order.slotDate)+' · '+escapeHTML(order.slotTime)+' · '+checkoutMethodLabel(order.deliveryMethod)+'</p><div class="items">'+order.items.map(item=>'<div class="item"><span>'+escapeHTML(cleanUiText(item.name))+'<br><small class="muted">'+escapeHTML(item.variant)+' × '+item.quantity+'</small></span><b>'+money(item.lineTotal)+'</b></div>').join('')+'</div>'+(order.deliveryFee?'<div class="row"><span class="muted">Доставка</span><span>'+money(order.deliveryFee)+'</span></div>':'')+'<div class="row"><span class="muted">Итого</span><strong>'+money(order.total)+'</strong></div><div class="muted small order-events">'+(order.events||[]).map(event=>escapeHTML(event.message||labels[event.status]||'')).filter(Boolean).join(' · ')+'</div>'+(order.status==='new'?'<button class="btn cancel-order" data-cancel-order="'+escapeHTML(order.id)+'">Отменить заказ</button>':'')+'</div>').join('');$('orders').querySelectorAll('[data-cancel-order]').forEach(button=>button.onclick=async()=>{if(!confirm('Отменить этот заказ?'))return;try{const result=await fetch('/api/orders/'+encodeURIComponent(button.dataset.cancelOrder)+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerToken:token})});const payload=await result.json();if(!result.ok)throw new Error(payload.error||'Не удалось отменить заказ');showNotice('Заказ отменён');await renderOrders();}catch(error){showNotice(error.message);}});}catch(error){$('orders').innerHTML='<div class="empty">'+escapeHTML(error.message)+'</div>';}}
 function renderManager(){}
-function isDiscounted(item){
+function promoPrices(item){
  const attributes=item.attributes||{};
- const oldPrice=Number(item.oldPrice??item.compareAtPrice??item.originalPrice??0),salePrice=Number(item.salePrice??item.discountPrice??0),percent=Number(item.discountPercent??item.discount??attributes.discount_percent??attributes.discount??0);
- return item.discounted===true||item.isPromo===true||percent>0||(oldPrice>0&&oldPrice>Number(item.price||0))||(salePrice>0&&salePrice<Number(item.price||0));
+ const oldPrice=Number(item.oldPrice??item.compareAtPrice??item.originalPrice??attributes.old_price??attributes.compare_at_price??0);
+ const salePrice=Number(item.salePrice??item.discountPrice??attributes.sale_price??attributes.discount_price??item.priceMin??item.price??0);
+ return {oldPrice,salePrice};
+}
+function isDiscounted(item){
+ const attributes=item.attributes||{},prices=promoPrices(item);
+ const percent=Number(item.discountPercent??item.discount??attributes.discount_percent??attributes.discount??0);
+ return item.discounted===true||item.isPromo===true||percent>0||(prices.oldPrice>0&&prices.oldPrice>prices.salePrice)||(prices.salePrice>0&&prices.salePrice<Number(item.priceMin??item.price??0));
 }
 function renderPromos(){
- const promoRows=products.filter(isDiscounted);
- const query=state.query.trim();
- const rows=query?promoRows.map(item=>({item,score:searchScore(item,query)})).sort((a,b)=>b.score-a.score).filter(row=>row.score>=.35).map(row=>row.item):promoRows;
- $('promo-products').replaceChildren(...rows.map(item=>{const card=document.createElement('article');card.className='card';card.innerHTML='<div class="card-art">'+art(item)+'</div><div class="card-body"><small>'+escapeHTML(cleanUiText(item.manufacturer||item.category||''))+'</small><h3>'+escapeHTML(cleanUiText(item.name))+'</h3><span class="price">'+money(item.priceMin??item.price)+'</span></div>';card.onclick=()=>openDetail(item.id);return card;}));
+ const promoRows=products.filter(isDiscounted),query=state.query.trim();
+ let rows=promoRows;
+ if(query){
+  const ranked=promoRows.map(item=>({item,score:searchScore(item,query)})).sort((a,b)=>b.score-a.score);
+  const matches=ranked.filter(row=>row.score>=.43);
+  rows=(matches.length?matches:ranked.slice(0,Math.min(12,ranked.length))).map(row=>row.item);
+ }
+ $('promo-products').replaceChildren(...rows.map(item=>{
+  const card=document.createElement('article');card.className='card';
+  const prices=promoPrices(item),old=prices.oldPrice>prices.salePrice?'<s class="promo-old-price">'+money(prices.oldPrice)+'</s>':'';
+  card.innerHTML='<div class="card-art">'+art(item)+'</div><div class="card-body"><small>'+escapeHTML(cleanUiText(item.manufacturer||item.category||''))+'</small><h3>'+escapeHTML(cleanUiText(item.name))+'</h3><span class="price">'+money(prices.salePrice)+'</span>'+old+'</div>';
+  card.onclick=()=>openDetail(item.id);return card;
+ }));
  $('promo-empty').hidden=rows.length>0;
  if(query&&!rows.length)$('promo-empty').querySelector('strong').textContent='В акциях ничего не найдено';
  else $('promo-empty').querySelector('strong').textContent='Акций пока нет';
