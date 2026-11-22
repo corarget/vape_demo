@@ -185,7 +185,7 @@ input,select,textarea{background:var(--panel2)!important;border-color:var(--line
 input::placeholder,textarea::placeholder{color:var(--muted)!important}
 .primary{background:var(--accent)!important;border-color:var(--accent)!important;color:#111315!important}
 .category[aria-pressed=true],.option.selected,.option:has(input:checked){border-color:var(--category-accent,var(--accent))!important;background:color-mix(in srgb,var(--category-accent,var(--accent)) 12%,var(--panel))!important}
-.category-icon,.category span{color:var(--category-accent,var(--accent))!important}
+.category-icon,.category > span[aria-hidden="true"]{color:var(--category-accent,var(--accent))!important}.category > span:not([aria-hidden="true"]){color:var(--text)!important}
 .bottom{background:color-mix(in srgb,var(--panel) 96%,transparent)!important;border-color:var(--line)!important}
 .bottom button[aria-pressed=true],.eyebrow,.back,.notice,.stock,.option-price{color:var(--accent)!important}
 .badge{background:var(--accent)!important;color:#111315!important}
