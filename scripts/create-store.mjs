@@ -7,7 +7,7 @@ import { cp, mkdir, writeFile, access } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = process.cwd();
-const SOURCE_FILES = ["worker.mjs", "catalog.mjs", "site.mjs", "admin.mjs"];
+const SOURCE_FILES = ["worker.mjs", "catalog.mjs", "promotions.mjs", "site.mjs", "admin.mjs"];
 const WRANGLER = process.platform === "win32" ? "npx.cmd" : "npx";
 
 function runWrangler(args, options = {}) {

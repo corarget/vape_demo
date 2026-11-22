@@ -1,8 +1,9 @@
 import { loadCatalog, parseCSV } from "./catalog.mjs";
+import { DEMO_PROMOTIONS, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
-const VERSION = "2.3.0";
+const VERSION = "2.4.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
 const STATUS_LABELS = {
@@ -166,7 +167,7 @@ function permissionForAdminRoute(path,method){
   if(path==="/api/admin/analytics")return "analytics";
   if(path==="/api/admin/categories")return method==="GET"?"categories":"categories.manage";
   if(path==="/api/admin/branding")return method==="GET"?"branding":"branding.manage";
-  if(path==="/api/admin/settings")return method==="GET"?"settings":"settings.manage";
+  if(path==="/api/admin/settings"||path==="/api/admin/promotions")return method==="GET"?"settings":"settings.manage";
   if(path==="/api/admin/config/export")return "settings";
   if(path==="/api/admin/config/import")return "settings.manage";
   if(["/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs"].includes(path))return method==="GET"?"catalog":"catalog.manage";
@@ -411,15 +412,18 @@ function publicCatalog(payload){
       price:product.price,priceMin:product.priceMin,priceMax:product.priceMax,
       popularity:product.popularity,analyticsScore:product.analyticsScore||0,views30d:product.views30d||0,cartAdds30d:product.cartAdds30d||0,orders30d:product.orders30d||0,sortOrder:product.sortOrder,attributes:product.attributes,
       options:product.options.map(option=>({
-        variantId:option.variantId,label:option.label,available:option.available,
-        price:option.price,attributes:option.attributes
+        variantId:option.variantId,legacyVariantId:option.variantId!==option.productKey?option.productKey:undefined,
+        label:option.label,available:option.available,image:option.image,
+        price:option.price,attributes:option.attributes,promotionGroup:promotionGroup(product,option)
       }))
     }))
   };
 }
 async function catalogResponse(request,env,ctx){
   const cache=caches.default;
-  const cacheKey=new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"});
+  const cacheUrl=new URL("/api/catalog",request.url);
+  cacheUrl.searchParams.set("version",VERSION);
+  const cacheKey=new Request(cacheUrl,{method:"GET"});
   const force=new URL(request.url).searchParams.has("refresh");
   const catalogConfig=await getCatalogConfig(env);
   if(!force){
@@ -480,7 +484,8 @@ async function createOrder(request,env){
   const items=[];let total=0;
   for(const raw of body.items){
     const product=products.get(String(raw.productId||""));
-    const option=product?.options.find(item=>item.variantId===String(raw.variantId||""));
+    const variantId=String(raw.variantId||"");
+    const option=product?.options.find(item=>item.variantId===variantId)||product?.options.find(item=>item.productKey===variantId);
     const quantity=Math.max(0,Math.min(20,Math.floor(Number(raw.quantity)||0)));
     if(!product||!option||!option.available||quantity<1)return json({error:"Одна из позиций больше недоступна. Обновите корзину"},409);
     const lineTotal=option.price*quantity;
@@ -488,7 +493,7 @@ async function createOrder(request,env){
     items.push({
       productId:product.id,productKey:option.productKey,sku:option.sku,
       productName:product.name,manufacturer:product.manufacturer,category:product.category,
-      optionLabel:option.label,attributes:option.attributes,quantity,
+      optionLabel:option.label,attributes:option.attributes,quantity,promotionGroup:promotionGroup(product,option),
       unitPrice:option.price,lineTotal
     });
   }
@@ -496,6 +501,15 @@ async function createOrder(request,env){
   if(itemSubtotal<Math.max(0,Number(config.minOrder)||0))return json({error:"Минимальная сумма заказа: "+(Number(config.minOrder)/100).toFixed(2)+" BYN"},400);
   const deliveryFee=method==="delivery"?Math.max(0,Number(config.deliveryFee)||0):0;
   total=itemSubtotal+deliveryFee;
+  const rule=highestPromotion(await getPromotions(env),items);
+  const gifts=rule?promotionGiftOptions(catalog.products,rule):[];
+  const gift=gifts.length?gifts[Math.floor(Math.random()*gifts.length)]:null;
+  const orderItems=gift?[...items,{
+    productId:gift.product.id,productKey:gift.option.productKey,sku:gift.option.sku,
+    productName:gift.product.name,manufacturer:gift.product.manufacturer,category:gift.product.category,
+    optionLabel:"Подарок по акции "+rule.title+" · "+gift.option.label,
+    attributes:{...gift.option.attributes,promotion:rule.id},quantity:1,unitPrice:0,lineTotal:0
+  }]:items;
 
   let telegramUser=null;
   if(env.BOT_TOKEN)telegramUser=await verifyTelegramInitData(body.telegramInitData,env.BOT_TOKEN);
@@ -510,7 +524,7 @@ async function createOrder(request,env){
   const statements=[
     env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,telegram_username,customer_name,phone,delivery_method,address,fulfillment_method,doorbell,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND COALESCE(fulfillment_method,delivery_method)=? AND status NOT IN ('cancelled','rejected')) < ?")
       .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,telegramUsername||null,name,"",storageMethod,address,method,doorbell,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
-    ...items.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
+    ...orderItems.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,item.productId,item.productKey,item.sku,item.productName,item.manufacturer,item.optionLabel,JSON.stringify(item.attributes),String(item.quantity),String(item.unitPrice),String(item.lineTotal),orderId)),
     env.DB.prepare("INSERT INTO order_events(order_id,actor_role,event_type,to_status,message,metadata_json,created_at) SELECT ?,'customer','created','new','Заказ оформлен',?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,JSON.stringify({deliveryMethod:method,slotDate,slotTime,doorbell}),createdAt,orderId),
@@ -631,6 +645,15 @@ async function demoStaffLogin(request,env){
     return json({error:"Неверный логин или пароль"},401);
   }
   await run(env,"DELETE FROM demo_login_attempts WHERE ip_hash=?",[ipHash]);
+  if(body?.mode==="courier"){
+    const id="demo-courier",name="Демо-курьер";
+    await run(env,"INSERT OR IGNORE INTO staff(id,display_name,role,active,created_at) VALUES(?,?,'courier',1,?)",[id,name,now()]);
+    const staff=await first(env,"SELECT id,display_name FROM staff WHERE id=? AND role='courier' AND active=1",[id]);
+    if(!staff)return json({error:"Демо-курьер отключён"},403);
+    const token=await createSession(env,staff.id);
+    await logSystem(env,"info","auth","Вход демо-курьера",{staffId:staff.id});
+    return json({success:true,staff:{id:staff.id,name:staff.display_name,role:"courier",permissions:[]}},200,{"Set-Cookie":cookieHeader(token)});
+  }
   let owner=await first(env,"SELECT id,display_name FROM staff WHERE role='owner' AND active=1 ORDER BY created_at LIMIT 1");
   if(!owner){
     const id=randomId(),created=now();
@@ -657,6 +680,10 @@ async function categorySettings(env){
   });
   return result;
 }
+async function getPromotions(env){
+  const defaults=env.DEMO_ADMIN_USERNAME&&env.DEMO_ADMIN_PASSWORD?DEMO_PROMOTIONS:[];
+  return getSetting(env,"promotions",defaults);
+}
 async function publicSettings(env){
   const c=await getConfig(env);
   return {
@@ -665,7 +692,8 @@ async function publicSettings(env){
     address:c.address,phone:c.phone,daysAhead:c.daysAhead,
     brandTagline:c.brandTagline||"",logoUrl:c.logoUrl||"",heroTitle:c.heroTitle||"Каталог",heroSubtitle:c.heroSubtitle||"",
     theme:sanitizeTheme(c.theme),defaultSort:c.defaultSort||"featured",analyticsEnabled:c.analyticsEnabled!==false,
-    categories:await categorySettings(env)
+    categories:await categorySettings(env),promotions:(await getPromotions(env)).filter(rule=>rule.active),
+    telegramCheckoutEnabled:!!env.BOT_TOKEN
   };
 }
 async function recordAnalyticsEvent(request,env){
@@ -804,6 +832,23 @@ export default {
         const requiredPermission=permissionForAdminRoute(path,request.method);
         if(!requiredPermission)return json({error:"Маршрут не найден"},404);
         if(!hasPermission(staff,requiredPermission))return json({error:"Недостаточно прав для этого действия"},403);
+        if(path==="/api/admin/promotions"&&request.method==="GET")return json({promotions:await getPromotions(env)});
+        if(path==="/api/admin/promotions"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          const saved=await first(env,"SELECT value_json FROM settings WHERE key='promotions'");
+          const current=saved?JSON.parse(saved.value_json):await getPromotions(env);
+          if(JSON.stringify(body?.previous)!==JSON.stringify(current))return json({error:"Список акций изменился. Обновите страницу и повторите."},409);
+          if(!Array.isArray(body?.promotions)||body.promotions.length>20)return json({error:"Можно сохранить до 20 акций"},400);
+          const currentIds=new Set(current.map(rule=>rule.id));
+          const promotions=body.promotions.map(input=>normalizePromotion(input,currentIds.has(input?.id)?input.id:randomId()));
+          if(promotions.some(rule=>!rule)||new Set(promotions.map(rule=>rule.id)).size!==promotions.length)return json({error:"Заполните название, описание, подарок, количество и типы товаров для каждой акции"},400);
+          const values=[JSON.stringify(promotions),now(),staff.id];
+          const result=saved
+            ?await run(env,"UPDATE settings SET value_json=?,updated_at=?,updated_by=? WHERE key='promotions' AND value_json=?",[...values,saved.value_json])
+            :await run(env,"INSERT OR IGNORE INTO settings(key,value_json,updated_at,updated_by) VALUES('promotions',?,?,?)",values);
+          if(!result.meta?.changes)return json({error:"Список акций изменился. Обновите страницу и повторите."},409);
+          return json({promotions});
+        }
         if(path==="/api/admin/analytics"&&request.method==="GET"){
           const days=Math.max(7,Math.min(90,Number(url.searchParams.get("days"))||30));
           return json(await adminAnalytics(env,days));

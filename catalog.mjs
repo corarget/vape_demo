@@ -14,6 +14,7 @@ const HEADER_ALIASES = {
   in_stock:"available", stock:"available", наличие:"available",
   is_active:"active", enabled:"active", активен:"active",
   image:"image_url", photo:"image_url", photo_url:"image_url", фото:"image_url",
+  option_image_url:"variant_image_url", color_image_url:"variant_image_url",
   описание:"description", priority:"sort_order", order:"sort_order",
   brand:"manufacturer", vendor:"manufacturer", producer:"manufacturer",
   manufacturer_name:"manufacturer", бренд:"manufacturer", производитель:"manufacturer",
@@ -25,7 +26,7 @@ const HEADER_ALIASES = {
 
 const CORE_FIELDS = new Set([
   "product_key","sku","category","category_label","category_image_url","category_icon","name","option_label","price_byn","available",
-  "active","image_url","description","sort_order","popularity","manufacturer",
+  "active","image_url","variant_image_url","description","sort_order","popularity","manufacturer",
   "strength_mg","resistance_ohm","component_type","color"
 ]);
 
@@ -210,6 +211,7 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
       label:baseLabel,
       available:parseBoolean(row.available,false),
       price,
+      image:safeImageUrl(row.variant_image_url)||safeImageUrl(row.image_url),
       sortOrder:sortOrder??rowIndex,
       attributes:attrs
     };
@@ -221,10 +223,23 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
 
   const products=[...families.values()].map(product=>{
     const hasMultipleStrengths=product._strengths.size>1;
-    product.options=product.options.map(option=>{
+    const keyCounts=new Map(),skuCounts=new Map();
+    for(const {productKey,sku} of product.options){
+      keyCounts.set(productKey,(keyCounts.get(productKey)||0)+1);
+      if(sku)skuCounts.set(sku,(skuCounts.get(sku)||0)+1);
+    }
+    const variantIds=new Set(keyCounts.keys());
+    product.options=product.options.map((option,index)=>{
       const strength=option.attributes.strength_mg;
       const label=hasMultipleStrengths&&strength?option.label+" · "+strength+" мг":option.label;
-      return {...option,label};
+      let variantId=option.productKey;
+      if(keyCounts.get(option.productKey)>1){
+        const uniqueSku=option.sku&&skuCounts.get(option.sku)===1&&!variantIds.has(option.sku);
+        variantId=uniqueSku?option.sku:option.productKey+"@"+index;
+        while(variantIds.has(variantId))variantId+="@";
+        variantIds.add(variantId);
+      }
+      return {...option,variantId,label};
     });
     product.options.sort((a,b)=>
       Number(b.available)-Number(a.available)||

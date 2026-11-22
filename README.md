@@ -22,7 +22,7 @@ White-label движок магазина: Telegram Mini App-витрина, о�
 
 Источник Google Sheets задаётся в `/admin → Каталог и синхронизация`. Для новой копии нет привязки к таблице предыдущего магазина: менеджер подключает свою таблицу, выбирает GID листа, проверяет заголовки и настраивает сопоставление столбцов.
 
-Importer maps columns by header name and supports a saved CSV template plus manual field mapping. The canonical columns include `product_key` or `sku` (unique variant ID), `category`, `category_label`, `category_image_url`, `category_icon`, `name`, `option_label`, `price_byn`, `image_url`, `available`, `active`, `manufacturer`, `strength_mg`, `resistance_ohm`, `component_type`, and `color`. Category label, image and icon columns are optional; when present, their values are synchronized into category settings.
+Importer maps columns by header name and supports a saved CSV template plus manual field mapping. The canonical columns include `product_key` and `sku` (use a unique SKU on each variant when the product key is shared), `category`, `category_label`, `category_image_url`, `category_icon`, `name`, `option_label`, `price_byn`, `image_url`, `variant_image_url`, `available`, `active`, `manufacturer`, `strength_mg`, `resistance_ohm`, `component_type`, and `color`. Category label, image and icon columns are optional; when present, their values are synchronized into category settings.
 
 ### Product families and variants
 
@@ -34,7 +34,7 @@ A storefront card is grouped by:
 - product-line name;
 - component type (when present).
 
-Rows in the same family become selectable variants. Variant attributes such as flavour, strength, resistance and colour remain attached to the variant. If one line has multiple strengths, strength is appended to the option label. Internal `product_key` and `sku` are retained for order records and manager views but are not rendered in the customer UI.
+Rows in the same family become selectable variants. Variant attributes such as flavour, strength, resistance and colour remain attached to the variant. If one line has multiple strengths, strength is appended to the option label. A row can have a separate `variant_image_url`. The selected variant supplies the photo in the detail view and cart; the family image is the fallback. Internal `product_key` and `sku` are retained for order records and manager views but are not rendered in the customer UI.
 
 This keeps flavour variants together while preserving distinct product lines and component types.
 
@@ -84,6 +84,12 @@ The owner can create one-time staff invitations and assign granular permissions:
 The advanced storefront theme editor is tucked into **Branding → Расширенная настройка интерфейса**. It controls body and heading fonts, background, surfaces, text, borders and two accent colours.
 
 Staff sessions use random, hashed server-side session identifiers in HttpOnly, Secure, SameSite cookies. Customer routes never expose manager functions.
+
+## Demo promotions and courier
+
+The demo includes two gift rules, **1+1=3** and **1+2=4**. In **Акции**, a manager with store-settings edit access can set the minimum item count, eligible product types, gift brand and public text. Checkout validates the cart and adds one available gift at zero cost for the highest qualifying threshold.
+
+Choose **Войти демо-курьером** on the demo sign-in page, then assign a delivery to **Демо-курьер** from the owner account. The courier sees the assigned delivery in `/courier` and can record pickup, departure and delivery. Demo sign-in and default offers are enabled only for deployments with demo credentials configured.
 
 ## Schedule and slots
 
