@@ -168,7 +168,7 @@ tr:hover td{background:color-mix(in srgb,var(--admin-panel-2) 55%,transparent)}
 .category-editor.dragging{opacity:.45}
 .category-editor.drag-over{border-color:var(--admin-accent)!important}
 .category-editor input[type=color],#admin-appearance-form input[type=color]{height:42px;padding:4px;cursor:pointer}
-.admin-appearance-panel{margin-bottom:16px}
+.admin-appearance-panel{margin-bottom:16px}.promo-logic-note{margin:0 0 16px;padding:12px 14px;border:1px solid var(--admin-line);border-radius:var(--admin-radius);background:var(--admin-panel-2);line-height:1.5}
 .appearance-presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .admin-appearance-form{margin-top:12px}
 .admin-appearance-preview{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px;border:1px solid var(--preview-line,var(--admin-line));border-radius:var(--admin-radius);background:var(--preview-panel,var(--admin-panel-2));color:var(--preview-text,var(--admin-text))}
@@ -315,7 +315,7 @@ tr:hover td{background:color-mix(in srgb,var(--admin-panel-2) 55%,transparent)}
 
     <section id="page-promotions" class="section">
       <div class="panel promo-editor">
-        <div class="panel-head promo-editor-head"><div><h2>Акции с подарком</h2><p>Покупатель получает один подарок по акции с самым высоким подходящим порогом.</p></div><button type="button" class="btn" id="add-promotion">Добавить акцию</button></div>
+        <div class="panel-head promo-editor-head"><div><h2>Автоматические акции</h2><p>Система считает подходящие позиции в корзине и применяет одну акцию с самым высоким выполненным порогом.</p></div><button type="button" class="btn" id="add-promotion">Добавить акцию</button></div><div class="promo-logic-note muted small">Порядок применения: считаются штуки из выбранных групп (жидкости, испарители, картриджи); выбирается одно самое выгодное по порогу правило; подарок случайно выбирается из доступных товаров каталога с положительной крепостью и подходящим брендом; в заказ он попадает отдельной строкой по цене 0 BYN. Если подходящего подарка нет в наличии, акция не применяется. В одном заказе действует только одна акция.</div>
         <form id="promotions-form" class="promo-editor">
           <div id="promotion-rules" class="promo-editor"></div>
           <div><button type="submit" class="btn primary" id="promotion-save">Сохранить акции</button></div>
