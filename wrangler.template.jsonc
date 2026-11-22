@@ -8,6 +8,7 @@
     "head_sampling_rate": 1
   },
   "vars": {
+    "STORE_NAME": "New Store",
     "GOOGLE_SHEET_ID": "",
     "GOOGLE_CATALOG_GID": ""
   },

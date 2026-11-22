@@ -114,7 +114,7 @@ async function setSetting(env,key,value,updatedBy="system"){
 }
 async function getConfig(env){
   const saved=await getSetting(env,"store_config",{});
-  return {...DEFAULT_CONFIG,...saved,theme:{...DEFAULT_CONFIG.theme,...(saved?.theme||{})},weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
+  return {...DEFAULT_CONFIG,...saved,storeName:String(saved?.storeName||env.STORE_NAME||DEFAULT_CONFIG.storeName),theme:{...DEFAULT_CONFIG.theme,...(saved?.theme||{})},weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
 }
 async function getStaff(request,env){
   const token=parseCookie(request,COOKIE);

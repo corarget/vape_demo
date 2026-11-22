@@ -1,12 +1,13 @@
 {
   "name": "violet-shop-demo",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "db:migrate": "wrangler d1 migrations apply violet-shop-db --remote"
+    "db:migrate": "wrangler d1 migrations apply violet-shop-db --remote",
+    "create:store": "node scripts/create-store.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

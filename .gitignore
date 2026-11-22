@@ -2,3 +2,6 @@
 state.json
 node_modules/
 work/
+
+# Generated customer deployments
+deployments/

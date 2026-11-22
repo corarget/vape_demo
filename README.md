@@ -85,6 +85,18 @@ The storefront records anonymous events: product views, add-to-cart actions, una
 
 The 30-day product score is calculated as views + 4 × cart additions + 12 × ordered items. It is exposed to the storefront as an analytics sorting signal and can be selected as the default sort strategy.
 
+### Быстрое создание отдельного магазина
+
+После npm install и npx wrangler login запустите:
+
+```powershell
+npm run create:store
+```
+
+Мастер запросит ID и название магазина, затем создаст отдельную D1-базу в европейском регионе, скопирует код и миграции в deployments/<id>, применит схему, опубликует Worker и задаст одноразовый секрет первого владельца. Конфигурация Cloudflare генерируется автоматически; исходный wrangler.jsonc текущего магазина не изменяется.
+
+Код первого владельца показывается один раз в терминале и не записывается в файлы. После первого входа удалите его командой из deployments/<id>/HANDOFF.md.
+
 ## White-label configuration
 
 The admin can change the store name, tagline, logo URL, hero copy, theme colors and default sorting without editing source code. Category keys continue to come from the source sheet; managers can customize each category's public label, image URL, icon, visibility and order.
