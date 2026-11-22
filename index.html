@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#08080b">
+  <meta name="theme-color" content="#101112">
   <title>VIOLET — demo store</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Golos+Text:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=PT+Sans:wght@400;700&family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{font-family:"Golos Text",system-ui,sans-serif;color:#f7f4ff;background:#08080b;--violet:#a855f7;--violet2:#d946ef;--panel:#111116;--panel2:#181820;--line:#2c2934;--muted:#9994a5;--safe:env(safe-area-inset-bottom,0px)}
     *{box-sizing:border-box}html{background:#F6F2EA}body{margin:0;min-height:100vh;background:#F6F2EA}button,input,select{font:inherit}button{color:inherit}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #d946ef;outline-offset:2px}
@@ -172,10 +172,49 @@ input,select,textarea{border-color:var(--line)}
  .icon-button{width:48px}
  .category-search-panel{grid-template-columns:minmax(0,1fr) auto}
 }
+ 
+/* VIOLETSHOP monochrome interface */
+:root{--bg:#101112;--panel:#191D1F;--panel2:#24292B;--line:#363D3F;--muted:#A0AAA4;--accent:#E5E7EB;--accent2:#C4C9CC;--text:#E8ECEF;--font-family:"Inter",system-ui,sans-serif;--heading-font-family:"Manrope",system-ui,sans-serif;font-family:var(--font-family)}
+html,body{background:var(--bg)!important;color:var(--text)!important;font-family:var(--font-family)!important}
+body{background:var(--bg)!important}
+h1,h2,h3,h4,.logo,.price,.primary{font-family:var(--heading-font-family)!important}
+.hero,.panel,.card,.category,.option,.spec,.checkout,.order-card{background:var(--panel)!important;border-color:var(--line)!important;color:var(--text)!important}
+.hero{color:var(--text)!important}
+.hero::before{border-color:var(--accent)!important;opacity:.12}
+input,select,textarea{background:var(--panel2)!important;border-color:var(--line)!important;color:var(--text)!important;color-scheme:dark}
+input::placeholder,textarea::placeholder{color:var(--muted)!important}
+.primary{background:var(--accent)!important;border-color:var(--accent)!important;color:#111315!important}
+.category[aria-pressed=true],.option.selected,.option:has(input:checked){border-color:var(--category-accent,var(--accent))!important;background:color-mix(in srgb,var(--category-accent,var(--accent)) 12%,var(--panel))!important}
+.category-icon,.category span{color:var(--category-accent,var(--accent))!important}
+.bottom{background:color-mix(in srgb,var(--panel) 96%,transparent)!important;border-color:var(--line)!important}
+.bottom button[aria-pressed=true],.eyebrow,.back,.notice,.stock,.option-price{color:var(--accent)!important}
+.badge{background:var(--accent)!important;color:#111315!important}
+.age-gate{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;padding:24px;background:#090A0B}
+.age-gate[hidden]{display:none!important}
+.age-gate-card{width:min(100%,440px);padding:28px;border:1px solid #363D3F;border-radius:20px;background:#191D1F;color:#E8ECEF;box-shadow:0 24px 80px #0009}
+.age-gate-brand{margin-bottom:28px;font:800 1.05rem "Manrope",sans-serif;letter-spacing:.12em}
+.age-gate-brand span{color:#AEB4B8}
+.age-gate-card h1{margin:10px 0 12px;font:800 clamp(1.7rem,5vw,2.2rem) "Manrope",sans-serif;letter-spacing:-.04em}
+.age-gate-card p{margin:0 0 22px;color:#A0AAA4;line-height:1.55}
+.age-gate-card small{display:block;margin-top:16px;color:#77817B;line-height:1.4}
+.age-gate-confirm{width:100%;margin-bottom:8px}
+.age-gate-decline{width:100%;padding:12px;border:1px solid #363D3F;border-radius:12px;background:transparent;color:#A0AAA4}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
-<main class="app">
+<div id="age-gate" class="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title">
+  <div class="age-gate-card">
+    <div class="age-gate-brand">VIOLET<span>SHOP</span></div>
+    <div class="eyebrow">Подтверждение возраста</div>
+    <h1 id="age-gate-title">Вам уже исполнилось 18 лет?</h1>
+    <p>Магазин содержит товары с возрастными ограничениями. Продолжая, вы подтверждаете, что достигли 18 лет и имеете право просматривать этот каталог.</p>
+    <button type="button" class="primary age-gate-confirm" id="age-confirm">Мне есть 18 лет</button>
+    <button type="button" class="age-gate-decline" id="age-decline">Мне нет 18 лет</button>
+    <small>Это подтверждение пользователя, а не проверка документа.</small>
+  </div>
+</div>
+<main class="app" id="store-app" hidden>
   <header class="topbar">
     <div class="logo" id="store-logo">VIOLET<b>SHOP</b></div>
     <label class="global-search" aria-label="Поиск по всему магазину">
@@ -217,17 +256,7 @@ input,select,textarea{border-color:var(--line)}
 </nav>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-const fallbackProducts=[
- {id:'bottle',category:'drinkware',icon:'◒',name:'Термобутылка Urban',price:3990,popularity:9,options:['Графит','Фиолетовая','Стальная']},
- {id:'mug',category:'drinkware',icon:'◐',name:'Термокружка Compact',price:2990,popularity:8,options:['350 мл','500 мл']},
- {id:'organizer',category:'home',icon:'▦',name:'Органайзер Modular',price:4590,popularity:10,options:['Чёрный','Серый']},
- {id:'lamp',category:'home',icon:'◉',name:'Лампа Ambient Mini',price:6290,popularity:7,options:['Тёплый свет','RGB']},
- {id:'cable',category:'tech',icon:'⌁',name:'Кабель Flex USB-C',price:1290,popularity:6,options:['1 м','2 м']},
- {id:'stand',category:'tech',icon:'◇',name:'Подставка Fold',price:2490,popularity:5,options:['Чёрная','Серебристая']},
- {id:'bag',category:'travel',icon:'⬡',name:'Сумка City Sling',price:5490,popularity:9,options:['Чёрная','Графитовая']},
- {id:'case',category:'travel',icon:'▱',name:'Кейс Travel Kit',price:2190,popularity:4,options:['S','M','L']}
-].map(item=>({...item,available:true,options:item.options.map(label=>({label,available:true}))}));
-let products=fallbackProducts;let syncSource='demo';
+let products=[];let syncSource='loading';
 const iconPool=['◒','▦','⌁','⬡','◇','◉','▱','✦'];
 const categoryPaths={
  'Жидкости':'M10 3h4v4h-4z M10 7v3l-4 4v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5l-4-4V7 M6 16h12',
@@ -243,12 +272,20 @@ function categoryIcon(key, fallback='◇'){
  const path=Object.hasOwn(categoryPaths,key)?categoryPaths[key]:'';
  return path?'<svg class="category-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>':'<span aria-hidden="true">'+escapeHTML(fallback)+'</span>';
 }
-let categoryMeta={all:{icon:'✦',label:'Все'},drinkware:{icon:'◒',label:'Посуда'},home:{icon:'▦',label:'Дом'},tech:{icon:'⌁',label:'Техника'},travel:{icon:'⬡',label:'В дорогу'}};
+let categoryMeta={all:{icon:'✦',label:'Все',active:true,sortOrder:-1}};
 const state={screen:'catalog',category:localStorage.getItem('violet-category')||'all',brand:localStorage.getItem('violet-brand')||'all',sort:localStorage.getItem('violet-sort')||'featured',query:localStorage.getItem('violet-query')||'',categoryQuery:'',categorySearchOpen:false,cart:JSON.parse(localStorage.getItem('violet-cart')||'{}'),scroll:0,returnScreen:'catalog',returnScroll:0,selected:null,checkoutOpen:false,checkoutDate:'',checkoutMethod:'metro',storeSettings:{metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,deliveryFee:0,minOrder:0,categories:{},promotions:[],analyticsEnabled:true}};
-const $=id=>document.getElementById(id);const money=n=>(Number(n||0)/100).toFixed(2).replace('.',',')+' BYN';const cleanUiText=value=>String(value??'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu,'').replace(/\s{2,}/g,' ').trim();const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));const safeImageURL=value=>{try{const url=new URL(value);return url.protocol==='https:'?url.href:'';}catch{return '';}};const save=()=>{localStorage.setItem('violet-cart',JSON.stringify(state.cart));};
+const $=id=>document.getElementById(id);const ageGate=$('age-gate'),storeApp=$('store-app');
+function initAgeGate(){
+ const confirmed=localStorage.getItem('violet-age-confirmed')==='yes';
+ ageGate.hidden=confirmed;storeApp.hidden=!confirmed;
+}
+$('age-confirm').onclick=()=>{localStorage.setItem('violet-age-confirmed','yes');ageGate.hidden=true;storeApp.hidden=false;};
+$('age-decline').onclick=()=>{ageGate.innerHTML='<div class="age-gate-card"><div class="age-gate-brand">VIOLET<span>SHOP</span></div><h1>Доступ закрыт</h1><p>Просмотр каталога доступен только совершеннолетним пользователям.</p></div>';};
+initAgeGate();
+const money=n=>(Number(n||0)/100).toFixed(2).replace('.',',')+' BYN';const cleanUiText=value=>String(value??'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu,'').replace(/\s{2,}/g,' ').trim();const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));const safeImageURL=value=>{try{const url=new URL(value);return url.protocol==='https:'?url.href:'';}catch{return '';}};const save=()=>{localStorage.setItem('violet-cart',JSON.stringify(state.cart));};
 function showNotice(text=''){$('notice').textContent=text;}
 function setScreen(screen){if(state.screen==='catalog')state.scroll=scrollY;state.screen=screen;for(const name of ['catalog','detail','promo','cart','orders'])$(name+'-screen').hidden=name!==screen;document.querySelectorAll('[data-screen]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.screen===screen)));render();scrollTo(0,screen==='catalog'?state.scroll:0);}
-function renderCategories(){const keys=Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999));$('categories').replaceChildren(...keys.map(key=>{const meta=categoryMeta[key];const button=document.createElement('button');button.className='category'+(meta.image?' has-image':'');button.title=meta.label;button.setAttribute('aria-label',meta.label);button.setAttribute('aria-pressed',String(state.category===key));button.innerHTML=(meta.image?'<img class="category-image" src="'+escapeHTML(safeImageURL(meta.image))+'" alt="" loading="lazy">':meta.icon?'<span aria-hidden="true">'+escapeHTML(meta.icon)+'</span>':categoryIcon(key))+'<small>'+escapeHTML(cleanUiText(meta.label))+'</small>';button.onclick=()=>{state.category=state.category===key?'all':key;localStorage.setItem('violet-category',state.category);trackEvent('category_filter',{category:state.category});renderCatalog();};return button;}));}
+function renderCategories(){const keys=Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999));$('categories').replaceChildren(...keys.map(key=>{const meta=categoryMeta[key];const button=document.createElement('button');button.className='category'+(meta.image?' has-image':'');button.title=meta.label;button.setAttribute('aria-label',meta.label);button.setAttribute('aria-pressed',String(state.category===key));if(meta.color)button.style.setProperty('--category-accent',meta.color);button.innerHTML=(meta.image?'<img class="category-image" src="'+escapeHTML(safeImageURL(meta.image))+'" alt="" loading="lazy">':meta.icon?'<span aria-hidden="true">'+escapeHTML(meta.icon)+'</span>':categoryIcon(key))+'<small>'+escapeHTML(cleanUiText(meta.label))+'</small>';button.onclick=()=>{state.category=state.category===key?'all':key;localStorage.setItem('violet-category',state.category);trackEvent('category_filter',{category:state.category});renderCatalog();};return button;}));}
 function normalizeSearch(value){return String(value??"").toLowerCase().replace(/ё/g,"е").replace(/й/g,"\uE000").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/\uE000/g,"й").replace(/[^a-zа-я0-9]+/g," ").trim().replace(/\s+/g," ");}
 const LATIN_MAP={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"yo",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
 const CYRILLIC_MAP={a:"а",b:"б",v:"в",g:"г",d:"д",e:"е",z:"з",i:"и",j:"й",k:"к",l:"л",m:"м",n:"н",o:"о",p:"п",r:"р",s:"с",t:"т",u:"у",f:"ф",h:"х",c:"с",q:"к",w:"в",x:"кс",y:"ы"};
@@ -405,7 +442,7 @@ function renderCart(){
  const appliedPromotion=eligibleCartPromotion(entries);
  if(appliedPromotion){
   const banner=document.createElement('div');banner.className='panel promo-cart';
-  banner.innerHTML='<strong>'+escapeHTML(appliedPromotion.title)+' · подарок</strong><p class="muted">'+escapeHTML(appliedPromotion.giftLabel)+'</p>';
+  banner.innerHTML='<strong>'+escapeHTML(appliedPromotion.title)+' · подарок</strong><p class="muted">'+escapeHTML(appliedPromotion.giftLabel)+'</p><p class="small muted">Подарок автоматически подбирается из доступных вариантов и добавляется в заказ за 0 BYN. Применяется одна акция — с наибольшим порогом. Наличие подарка повторно проверяется при оформлении.</p>';
   $('cart').append(banner);
  }
  $('cart').append(checkout);
@@ -483,14 +520,14 @@ function visitorToken(){let token=localStorage.getItem('violet-analytics-visitor
 function trackEvent(eventType,data={}){if(state.storeSettings.analyticsEnabled===false)return;const payload={eventType,visitorToken:visitorToken(),...data};fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});}
 function applyBrandTheme(){
  const theme=state.storeSettings.theme||{};
- const defaults={accent:"#B7D86B",accent2:"#D2E69A",background:"#0E1011",panel:"#191D1F",panel2:"#24292B",text:"#E8ECE8",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Golos Text",headingFontFamily:"Golos Text"};
+ const defaults={accent:"#E5E7EB",accent2:"#C4C9CC",background:"#101112",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Inter",headingFontFamily:"Manrope"};
  const value={...defaults,...theme};
  const validColor=color=>/^#[0-9a-f]{6}$/i.test(String(color||""));
  for(const key of ["accent","accent2","background","panel","panel2","text","muted","line"])if(!validColor(value[key]))value[key]=defaults[key];
  const root=document.documentElement;
  const vars={accent:value.accent,accent2:value.accent2,bg:value.background,panel:value.panel,panel2:value.panel2,text:value.text,muted:value.muted,line:value.line};
  for(const [key,color] of Object.entries(vars))root.style.setProperty("--"+key,color);
- const fonts=["Golos Text","Manrope","Rubik","PT Sans"];
+ const fonts=["Inter","Open Sans","Manrope","Montserrat"];
  root.style.setProperty("--font-family",'"'+(fonts.includes(value.fontFamily)?value.fontFamily:defaults.fontFamily)+'",sans-serif');
  root.style.setProperty("--heading-font-family",'"'+(fonts.includes(value.headingFontFamily)?value.headingFontFamily:defaults.headingFontFamily)+'",sans-serif');
 }
@@ -506,8 +543,8 @@ $('clear-category-search').onclick=()=>{$('category-query').value='';state.categ
 $('back').onclick=()=>{if(history.state?.storeDetail)history.back();else{setScreen(state.returnScreen||'catalog');state.scroll=state.returnScroll;scrollTo(0,state.returnScroll||0);}};
 window.addEventListener('popstate',event=>{if(event.state?.storeDetail&&event.state.productId){openDetail(event.state.productId,{fromHistory:true});return;}if(state.screen==='detail'){const screen=state.returnScreen||'catalog';state.scroll=state.returnScroll||0;setScreen(screen);requestAnimationFrame(()=>scrollTo(0,screen==='catalog'?state.returnScroll:0));}});
 document.querySelectorAll('[data-screen]').forEach(button=>button.onclick=()=>setScreen(button.dataset.screen));
-async function loadStoreSettings(){try{const response=await fetch('/api/settings/public');if(!response.ok)return;state.storeSettings={...state.storeSettings,...await response.json()};if(!checkoutMethods().some(method=>method.value===state.checkoutMethod))state.checkoutMethod=preferredCheckoutMethod();if(!localStorage.getItem('violet-sort')&&state.storeSettings.defaultSort){state.sort=state.storeSettings.defaultSort;$('sort').value=state.sort;}applyStoreIdentity();applyBrandTheme();if(products.length){const categories=[...new Set(products.map(item=>item.category).filter(Boolean))];const overrides=state.storeSettings.categories||{};categoryMeta={all:{icon:'✦',label:'Все',active:true,sortOrder:-1}};categories.forEach((key,index)=>{const custom=overrides[key]||{};categoryMeta[key]={icon:cleanUiText(custom.icon),label:custom.label||key,image:custom.image||'',active:custom.active!==false,sortOrder:custom.sortOrder??index};});render();}if(state.checkoutOpen){renderCart();loadCheckoutSlots();}}catch{}}
-async function syncCatalog(){try{const response=await fetch('/api/catalog',{cache:'no-store'});const payload=await response.json();if(!response.ok||!Array.isArray(payload.products))throw new Error(payload.detail||payload.error||'sync');const categories=[...new Set(payload.products.map(item=>item.category).filter(Boolean))];const overrides=state.storeSettings.categories||{};categoryMeta={all:{icon:'✦',label:'Все',active:true,sortOrder:-1}};categories.forEach((key,index)=>{const custom=overrides[key]||{};categoryMeta[key]={icon:cleanUiText(custom.icon),label:custom.label||key,image:custom.image||'',active:custom.active!==false,sortOrder:custom.sortOrder??index};});products=payload.products.map((item,index)=>({...item,icon:iconPool[index%iconPool.length],popularity:item.popularity||0,options:Array.isArray(item.options)?item.options:[]}));const familyIds=new Set(products.map(item=>item.id));for(const key of Object.keys(state.cart)){const split=key.indexOf('::');const id=split<0?key:key.slice(0,split);if(!familyIds.has(id))delete state.cart[key];}mergeLegacyCartKeys();save();updateBadge();const brands=[...new Set(products.map(item=>item.manufacturer).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));$('brand-filter').innerHTML='<option value="all">Все бренды</option>'+brands.map(brand=>'<option value="'+escapeHTML(brand)+'">'+escapeHTML(brand)+'</option>').join('');if(!brands.includes(state.brand))state.brand='all';$('brand-filter').value=state.brand;if(state.category!=='all'&&(!categoryMeta[state.category]||categoryMeta[state.category].active===false)){state.category='all';localStorage.setItem('violet-category','all');}syncSource='google';render();}catch(error){syncSource='demo';render();}}
+async function loadStoreSettings(){try{const response=await fetch('/api/settings/public');if(!response.ok)return;state.storeSettings={...state.storeSettings,...await response.json()};if(!checkoutMethods().some(method=>method.value===state.checkoutMethod))state.checkoutMethod=preferredCheckoutMethod();if(!localStorage.getItem('violet-sort')&&state.storeSettings.defaultSort){state.sort=state.storeSettings.defaultSort;$('sort').value=state.sort;}applyStoreIdentity();applyBrandTheme();if(products.length){const categories=[...new Set(products.map(item=>item.category).filter(Boolean))];const overrides=state.storeSettings.categories||{};categoryMeta={all:{icon:'✦',label:'Все',active:true,sortOrder:-1}};categories.forEach((key,index)=>{const custom=overrides[key]||{};categoryMeta[key]={icon:cleanUiText(custom.icon),label:custom.label||key,image:custom.image||'',color:custom.color||'',active:custom.active!==false,sortOrder:custom.sortOrder??index};});render();}if(state.checkoutOpen){renderCart();loadCheckoutSlots();}}catch{}}
+async function syncCatalog(){try{const response=await fetch('/api/catalog',{cache:'no-store'});const payload=await response.json();if(!response.ok||!Array.isArray(payload.products))throw new Error(payload.detail||payload.error||'sync');const categories=[...new Set(payload.products.map(item=>item.category).filter(Boolean))];const overrides=state.storeSettings.categories||{};categoryMeta={all:{icon:'✦',label:'Все',active:true,sortOrder:-1}};categories.forEach((key,index)=>{const custom=overrides[key]||{};categoryMeta[key]={icon:cleanUiText(custom.icon),label:custom.label||key,image:custom.image||'',color:custom.color||'',active:custom.active!==false,sortOrder:custom.sortOrder??index};});products=payload.products.map((item,index)=>({...item,icon:iconPool[index%iconPool.length],popularity:item.popularity||0,options:Array.isArray(item.options)?item.options:[]}));const familyIds=new Set(products.map(item=>item.id));for(const key of Object.keys(state.cart)){const split=key.indexOf('::');const id=split<0?key:key.slice(0,split);if(!familyIds.has(id))delete state.cart[key];}mergeLegacyCartKeys();save();updateBadge();const brands=[...new Set(products.map(item=>item.manufacturer).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));$('brand-filter').innerHTML='<option value="all">Все бренды</option>'+brands.map(brand=>'<option value="'+escapeHTML(brand)+'">'+escapeHTML(brand)+'</option>').join('');if(!brands.includes(state.brand))state.brand='all';$('brand-filter').value=state.brand;if(state.category!=='all'&&(!categoryMeta[state.category]||categoryMeta[state.category].active===false)){state.category='all';localStorage.setItem('violet-category','all');}syncSource='google';render();}catch(error){syncSource='error';render();}}
 const telegram=window.Telegram?.WebApp;telegram?.ready();telegram?.expand();render();syncCatalog();loadStoreSettings();
 </script>
 </body>
