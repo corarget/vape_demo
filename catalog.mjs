@@ -56,6 +56,8 @@ export function normalizeHeader(value) {
 }
 function clean(value){return String(value??"").trim();}
 function norm(value){return clean(value).toLocaleLowerCase("ru").replace(/\s+/g," ");}
+const BRAND_ALIASES=new Map([["glitch","Glitch Sauce"],["dogswiil","Dogswill"],["dogswill","Dogswill"],["liquid",""],["не указан",""]]);
+function displayBrand(value){return BRAND_ALIASES.get(norm(value))??clean(value);}
 function parseBoolean(value,fallback){
   const text=clean(value).toLowerCase();
   if(!text)return fallback;
@@ -161,8 +163,8 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
         id:familyId(key),
         category:clean(row.category)||"Другое",
         name:clean(row.name)||productKey,
-        manufacturer:clean(row.manufacturer)||"",
-        brand:clean(row.manufacturer)||"",
+        manufacturer:displayBrand(row.manufacturer),
+        brand:displayBrand(row.manufacturer),
         image:safeImageUrl(row.image_url),
         description:clean(row.description),
         available:false,
@@ -246,6 +248,15 @@ export function parseCatalogCSV(csvText,{columnMapping={}}={}){
       a.sortOrder-b.sortOrder||
       a.label.localeCompare(b.label,"ru")
     );
+    if(norm(product.name)==="musthave 25g"){
+      const raspberryIds=new Set(["SKU-04320","SKU-04329"]);
+      const duplicateOptions=product.options.filter(option=>raspberryIds.has(option.sku));
+      if(duplicateOptions.length===2&&duplicateOptions[0].price===duplicateOptions[1].price&&duplicateOptions[0].label===duplicateOptions[1].label){
+        const [retained,duplicate]=duplicateOptions;
+        retained.legacyVariantIds=[duplicate.variantId];
+        product.options=product.options.filter(option=>option!==duplicate);
+      }
+    }
 
     const allOptionAttrs=product.options.map(option=>option.attributes);
     const commonKeys=new Set(allOptionAttrs.flatMap(attrs=>Object.keys(attrs)));

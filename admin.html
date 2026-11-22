@@ -283,7 +283,7 @@ tr:hover td{background:color-mix(in srgb,var(--admin-panel-2) 55%,transparent)}
         <div class="panel"><div class="panel-head"><div><h2>Синхронизация каталога</h2><p>Источник данных — Google Sheets, лист Catalog</p></div><span class="pill" id="sync-state">Не проверено</span></div><div id="catalog-stats" class="grid metrics catalog-stats-grid"></div><button class="btn primary" id="sync-now">↻ Синхронизировать сейчас</button><div class="small muted mt-8">Синхронизация не изменяет исходную таблицу. Витрина читает данные и нормализует варианты в товарные линейки.</div></div>
         <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
       </div>
-      <div class="panel panel-spaced"><div class="panel-head"><div><h2>Источник и кеширование</h2><p>Настройки подключения к таблице, без изменения самой таблицы</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Ссылка на Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></label><label class="full">ID таблицы<input id="sync-sheet-id" required></label><label>GID листа<input id="sync-gid" inputmode="numeric" required></label><label>Кеш каталога, секунд<input id="sync-cache" type="number" min="15" max="600" step="5" required></label><div class="full"><button class="btn primary" type="submit">Сохранить подключение</button> <button class="btn" id="preview-sheet" type="button">Проверить таблицу</button></div></form></div>
+      <div class="panel panel-spaced"><div class="panel-head"><div><h2>Источник и кеширование</h2><p>Настройки подключения к таблице, без изменения самой таблицы</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Ссылка на Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" autocomplete="off"></label><label class="full">ID таблицы<input id="sync-sheet-id" required></label><label>GID листа<input id="sync-gid" inputmode="numeric" required></label><label>Кеш каталога, секунд<input id="sync-cache" type="number" min="60" max="240" step="5" required></label><div class="full"><button class="btn primary" type="submit">Сохранить подключение</button> <button class="btn" id="preview-sheet" type="button">Проверить таблицу</button></div></form></div>
       <div class="panel panel-spaced"><div class="panel-head"><div><h2>Шаблон и сопоставление столбцов</h2><p>Можно прикрепить CSV-шаблон или проверить заголовки подключённой таблицы. Данные источника не изменяются.</p></div></div><div class="form-grid"><label class="full">Прикрепить шаблон CSV<input id="catalog-template-file" type="file" accept=".csv,text/csv"></label><div class="full actions"><button class="btn" id="attach-template" type="button">Сохранить шаблон</button><button class="btn" id="download-template" type="button">Скачать пустой шаблон</button><button class="btn" id="download-attached-template" type="button">Скачать прикреплённый</button><span id="template-info" class="muted small"></span></div><div id="column-mapping" class="full form-grid"></div><div class="full"><button class="btn" id="save-template" type="button">Сохранить сопоставление столбцов</button></div></div></div>
       <div class="panel panel-spaced"><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
     </section>
@@ -308,8 +308,15 @@ tr:hover td{background:color-mix(in srgb,var(--admin-panel-2) 55%,transparent)}
       <div class="panel"><div class="panel-head"><div><h2>Настройки магазина</h2><p>Контактная информация, способы получения и правила оформления</p></div></div><form id="settings-form" class="form-grid">
         <label>Название магазина<input id="cfg-name"></label><label>Телефон магазина<input id="cfg-phone"></label>
         <label class="full">Адрес самовывоза<input id="cfg-address"></label>
+        <label class="full">Место встречи у метро<input id="cfg-metro-hint" maxlength="250" placeholder="Станция, выход или ориентир"></label>
         <label>Минимальная сумма, BYN<input id="cfg-min" type="number" min="0" step="0.01"></label><label>Стоимость доставки, BYN<input id="cfg-fee" type="number" min="0" step="0.01"></label>
+        <label>Максимум штук на вариант<input id="cfg-item-limit" type="number" min="1" max="100" step="1" required></label>
         <label class="field-row"><input id="cfg-metro" type="checkbox"> Получение у метро включено</label><label class="field-row"><input id="cfg-pickup" type="checkbox"> Самовывоз включён</label><label class="field-row"><input id="cfg-delivery" type="checkbox"> Доставка на дом включена</label>
+        <h3 class="full">Оплата</h3>
+        <label class="field-row"><input id="cfg-cash-payment" type="checkbox"> Наличными при получении</label>
+        <label class="field-row"><input id="cfg-transfer-payment" type="checkbox"> Перевод по реквизитам</label>
+        <label class="full">Реквизиты и инструкция для покупателя<textarea id="cfg-transfer-details" rows="4" maxlength="1500" placeholder="Получатель, банк, номер счёта и назначение платежа"></textarea><small class="muted">Покупатель увидит реквизиты в заказе после его подтверждения.</small></label>
+        <label class="full field-row"><input id="cfg-age-gate" type="checkbox"> Показывать подтверждение 18+ при входе на витрину</label>
         <div class="full"><button class="btn primary" type="submit">Сохранить настройки</button></div>
       </form></div>
     </section>
@@ -575,6 +582,8 @@ async function loadOrders(){
  else $("order-detail").innerHTML='<div class="empty">Выберите заказ, чтобы посмотреть детали и изменить статус</div>';
 }
 async function selectOrder(id){state.selectedOrder=id;await loadOrders();}
+const orderPaymentLabels={cash:"Наличными при получении",transfer:"Перевод по реквизитам",card:"Картой при получении",online:"Онлайн",upon_receipt:"При получении"};
+const orderPaymentStatusLabels={unpaid:"Не оплачено",paid:"Оплачено",refunded:"Возврат",failed:"Ошибка оплаты"};
 function renderOrderDetail(o){
  const items=o.items||[];
  let actions="";
@@ -590,16 +599,19 @@ function renderOrderDetail(o){
  if((o.status==="ready"||o.status==="assigned")&&o.deliveryMethod==="delivery"){
   actions+='<select id="assign-courier" class="compact-select"><option value="">Выбрать курьера</option>'+state.staffList.filter(s=>s.role==="courier"&&s.active).map(s=>'<option value="'+esc(s.id)+'" '+(s.id===o.courierId?'selected':'')+'>'+esc(s.display_name)+'</option>').join("")+'</select><button class="btn primary" data-status="assigned">'+(o.status==="assigned"?"Переназначить":"Назначить")+'</button>';
  }
- $("order-detail").innerHTML='<div class="panel-head"><div><div class="muted small">ЗАКАЗ #'+esc(o.number)+'</div><h2 class="order-customer">'+esc(o.customerName)+'</h2></div>'+statusPill(o.status)+'</div><div class="info"><div><small>Телефон</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong></div><div><small>Получение</small><strong>'+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[o.deliveryMethod]||"Самовывоз")+'</strong></div><div><small>Дата и время</small><strong>'+esc(o.slotDate)+' '+esc(o.slotTime)+'</strong></div><div><small>Доставка</small><strong>'+money(o.deliveryFee)+'</strong></div><div><small>Сумма</small><strong>'+money(o.total)+'</strong></div><div class="full"><small>Адрес</small><strong>'+esc(o.address||(o.deliveryMethod==="metro"?"Метро":"Самовывоз"))+'</strong></div>'+(o.doorbell?'<div><small>Домофон</small><strong>'+esc(o.doorbell)+'</strong></div>':'')+'<div><small>Оплата</small><strong>'+esc(o.paymentMethod)+' · '+esc(o.paymentStatus)+'</strong></div><div><small>Курьер</small><strong>'+esc(o.courierName||"Не назначен")+'</strong></div></div><h3>Состав заказа</h3><div class="items">'+items.map(item=>'<div class="item"><span><b>'+esc(item.product_name)+'</b><br><span class="muted">'+esc(item.option_label)+' · SKU '+esc(item.sku)+'</span><br><span class="muted">× '+item.quantity+'</span></span><b>'+money(item.line_total)+'</b></div>').join("")+'</div>'+(o.comment?'<p class="muted">Комментарий: '+esc(o.comment)+'</p>':'')+'<div class="actions">'+actions+'</div><div class="actions actions-centered"><select id="payment-status" class="compact-select"><option value="unpaid">Не оплачено</option><option value="paid">Оплачено</option><option value="refunded">Возврат</option><option value="failed">Ошибка оплаты</option></select><button class="btn" id="save-payment">Сохранить оплату</button></div><h3 class="history-heading">История</h3><div class="items">'+(o.events||[]).map(e=>'<div class="item"><span>'+esc(e.message||labels[e.to_status]||e.event_type)+'</span><small class="muted">'+new Date(e.created_at).toLocaleString("ru-BY")+'</small></div>').join("")+'</div>';
+ $("order-detail").innerHTML='<div class="panel-head"><div><div class="muted small">ЗАКАЗ #'+esc(o.number)+'</div><h2 class="order-customer">'+esc(o.customerName)+'</h2></div>'+statusPill(o.status)+'</div><div class="info"><div><small>Телефон</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong></div><div><small>Получение</small><strong>'+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[o.deliveryMethod]||"Самовывоз")+'</strong></div><div><small>Дата и время</small><strong>'+esc(o.slotDate)+' '+esc(o.slotTime)+'</strong></div><div><small>Доставка</small><strong>'+money(o.deliveryFee)+'</strong></div><div><small>Сумма</small><strong>'+money(o.total)+'</strong></div><div class="full"><small>Адрес</small><strong>'+esc(o.address||(o.deliveryMethod==="metro"?"Метро":"Самовывоз"))+'</strong></div>'+(o.doorbell?'<div><small>Домофон</small><strong>'+esc(o.doorbell)+'</strong></div>':'')+'<div><small>Оплата</small><strong>'+esc(orderPaymentLabels[o.paymentMethod]||o.paymentMethod)+' · '+esc(orderPaymentStatusLabels[o.paymentStatus]||o.paymentStatus)+'</strong></div><div><small>Курьер</small><strong>'+esc(o.courierName||"Не назначен")+'</strong></div></div><h3>Состав заказа</h3><div class="items">'+items.map(item=>'<div class="item"><span><b>'+esc(item.product_name)+'</b><br><span class="muted">'+esc(item.option_label)+' · SKU '+esc(item.sku)+'</span><br><span class="muted">× '+item.quantity+'</span></span><b>'+money(item.line_total)+'</b></div>').join("")+'</div>'+(o.comment?'<p class="muted">Комментарий: '+esc(o.comment)+'</p>':'')+'<div class="actions">'+actions+'</div><div class="actions actions-centered"><select id="payment-status" class="compact-select"><option value="unpaid">Не оплачено</option><option value="paid">Оплачено</option><option value="refunded">Возврат</option><option value="failed">Ошибка оплаты</option></select><button class="btn" id="save-payment">Сохранить оплату</button></div><h3 class="history-heading">История</h3><div class="items">'+(o.events||[]).map(e=>'<div class="item"><span>'+esc(e.message||labels[e.to_status]||e.event_type)+'</span><small class="muted">'+new Date(e.created_at).toLocaleString("ru-BY")+'</small></div>').join("")+'</div>';
  const contact=$("order-detail").querySelector(".info>div");
- if(contact)contact.innerHTML='<small>Telegram</small><strong>'+(o.telegramUsername?'@'+esc(o.telegramUsername):'Привязан к заказу')+'</strong>';
+ if(contact){
+  contact.innerHTML=o.phone?'<small>Телефон</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong>':
+   '<small>Контакт</small><strong>'+(o.telegramUsername?'Telegram · @'+esc(o.telegramUsername):o.telegramLinked?'Привязан к Telegram':'Не указан')+'</strong>';
+ }
  if(!canPermission("orders.manage"))$("order-detail").querySelectorAll("[data-status],#assign-courier,#payment-status,#save-payment").forEach(element=>element.remove());
  $("order-detail").querySelectorAll("[data-status]").forEach(button=>button.onclick=async()=>{
   let courierId=null;if(button.dataset.status==="assigned")courierId=$("assign-courier")?.value;
   try{await api("/api/admin/orders/"+encodeURIComponent(o.id),{method:"PATCH",body:JSON.stringify({status:button.dataset.status,courierId})});toast("Статус заказа обновлён");await loadOrders();}catch(error){toast(error.message);}
  });
- $("payment-status").value=o.paymentStatus||"unpaid";
- $("save-payment").onclick=async()=>{try{await api("/api/admin/orders/"+encodeURIComponent(o.id),{method:"PATCH",body:JSON.stringify({paymentStatus:$("payment-status").value})});toast("Статус оплаты сохранён");await loadOrders();}catch(error){toast(error.message);}};
+ if($("payment-status"))$("payment-status").value=o.paymentStatus||"unpaid";
+ if($("save-payment"))$("save-payment").onclick=async()=>{try{await api("/api/admin/orders/"+encodeURIComponent(o.id),{method:"PATCH",body:JSON.stringify({paymentStatus:$("payment-status").value})});toast("Статус оплаты сохранён");await loadOrders();}catch(error){toast(error.message);}};
 }
 $("order-filter").onchange=()=>{state.selectedOrder=null;loadOrders();};
 $("orders-reload").onclick=()=>loadOrders();
@@ -837,9 +849,32 @@ async function loadSettings(){
  const c=await api("/api/admin/settings");state.config=c;
  $("cfg-name").value=c.storeName||"";$("cfg-phone").value=c.phone||"";$("cfg-address").value=c.address||"";
  $("cfg-min").value=(Number(c.minOrder||0)/100).toFixed(2);$("cfg-fee").value=(Number(c.deliveryFee||0)/100).toFixed(2);
+ $("cfg-metro-hint").value=c.metroMeetingHint||"";$("cfg-item-limit").value=c.maxItemQuantity||10;
  $("cfg-metro").checked=c.metroEnabled!==false;$("cfg-pickup").checked=c.pickupEnabled!==false;$("cfg-delivery").checked=!!c.deliveryEnabled;
+ $("cfg-cash-payment").checked=c.cashPaymentEnabled!==false;
+ $("cfg-transfer-payment").checked=c.transferPaymentEnabled===true;
+ $("cfg-transfer-details").value=c.transferDetails||"";
+ $("cfg-transfer-details").required=$("cfg-transfer-payment").checked;
+ $("cfg-age-gate").checked=c.ageGateEnabled!==false;
+ const editable=canPermission("settings.manage");
+ $("settings-form").querySelectorAll("input,textarea,button").forEach(field=>field.disabled=!editable);
 }
-$("settings-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/settings",{method:"PUT",body:JSON.stringify({storeName:$("cfg-name").value,phone:$("cfg-phone").value,address:$("cfg-address").value,minOrder:Math.round(Number($("cfg-min").value||0)*100),deliveryFee:Math.round(Number($("cfg-fee").value||0)*100),metroEnabled:$("cfg-metro").checked,pickupEnabled:$("cfg-pickup").checked,deliveryEnabled:$("cfg-delivery").checked})});toast("Настройки магазина сохранены");}catch(error){toast(error.message);}};
+$("cfg-transfer-payment").onchange=()=>$("cfg-transfer-details").required=$("cfg-transfer-payment").checked;
+$("settings-form").onsubmit=async event=>{
+ event.preventDefault();
+ const settings={
+  storeName:$("cfg-name").value,phone:$("cfg-phone").value,address:$("cfg-address").value,
+  minOrder:Math.round(Number($("cfg-min").value||0)*100),deliveryFee:Math.round(Number($("cfg-fee").value||0)*100),
+  metroMeetingHint:$("cfg-metro-hint").value,maxItemQuantity:Number($("cfg-item-limit").value),
+  metroEnabled:$("cfg-metro").checked,pickupEnabled:$("cfg-pickup").checked,deliveryEnabled:$("cfg-delivery").checked,
+  cashPaymentEnabled:$("cfg-cash-payment").checked,transferPaymentEnabled:$("cfg-transfer-payment").checked,
+  transferDetails:$("cfg-transfer-details").value,ageGateEnabled:$("cfg-age-gate").checked
+ };
+ try{
+  await api("/api/admin/settings",{method:"PUT",body:JSON.stringify(settings)});
+  toast("Настройки магазина сохранены");
+ }catch(error){toast(error.message);}
+};
 const promotionGroups=[["liquid","Жидкости"],["coil","Испарители"],["cartridge","Картриджи"]];
 function readPromotionInputs(){
  return Array.from($("promotion-rules").querySelectorAll("fieldset"),field=>{

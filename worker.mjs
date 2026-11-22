@@ -3,7 +3,7 @@ import { DEMO_PROMOTIONS, highestPromotion, normalizePromotion, promotionGiftOpt
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
-const VERSION = "2.5.0";
+const VERSION = "2.6.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
 const STATUS_LABELS = {
@@ -21,6 +21,8 @@ const DEFAULT_CONFIG = {
   timezone:"Europe/Minsk",currency:"BYN",storeName:"VIOLET SHOP",
   metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,slotMinutes:60,leadMinutes:60,
   daysAhead:7,slotCapacity:4,minOrder:0,deliveryFee:0,address:"",phone:"",
+  ageGateEnabled:true,cashPaymentEnabled:true,transferPaymentEnabled:false,transferDetails:"",
+  maxItemQuantity:10,metroMeetingHint:"",
   brandTagline:"",logoUrl:"",heroTitle:"Каталог",heroSubtitle:"Выберите то, что вам нужно",
   theme:{accent:"#E5E7EB",accent2:"#C4C9CC",background:"#101112",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Inter",headingFontFamily:"Manrope"},
   defaultSort:"featured",analyticsEnabled:true,
@@ -226,11 +228,14 @@ async function loadOrder(env,id){
   return order;
 }
 function customerOrder(order){
+  const showTransferDetails=order.payment_method==="transfer"&&
+    !["new","cancelled","rejected"].includes(order.status)&&order.payment_status==="unpaid";
   return {
     id:order.id,number:order.number,status:order.status,statusLabel:STATUS_LABELS[order.status]||order.status,
     customerName:order.customer_name,deliveryMethod:order.fulfillment_method||order.delivery_method,address:order.address,doorbell:order.doorbell||"",
     slotDate:order.slot_date,slotTime:order.slot_time,comment:order.comment,total:order.total,
     currency:order.currency,deliveryFee:Number(order.delivery_fee||0),paymentMethod:order.payment_method,paymentStatus:order.payment_status,
+    transferDetails:showTransferDetails?order.transfer_details||"":"",
     createdAt:order.created_at,updatedAt:order.updated_at,
     items:order.items.map(item=>({name:item.product_name,brand:item.manufacturer,variant:item.option_label,quantity:item.quantity,unitPrice:item.unit_price,lineTotal:item.line_total})),
     events:order.events.map(event=>({type:event.event_type,status:event.to_status,message:event.message,createdAt:event.created_at}))
@@ -239,7 +244,8 @@ function customerOrder(order){
 function adminOrder(order){
   return {
     ...customerOrder(order),
-    telegramUsername:order.telegram_username||"",courierId:order.courier_id,courierName:order.courier_name,
+    phone:order.phone||"",telegramUsername:order.telegram_username||"",telegramLinked:!!order.telegram_user_id,
+    courierId:order.courier_id,courierName:order.courier_name,
     managerId:order.manager_id,cancelReason:order.cancel_reason,
     items:order.items.map(item=>({...item,attributes:JSON.parse(item.attributes_json||"{}")})),
     events:order.events
@@ -281,12 +287,12 @@ async function sendTelegram(env,chatId,message,replyMarkup=null){
   }
 }
 async function notifyOrder(env,order,status="new"){
-  const config=await getConfig(env);
   const managerChatId=String(await getSetting(env,"manager_chat_id","")||"");
   if(status==="new"){
     const lines=order.items.map(item=>"• "+escapeTelegram(item.product_name)+" / "+escapeTelegram(item.option_label)+" × "+item.quantity).join("\n");
     const message="<b>Новый заказ #"+order.number+"</b>\n"+
       "Покупатель: "+escapeTelegram(order.customer_name)+"\n"+
+      (order.phone?"Телефон: "+escapeTelegram(order.phone)+"\n":"")+
       (order.telegram_username?"Telegram: @"+escapeTelegram(order.telegram_username)+"\n":"")+
       "Способ: "+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[order.fulfillment_method||order.delivery_method]||"Самовывоз")+"\n"+
       "Время: "+order.slot_date+" "+order.slot_time+"\n"+
@@ -354,9 +360,23 @@ function dateDifference(a,b){
   const parse=value=>Date.UTC(Number(value.slice(0,4)),Number(value.slice(5,7))-1,Number(value.slice(8,10)));
   return Math.round((parse(a)-parse(b))/86400000);
 }
-async function getSlots(env,date,method){
-  const config=await getConfig(env);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!["metro","pickup","delivery"].includes(method))return [];
+function slotDateError(date,method,config){
+  if(!["metro","pickup","delivery"].includes(method))return "Неизвестный способ получения";
+  const parsed=new Date(date+"T12:00:00Z");
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(+parsed)||parsed.toISOString().slice(0,10)!==date)return "Укажите корректную дату";
+  const current=timeParts(new Date(),config.timezone||"Europe/Minsk");
+  const diff=dateDifference(date,current.year+"-"+current.month+"-"+current.day);
+  if(diff<0||diff>Number(config.daysAhead||7))return "Дата вне доступного периода записи";
+  return "";
+}
+function nextCalendarDate(date,days){
+  const value=new Date(date+"T12:00:00Z");
+  value.setUTCDate(value.getUTCDate()+days);
+  return value.toISOString().slice(0,10);
+}
+async function getSlots(env,date,method,config){
+  config??=await getConfig(env);
+  if(slotDateError(date,method,config))return [];
   if(method==="metro"&&config.metroEnabled===false)return [];
   if(method==="pickup"&&!config.pickupEnabled)return [];
   if(method==="delivery"&&!config.deliveryEnabled)return [];
@@ -393,7 +413,7 @@ async function getCatalogConfig(env){
   return {
     spreadsheetId:String(saved.spreadsheetId||env.GOOGLE_SHEET_ID||""),
     catalogGid:String(saved.catalogGid||env.GOOGLE_CATALOG_GID||""),
-    cacheSeconds:Math.max(15,Math.min(600,Number(saved.cacheSeconds)||45)),
+    cacheSeconds:Math.max(60,Math.min(240,Number(saved.cacheSeconds)||90)),
     columnMapping:saved.columnMapping&&typeof saved.columnMapping==="object"?saved.columnMapping:{}
   };
 }
@@ -427,41 +447,71 @@ function publicCatalog(payload){
       manufacturer:product.manufacturer,brand:product.brand,image:product.image,
       description:product.description,available:product.available,
       price:product.price,priceMin:product.priceMin,priceMax:product.priceMax,
-      popularity:product.popularity,analyticsScore:product.analyticsScore||0,views30d:product.views30d||0,cartAdds30d:product.cartAdds30d||0,orders30d:product.orders30d||0,sortOrder:product.sortOrder,attributes:product.attributes,
+      analyticsScore:product.analyticsScore||0,cartAdds30d:product.cartAdds30d||0,orders30d:product.orders30d||0,sortOrder:product.sortOrder,attributes:product.attributes,
       options:product.options.map(option=>({
         variantId:option.variantId,legacyVariantId:option.variantId!==option.productKey?option.productKey:undefined,
+        legacyVariantIds:option.legacyVariantIds,
         label:option.label,available:option.available,image:option.image,
         price:option.price,attributes:option.attributes,promotionGroup:promotionGroup(product,option)
       }))
     }))
   };
 }
+async function refreshCatalogCache(env,cache,cacheKey){
+  const payload=publicCatalog(await syncCatalog(env));
+  try{
+    const since=new Date(Date.now()-30*86400000).toISOString();
+    const signals=await all(env,"SELECT product_id,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cartAdds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? GROUP BY product_id",[since]);
+    const signalMap=new Map(signals.map(row=>[row.product_id,{views:Number(row.views||0),cartAdds:Number(row.cartAdds||0),orders:Number(row.orders||0)}]));
+    for(const product of payload.products){
+      const signal=signalMap.get(product.id);
+      if(!signal)continue;
+      product.cartAdds30d=signal.cartAdds;
+      product.orders30d=signal.orders;
+      product.analyticsScore=signal.views+signal.cartAdds*4+signal.orders*12;
+    }
+  }catch(error){await logSystem(env,"warning","analytics","Не удалось рассчитать популярность каталога",{error:String(error)});}
+  const {updatedAt,...content}=payload;
+  const etag='"'+await sha256(JSON.stringify(content))+'"';
+  const response=json({...payload,version:VERSION},200,{"Cache-Control":"public, max-age=300","ETag":etag,"X-Catalog-Source":"sheets","X-Catalog-Cached-At":String(Date.now())});
+  try{await cache.put(cacheKey,response.clone());}
+  catch(error){await logSystem(env,"warning","cache","Не удалось сохранить кеш каталога",{error:String(error)});}
+  return response;
+}
+function catalogClientResponse(request,response,freshSeconds){
+  const headers=new Headers(response.headers);
+  headers.delete("X-Catalog-Cached-At");
+  headers.set("Cache-Control","public, max-age="+freshSeconds+", stale-while-revalidate="+(300-freshSeconds));
+  const etag=headers.get("ETag");
+  const requested=request.headers.get("If-None-Match")?.split(",").map(tag=>tag.trim().replace(/^W\//,""));
+  if(etag&&(requested?.includes(etag)||requested?.includes("*")))return new Response(null,{status:304,headers});
+  return new Response(response.body,{status:200,headers});
+}
+const refreshingCatalogs=new Set();
 async function catalogResponse(request,env,ctx){
   const cache=caches.default;
+  const config=await getCatalogConfig(env);
   const cacheUrl=new URL("/api/catalog",request.url);
   cacheUrl.searchParams.set("version",VERSION);
+  cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.columnMapping])));
   const cacheKey=new Request(cacheUrl,{method:"GET"});
+  const cached=await cache.match(cacheKey);
   const force=new URL(request.url).searchParams.has("refresh");
-  const catalogConfig=await getCatalogConfig(env);
-  if(!force){
-    const cached=await cache.match(cacheKey);
-    if(cached)return cached;
+  if(cached&&!force){
+    const age=Date.now()-Number(cached.headers.get("X-Catalog-Cached-At")||0);
+    if(age>=config.cacheSeconds*1000&&!refreshingCatalogs.has(cacheKey.url)){
+      refreshingCatalogs.add(cacheKey.url);
+      ctx.waitUntil(refreshCatalogCache(env,cache,cacheKey)
+        .catch(error=>logSystem(env,"warning","catalog","Не удалось обновить кеш каталога",{error:String(error)}))
+        .finally(()=>refreshingCatalogs.delete(cacheKey.url)));
+    }
+    return catalogClientResponse(request,cached,config.cacheSeconds);
   }
   try{
-    const payload=publicCatalog(await syncCatalog(env));
-    try{
-      const since=new Date(Date.now()-30*86400000).toISOString();
-      const signals=await all(env,"SELECT product_id,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cart_adds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? GROUP BY product_id",[since]);
-      const signalMap=new Map(signals.map(row=>[row.product_id,{views:Number(row.views||0),cartAdds:Number(row.cart_adds||0),orders:Number(row.orders||0)}]));
-      payload.products=payload.products.map(product=>{
-        const signal=signalMap.get(product.id)||{views:0,cartAdds:0,orders:0};
-        return {...product,views30d:signal.views,cartAdds30d:signal.cartAdds,orders30d:signal.orders,analyticsScore:signal.views+signal.cartAdds*4+signal.orders*12};
-      });
-    }catch(error){await logSystem(env,"warning","analytics","Не удалось рассчитать популярность каталога",{error:String(error)});}
-    const response=json({...payload,version:VERSION},200,{"Cache-Control":"public, max-age="+catalogConfig.cacheSeconds,"X-Catalog-Source":"sheets"});
-    ctx.waitUntil(cache.put(cacheKey,response.clone()).catch(error=>logSystem(env,"warning","cache","Не удалось сохранить кеш каталога",{error:String(error)})));
-    return response;
+    const response=await refreshCatalogCache(env,cache,cacheKey);
+    return catalogClientResponse(request,response,config.cacheSeconds);
   }catch(error){
+    if(cached)return catalogClientResponse(request,cached,config.cacheSeconds);
     return json({error:"Синхронизация каталога временно недоступна",detail:error instanceof Error?error.message:String(error)},502);
   }
 }
@@ -476,35 +526,64 @@ async function createOrder(request,env){
   const customerKeyHash=await verifyCustomerToken(request,body);
   if(!customerKeyHash)return json({error:"Не удалось подтвердить сессию покупателя"},400);
   const submittedName=String(body.customerName||"").trim().slice(0,100);
-  const method=["metro","pickup","delivery"].includes(body.deliveryMethod)?body.deliveryMethod:"metro";
+  const method=body.deliveryMethod??"metro";
+  if(!["metro","pickup","delivery"].includes(method))return json({error:"Неизвестный способ получения"},400);
   const storageMethod=method==="delivery"?"delivery":"pickup";
   const address=String(body.address||"").trim().slice(0,300);
   const doorbell=method==="delivery"?String(body.doorbell||"").trim().slice(0,80):"";
   const slotDate=String(body.slotDate||"");
   const slotTime=String(body.slotTime||"");
   const comment=String(body.comment||"").trim().slice(0,500);
-  const paymentMethod=["cash","card","online"].includes(body.paymentMethod)?body.paymentMethod:"upon_receipt";
-  if(method==="delivery"&&address.length<5)return json({error:"Укажите адрес доставки"},400);
   const config=await getConfig(env);
-  if(method==="delivery"&&!config.deliveryEnabled)return json({error:"Доставка на дом сейчас недоступна"},409);
+  const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(body.telegramInitData,env.BOT_TOKEN):null;
+  const phone=telegramUser?"":String(body.phone??"").trim().replace(/[\s()-]/g,"");
+  if(!telegramUser&&!submittedName)return json({error:"Укажите имя"},400);
+  if(!telegramUser&&!/^\+375\d{9}$/.test(phone))return json({error:"Укажите белорусский телефон в формате +375 XX XXX XX XX"},400);
+  const paymentMethod=body.paymentMethod??"cash";
+  if(!["cash","transfer"].includes(paymentMethod))return json({error:"Выберите доступный способ оплаты"},400);
+  if((paymentMethod==="cash"&&config.cashPaymentEnabled===false)||
+    (paymentMethod==="transfer"&&!(config.transferPaymentEnabled===true&&config.transferDetails))){
+    return json({error:"Этот способ оплаты сейчас недоступен. Обновите витрину и выберите другой"},409);
+  }
+  const transferDetails=paymentMethod==="transfer"?config.transferDetails:"";
+  if(method==="delivery"&&!config.deliveryEnabled)return json({error:"Доставка сейчас недоступна"},400);
+  if(method==="delivery"&&address.length<5)return json({error:"Укажите адрес доставки"},400);
   if(method==="pickup"&&!config.pickupEnabled)return json({error:"Самовывоз сейчас недоступен"},409);
   if(method==="metro"&&config.metroEnabled===false)return json({error:"Получение у метро сейчас недоступно"},409);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(slotDate)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(slotTime))return json({error:"Выберите время получения"},400);
-  const availableSlots=await getSlots(env,slotDate,method);
-  if(!availableSlots.some(slot=>slot.time===slotTime))return json({error:"Этот слот уже занят или недоступен. Выберите другое время"},409);
+  const dateError=slotDateError(slotDate,method,config);
+  if(dateError)return json({error:dateError},400);
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(slotTime))return json({error:"Выберите время получения"},400);
   if(!Array.isArray(body.items)||body.items.length===0||body.items.length>40)return json({error:"Корзина пуста или содержит слишком много позиций"},400);
+  const quantities=new Map();
+  const maxQuantity=config.maxItemQuantity;
+  for(const raw of body.items){
+    const quantity=raw?.quantity;
+    const key=JSON.stringify([raw?.productId,raw?.variantId]);
+    const combined=(quantities.get(key)||0)+quantity;
+    if(!Number.isInteger(quantity)||quantity<1||combined>maxQuantity)return json({error:"Некорректное количество"},400);
+    quantities.set(key,combined);
+  }
+  const availableSlots=await getSlots(env,slotDate,method,config);
+  if(!availableSlots.some(slot=>slot.time===slotTime))return json({error:"Этот слот уже занят или недоступен. Выберите другое время"},409);
 
   let catalog;
   try{const catalogConfig=await getCatalogConfig(env);catalog=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});}
   catch(error){await logSystem(env,"error","orders","Не удалось проверить каталог при оформлении заказа",{error:String(error)});return json({error:"Не удалось проверить наличие товаров. Попробуйте позже"},503);}
   const products=new Map(catalog.products.map(product=>[product.id,product]));
-  const items=[];let total=0;
+  const items=[],unavailableItems=[],resolvedQuantities=new Map();let total=0;
   for(const raw of body.items){
     const product=products.get(String(raw.productId||""));
     const variantId=String(raw.variantId||"");
-    const option=product?.options.find(item=>item.variantId===variantId)||product?.options.find(item=>item.productKey===variantId);
-    const quantity=Math.max(0,Math.min(20,Math.floor(Number(raw.quantity)||0)));
-    if(!product||!option||!option.available||quantity<1)return json({error:"Одна из позиций больше недоступна. Обновите корзину"},409);
+    const option=product?.options.find(item=>item.variantId===variantId||item.legacyVariantIds?.includes(variantId))||product?.options.find(item=>item.productKey===variantId);
+    if(!option?.available){
+      unavailableItems.push({productId:String(raw.productId||""),variantId});
+      continue;
+    }
+    const quantity=raw.quantity;
+    const resolvedKey=JSON.stringify([product.id,option.variantId]);
+    const combined=(resolvedQuantities.get(resolvedKey)||0)+quantity;
+    if(combined>maxQuantity)return json({error:"Некорректное количество"},400);
+    resolvedQuantities.set(resolvedKey,combined);
     const lineTotal=option.price*quantity;
     total+=lineTotal;
     items.push({
@@ -514,8 +593,9 @@ async function createOrder(request,env){
       unitPrice:option.price,lineTotal
     });
   }
+  if(unavailableItems.length)return json({error:"Некоторые позиции больше недоступны",unavailableItems},409);
   const itemSubtotal=total;
-  if(itemSubtotal<Math.max(0,Number(config.minOrder)||0))return json({error:"Минимальная сумма заказа: "+(Number(config.minOrder)/100).toFixed(2)+" BYN"},400);
+  if(itemSubtotal<Math.max(0,Number(config.minOrder)||0))return json({error:"Минимальная сумма заказа — "+(Number(config.minOrder)/100).toFixed(2).replace(".",",")+" BYN"},400);
   const deliveryFee=method==="delivery"?Math.max(0,Number(config.deliveryFee)||0):0;
   total=itemSubtotal+deliveryFee;
   const rule=highestPromotion(await getPromotions(env),items);
@@ -528,19 +608,19 @@ async function createOrder(request,env){
     attributes:{...gift.option.attributes,promotion:rule.id},quantity:1,unitPrice:0,lineTotal:0
   }]:items;
 
-  let telegramUser=null;
-  if(env.BOT_TOKEN)telegramUser=await verifyTelegramInitData(body.telegramInitData,env.BOT_TOKEN);
   const telegramUserId=telegramUser?String(telegramUser.id):null;
   const telegramUsername=String(telegramUser?.username||"").replace(/^@/,"").slice(0,80);
   const verifiedName=[telegramUser?.first_name,telegramUser?.last_name].filter(Boolean).join(" ").trim();
   const name=(verifiedName||submittedName||"Покупатель Telegram").slice(0,100);
+  const recoveryCode=telegramUser?null:randomToken(12);
+  const recoveryHash=recoveryCode?await sha256(recoveryCode):null;
   const orderId=randomId(),createdAt=now();
   const numberResult=await run(env,"INSERT INTO order_numbers(created_at) VALUES(?)",[createdAt]);
   const orderNumber=Number(numberResult.meta?.last_row_id||Date.now());
   const capacity=Number(config.slotCapacity)||4;
   const statements=[
-    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,telegram_username,customer_name,phone,delivery_method,address,fulfillment_method,doorbell,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND COALESCE(fulfillment_method,delivery_method)=? AND status NOT IN ('cancelled','rejected')) < ?")
-      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,telegramUsername||null,name,"",storageMethod,address,method,doorbell,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
+    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,telegram_username,customer_name,phone,delivery_method,address,fulfillment_method,doorbell,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,transfer_details,recovery_hash,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND COALESCE(fulfillment_method,delivery_method)=? AND status NOT IN ('cancelled','rejected')) < ?")
+      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,telegramUsername||null,name,phone,storageMethod,address,method,doorbell,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",transferDetails,recoveryHash,createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
     ...orderItems.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,item.productId,item.productKey,item.sku,item.productName,item.manufacturer,item.optionLabel,JSON.stringify(item.attributes),String(item.quantity),String(item.unitPrice),String(item.lineTotal),orderId)),
     env.DB.prepare("INSERT INTO order_events(order_id,actor_role,event_type,to_status,message,metadata_json,created_at) SELECT ?,'customer','created','new','Заказ оформлен',?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
@@ -557,7 +637,20 @@ async function createOrder(request,env){
   if(!result?.[0]?.meta?.changes)return json({error:"Слот только что заняли. Выберите другое время"},409);
   const order=await loadOrder(env,orderId);
   await notifyOrder(env,order,"new");
-  return json({success:true,order:customerOrder(order),orderNumber});
+  return json({success:true,order:customerOrder(order),orderNumber,...(recoveryCode?{recoveryCode}:{})});
+}
+async function recoverOrder(request,env){
+  const body=await bodyJson(request);
+  const customerHash=await verifyCustomerToken(request,body);
+  if(!customerHash)return json({error:"Сессия покупателя не найдена"},400);
+  const code=String(body?.code||"").trim().toLowerCase();
+  if(!/^[a-f0-9]{24}$/.test(code))return json({error:"Проверьте код из подтверждения заказа"},400);
+  const order=await first(env,"SELECT id,customer_key_hash FROM orders WHERE recovery_hash=?",[await sha256(code)]);
+  if(!order)return json({error:"Заказ с таким кодом не найден"},404);
+  if(order.customer_key_hash!==customerHash){
+    await run(env,"INSERT OR IGNORE INTO order_recovery_sessions(order_id,customer_key_hash,created_at) VALUES(?,?,?)",[order.id,customerHash,now()]);
+  }
+  return json({success:true});
 }
 async function updateOrderStatus(env,orderId,status,actor,message="",courierId=null){
   const order=await loadOrder(env,orderId);
@@ -706,7 +799,9 @@ async function publicSettings(env){
   return {
     storeName:c.storeName,currency:c.currency,metroEnabled:c.metroEnabled!==false,pickupEnabled:c.pickupEnabled,
     deliveryEnabled:c.deliveryEnabled,deliveryFee:c.deliveryFee,minOrder:c.minOrder,
-    address:c.address,phone:c.phone,daysAhead:c.daysAhead,
+    ageGateEnabled:c.ageGateEnabled!==false,cashPaymentEnabled:c.cashPaymentEnabled!==false,
+    transferPaymentEnabled:c.transferPaymentEnabled===true&&!!c.transferDetails,
+    address:c.address,phone:c.phone,daysAhead:c.daysAhead,maxItemQuantity:c.maxItemQuantity,metroMeetingHint:c.metroMeetingHint,
     brandTagline:c.brandTagline||"",logoUrl:c.logoUrl||"",heroTitle:c.heroTitle||"Каталог",heroSubtitle:c.heroSubtitle||"",
     theme:sanitizeTheme(c.theme),defaultSort:c.defaultSort||"featured",analyticsEnabled:c.analyticsEnabled!==false,
     categories:await categorySettings(env),promotions:(await getPromotions(env)).filter(rule=>rule.active),
@@ -767,6 +862,15 @@ async function telegramWebhook(request,env){
   return json({ok:true});
 }
 
+function publicInfoPage(path){
+  const privacy=path==="/privacy";
+  const title=privacy?"Конфиденциальность":"Правила магазина";
+  const copy=privacy?
+    "<p>Магазин использует имя и телефон из веб-заказа или данные подтверждённой учётной записи Telegram, чтобы обработать заказ и связаться с покупателем. В браузере сохраняются корзина, подтверждение возраста и ключ доступа к своим заказам.</p><p>Вопросы о данных можно задать менеджеру по контактам, указанным при оформлении заказа.</p>":
+    "<p>Каталог предназначен для совершеннолетних покупателей. При оформлении выберите доступные способы получения и оплаты. Наличие и время получения подтверждает менеджер.</p><p>Новый заказ можно отменить в разделе «Мои заказы». Сохраните номер заказа, если вам нужно связаться с менеджером.</p>";
+  return '<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+' — VIOLET SHOP</title><style>html{font:1rem/1.55 system-ui,sans-serif;color-scheme:dark;background:#101112;color:#e8ecef}main{max-width:42rem;margin:auto;padding:1.4rem}a{color:#e8ecef}</style><main><a href="/">Вернуться в магазин</a><h1>'+title+'</h1>'+copy+'</main></html>';
+}
+
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
@@ -785,16 +889,31 @@ export default {
       if(path==="/api/slots"&&request.method==="GET"){
         const date=url.searchParams.get("date")||"";
         const method=url.searchParams.get("method")||"pickup";
-        return json({date,method,slots:await getSlots(env,date,method)});
+        const config=await getConfig(env);
+        const error=slotDateError(date,method,config);
+        if(error)return json({error},400);
+        const slots=await getSlots(env,date,method,config);
+        if(slots.length||url.searchParams.get("nearest")!=="1")return json({date,method,slots});
+        for(let offset=1;offset<=config.daysAhead;offset++){
+          const nextDate=nextCalendarDate(date,offset);
+          if(slotDateError(nextDate,method,config))break;
+          const nextSlots=await getSlots(env,nextDate,method,config);
+          if(nextSlots.length)return json({date,method,slots,nextDate,nextSlots});
+        }
+        return json({date,method,slots});
       }
       if(path==="/api/orders"&&request.method==="POST")return await createOrder(request,env);
+      if(path==="/api/orders/recover"&&request.method==="POST")return await recoverOrder(request,env);
       const customerCancelMatch=path.match(/^\/api\/orders\/([^/]+)\/cancel$/);
       if(customerCancelMatch&&request.method==="POST"){
         const body=await bodyJson(request);
         const hash=await verifyCustomerToken(request,body);
-        if(!hash)return json({error:"Сессия покупателя не найдена"},401);
+        const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(body?.telegramInitData||request.headers.get("X-Telegram-Init-Data")||"",env.BOT_TOKEN):null;
+        if(!hash&&!telegramUser)return json({error:"Сессия покупателя не найдена"},401);
         const order=await loadOrder(env,customerCancelMatch[1]);
-        if(!order||order.customer_key_hash!==hash)return json({error:"Заказ не найден"},404);
+        if(!order)return json({error:"Заказ не найден"},404);
+        const sessionMatch=hash&&(order.customer_key_hash===hash||await first(env,"SELECT 1 FROM order_recovery_sessions WHERE order_id=? AND customer_key_hash=?",[order.id,hash]));
+        if(!sessionMatch&&!(telegramUser&&order.telegram_user_id===String(telegramUser.id)))return json({error:"Заказ не найден"},404);
         if(order.status!=="new")return json({error:"Отменить можно только новый заказ. Свяжитесь с магазином"},409);
         const result=await updateOrderStatus(env,order.id,"cancelled",{id:null,role:"customer"},"Отменён покупателем");
         return result.error?json({error:result.error},result.status):json({success:true,order:customerOrder(result.order)});
@@ -803,11 +922,7 @@ export default {
         const hash=await verifyCustomerToken(request);
         const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(request.headers.get("X-Telegram-Init-Data")||"",env.BOT_TOKEN):null;
         if(!hash&&!telegramUser)return json({error:"Сессия покупателя не найдена"},401);
-        const orders=hash&&telegramUser
-          ?await all(env,"SELECT id FROM orders WHERE customer_key_hash=? OR telegram_user_id=? ORDER BY created_at DESC LIMIT 50",[hash,String(telegramUser.id)])
-          :hash
-            ?await all(env,"SELECT id FROM orders WHERE customer_key_hash=? ORDER BY created_at DESC LIMIT 50",[hash])
-            :await all(env,"SELECT id FROM orders WHERE telegram_user_id=? ORDER BY created_at DESC LIMIT 50",[String(telegramUser.id)]);
+        const orders=await all(env,"SELECT id FROM orders WHERE customer_key_hash=? OR telegram_user_id=? OR id IN (SELECT order_id FROM order_recovery_sessions WHERE customer_key_hash=?) ORDER BY created_at DESC LIMIT 50",[hash||null,telegramUser?String(telegramUser.id):null,hash||null]);
         const detailed=await Promise.all(orders.map(row=>loadOrder(env,row.id)));
         return json({orders:detailed.filter(Boolean).map(customerOrder)});
       }
@@ -953,6 +1068,7 @@ export default {
           const config={...await getConfig(env)};
           if(!hasPermission(staff,"schedule"))for(const key of ["weeklyHours","slotMinutes","leadMinutes","daysAhead","slotCapacity"])delete config[key];
           if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"])delete config[key];
+          delete config.transferDetails;
           const template=hasPermission(staff,"catalog")?await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}}):{name:"",headers:[],columnMapping:{}};
           const categories=hasPermission(staff,"categories")?await getSetting(env,"category_config",{}):{};
           const adminAppearance=hasPermission(staff,"branding")?sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE)):null;
@@ -1080,6 +1196,23 @@ export default {
           const next={...current};
           const allowed=["storeName","currency","metroEnabled","pickupEnabled","deliveryEnabled","minOrder","deliveryFee","address","phone"];
           for(const key of allowed)if(body[key]!==undefined)next[key]=body[key];
+          for(const key of ["ageGateEnabled","cashPaymentEnabled","transferPaymentEnabled"]){
+            if(body[key]===undefined)continue;
+            if(typeof body[key]!=="boolean")return json({error:"Некорректное значение переключателя"},400);
+            next[key]=body[key];
+          }
+          if(body.transferDetails!==undefined){
+            if(typeof body.transferDetails!=="string"||body.transferDetails.trim().length>1500)return json({error:"Реквизиты должны содержать до 1500 символов"},400);
+            next.transferDetails=body.transferDetails.trim();
+          }
+          if(next.transferPaymentEnabled&&!next.transferDetails)return json({error:"Добавьте реквизиты для перевода"},400);
+          if(!next.cashPaymentEnabled&&!next.transferPaymentEnabled)return json({error:"Оставьте включённым хотя бы один способ оплаты"},400);
+          if(body.maxItemQuantity!==undefined){
+            const limit=Number(body.maxItemQuantity);
+            if(!Number.isInteger(limit)||limit<1||limit>100)return json({error:"Лимит количества должен быть целым числом от 1 до 100"},400);
+            next.maxItemQuantity=limit;
+          }
+          if(body.metroMeetingHint!==undefined)next.metroMeetingHint=String(body.metroMeetingHint).trim().slice(0,250);
           next.slotMinutes=Math.max(15,Math.min(240,Number(next.slotMinutes)||60));
           next.leadMinutes=Math.max(0,Math.min(1440,Number(next.leadMinutes)||0));
           next.daysAhead=Math.max(1,Math.min(30,Number(next.daysAhead)||7));
@@ -1167,7 +1300,7 @@ export default {
           const current=await getCatalogConfig(env);
           const spreadsheetId=String(body?.spreadsheetId||current.spreadsheetId).trim();
           const catalogGid=String(body?.catalogGid||current.catalogGid).trim();
-          const cacheSeconds=Math.max(15,Math.min(600,Number(body?.cacheSeconds)||current.cacheSeconds));
+          const cacheSeconds=Math.max(60,Math.min(240,Number(body?.cacheSeconds)||current.cacheSeconds));
           const columnMapping=body?.columnMapping&&typeof body.columnMapping==="object"?body.columnMapping:current.columnMapping||{};
           if(!/^[A-Za-z0-9_-]{20,}$/.test(spreadsheetId)||!/^\d+$/.test(catalogGid))return json({error:"Проверьте ID таблицы и GID листа"},400);
           await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,cacheSeconds,columnMapping},staff.id);
@@ -1206,7 +1339,8 @@ export default {
           return json({success:true,webhook:response.result});
         }
       }
-      if(request.method==="GET"&&(path==="/"||path==="/index.html"))return textResponse(html);
+      if(request.method==="GET"&&["/rules","/privacy"].includes(path))return textResponse(publicInfoPage(path));
+      if(["GET","HEAD"].includes(request.method)&&(path==="/"||path==="/index.html"))return textResponse(request.method==="HEAD"?null:html);
       if(request.method==="GET"&&(path==="/admin"||path==="/admin/"))return textResponse(adminHtml);
       if(request.method==="GET"&&(path==="/courier"||path==="/courier/"))return textResponse(adminHtml);
       return json({error:"Not found"},404);
