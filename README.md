@@ -42,10 +42,10 @@ New public attributes can be added using known field names or a `public_` / `dis
 
 ## Customer flow
 
-1. Browse families, search, filter by category and brand, sort by analytics / brand / price / name.
+1. Browse families, search across the store, filter by category and brand, sort by analytics / brand / price / name. Search supports Russian/Latin transliteration, keyboard-layout mistakes, spelling errors and ranked fallback suggestions.
 2. Choose a flavour/variant. Unavailable variants are visually de-emphasized; selecting one explains that it is temporarily unavailable and does not add it to the cart.
 3. Add variants to the cart.
-4. Enter name and phone, choose pickup or delivery, date and available time slot.
+4. Enter name and phone, choose metro handoff, pickup or (if enabled) home delivery, date and an available app-generated time slot.
 5. The Worker rechecks availability and price against the current sheet before creating an order.
 6. Order history is fetched from D1 using a private random customer token stored in the browser.
 
@@ -63,9 +63,13 @@ Managers confirm/reject orders, move them through preparation, assign or reassig
 
 Open `/admin` or `/courier`.
 
-The first login uses a one-time owner bootstrap code provided separately at deployment. Enter the code and the owner's display name. The code is stored only as a SHA-256 hash in D1 and is invalidated after the first successful owner login.
+The public VIOLET demo Worker has a temporary demo login: **admin / admin**. This credential is configured only on the demo Worker, protected by a per-IP lockout after repeated failed attempts, and is not copied into newly generated customer stores. Do not reuse this password on a customer deployment.
 
-Managers create one-time staff invitations from the Team section. Invitations expire after 48 hours and can create manager or courier accounts. A Telegram ID can be attached to an invitation or edited in the Team section for bot notifications.
+New customer stores use a one-time owner bootstrap code provided separately at deployment. Enter the code and the owner's display name. The code is stored only as a SHA-256 hash in D1 and is invalidated after the first successful owner login.
+
+The owner can create one-time staff invitations and assign granular permissions: overview, order viewing and management, schedule, catalog viewing and management, categories, analytics, branding and theme editing, store settings, logs and Telegram. Team and permission management remain owner-only. Couriers see only their assigned deliveries. Invitations expire after 48 hours; permission changes invalidate the affected employee's current sessions.
+
+The advanced storefront theme editor is tucked into **Branding → Расширенная настройка интерфейса**. It controls body and heading fonts, background, surfaces, text, borders and two accent colours.
 
 Staff sessions use random, hashed server-side session identifiers in HttpOnly, Secure, SameSite cookies. Customer routes never expose manager functions.
 
