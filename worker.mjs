@@ -2,7 +2,7 @@ import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
-const VERSION = "2.1.1";
+const VERSION = "2.2.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
 const STATUS_LABELS = {
@@ -14,10 +14,10 @@ const ACTIVE_STATUSES = ["new","confirmed","preparing","ready","assigned","picke
 
 const DEFAULT_CONFIG = {
   timezone:"Europe/Minsk",currency:"BYN",storeName:"VIOLET SHOP",
-  pickupEnabled:true,deliveryEnabled:true,slotMinutes:60,leadMinutes:60,
+  metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,slotMinutes:60,leadMinutes:60,
   daysAhead:7,slotCapacity:4,minOrder:0,deliveryFee:0,address:"",phone:"",
   brandTagline:"",logoUrl:"",heroTitle:"Каталог",heroSubtitle:"Выберите то, что вам нужно",
-  theme:{accent:"#a855f7",accent2:"#d946ef",background:"#08080b",panel:"#181820"},
+  theme:{accent:"#80664D",accent2:"#A17D59",background:"#F6F2EA",panel:"#EEE8DE"},
   defaultSort:"featured",analyticsEnabled:true,
   weeklyHours:{
     mon:{open:"10:00",close:"21:00",closed:false},
@@ -156,7 +156,7 @@ async function loadOrder(env,id){
 function customerOrder(order){
   return {
     id:order.id,number:order.number,status:order.status,statusLabel:STATUS_LABELS[order.status]||order.status,
-    customerName:order.customer_name,deliveryMethod:order.delivery_method,address:order.address,
+    customerName:order.customer_name,deliveryMethod:order.fulfillment_method||order.delivery_method,address:order.address,doorbell:order.doorbell||"",
     slotDate:order.slot_date,slotTime:order.slot_time,comment:order.comment,total:order.total,
     currency:order.currency,deliveryFee:Number(order.delivery_fee||0),paymentMethod:order.payment_method,paymentStatus:order.payment_status,
     createdAt:order.created_at,updatedAt:order.updated_at,
@@ -216,9 +216,10 @@ async function notifyOrder(env,order,status="new"){
     const message="<b>Новый заказ #"+order.number+"</b>\n"+
       "Покупатель: "+escapeTelegram(order.customer_name)+"\n"+
       "Телефон: "+escapeTelegram(order.phone)+"\n"+
-      "Способ: "+(order.delivery_method==="delivery"?"Доставка":"Самовывоз")+"\n"+
+      "Способ: "+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[order.fulfillment_method||order.delivery_method]||"Самовывоз")+"\n"+
       "Время: "+order.slot_date+" "+order.slot_time+"\n"+
       (order.address?"Адрес: "+escapeTelegram(order.address)+"\n":"")+
+      (order.doorbell?"Домофон: "+escapeTelegram(order.doorbell)+"\n":"")+
       lines+"\nИтого: "+(order.total/100).toFixed(2)+" BYN";
     const keyboard={inline_keyboard:[[
       {text:"Подтвердить",callback_data:"order|"+order.id+"|confirmed"},
@@ -283,7 +284,8 @@ function dateDifference(a,b){
 }
 async function getSlots(env,date,method){
   const config=await getConfig(env);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!["pickup","delivery"].includes(method))return [];
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!["metro","pickup","delivery"].includes(method))return [];
+  if(method==="metro"&&config.metroEnabled===false)return [];
   if(method==="pickup"&&!config.pickupEnabled)return [];
   if(method==="delivery"&&!config.deliveryEnabled)return [];
   const current=timeParts(new Date(),config.timezone||"Europe/Minsk");
@@ -297,7 +299,7 @@ async function getSlots(env,date,method){
   if(open<0||close<=open)return [];
   const blocks=await all(env,"SELECT start_time,end_time,method FROM slot_blocks WHERE slot_date=?",[date]);
   const orders=await all(env,
-    "SELECT slot_time,COUNT(*) AS booked FROM orders WHERE slot_date=? AND delivery_method=? AND status NOT IN ('cancelled','rejected') GROUP BY slot_time",
+    "SELECT slot_time,COUNT(*) AS booked FROM orders WHERE slot_date=? AND COALESCE(fulfillment_method,delivery_method)=? AND status NOT IN ('cancelled','rejected') GROUP BY slot_time",
     [date,method]);
   const bookedMap=new Map(orders.map(row=>[row.slot_time,Number(row.booked)]));
   const result=[];
@@ -400,8 +402,10 @@ async function createOrder(request,env){
   if(!customerKeyHash)return json({error:"Не удалось подтвердить сессию покупателя"},400);
   const name=String(body.customerName||"").trim().slice(0,100);
   const phone=String(body.phone||"").trim().slice(0,40);
-  const method=body.deliveryMethod==="delivery"?"delivery":"pickup";
+  const method=["metro","pickup","delivery"].includes(body.deliveryMethod)?body.deliveryMethod:"metro";
+  const storageMethod=method==="delivery"?"delivery":"pickup";
   const address=String(body.address||"").trim().slice(0,300);
+  const doorbell=method==="delivery"?String(body.doorbell||"").trim().slice(0,80):"";
   const slotDate=String(body.slotDate||"");
   const slotTime=String(body.slotTime||"");
   const comment=String(body.comment||"").trim().slice(0,500);
@@ -409,8 +413,9 @@ async function createOrder(request,env){
   if(name.length<2||phone.length<6)return json({error:"Укажите имя и корректный номер телефона"},400);
   if(method==="delivery"&&address.length<5)return json({error:"Укажите адрес доставки"},400);
   const config=await getConfig(env);
-  if(method==="delivery"&&!config.deliveryEnabled)return json({error:"Доставка сейчас недоступна"},409);
+  if(method==="delivery"&&!config.deliveryEnabled)return json({error:"Доставка на дом сейчас недоступна"},409);
   if(method==="pickup"&&!config.pickupEnabled)return json({error:"Самовывоз сейчас недоступен"},409);
+  if(method==="metro"&&config.metroEnabled===false)return json({error:"Получение у метро сейчас недоступно"},409);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(slotDate)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(slotTime))return json({error:"Выберите время получения"},400);
   const availableSlots=await getSlots(env,slotDate,method);
   if(!availableSlots.some(slot=>slot.time===slotTime))return json({error:"Этот слот уже занят или недоступен. Выберите другое время"},409);
@@ -448,12 +453,12 @@ async function createOrder(request,env){
   const orderNumber=Number(numberResult.meta?.last_row_id||Date.now());
   const capacity=Number(config.slotCapacity)||4;
   const statements=[
-    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,customer_name,phone,delivery_method,address,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND delivery_method=? AND status NOT IN ('cancelled','rejected')) < ?")
-      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,name,phone,method,address,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
+    env.DB.prepare("INSERT INTO orders(id,number,customer_key_hash,telegram_user_id,customer_name,phone,delivery_method,address,fulfillment_method,doorbell,slot_date,slot_time,comment,status,total,delivery_fee,currency,payment_method,payment_status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,'new',?,?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM orders WHERE slot_date=? AND slot_time=? AND COALESCE(fulfillment_method,delivery_method)=? AND status NOT IN ('cancelled','rejected')) < ?")
+      .bind(orderId,String(orderNumber),customerKeyHash,telegramUserId,name,phone,storageMethod,address,method,doorbell,slotDate,slotTime,comment,String(total),String(deliveryFee),config.currency||"BYN",paymentMethod,"unpaid",createdAt,createdAt,slotDate,slotTime,method,String(capacity)),
     ...items.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,item.productId,item.productKey,item.sku,item.productName,item.manufacturer,item.optionLabel,JSON.stringify(item.attributes),String(item.quantity),String(item.unitPrice),String(item.lineTotal),orderId)),
     env.DB.prepare("INSERT INTO order_events(order_id,actor_role,event_type,to_status,message,metadata_json,created_at) SELECT ?,'customer','created','new','Заказ оформлен',?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
-      .bind(orderId,JSON.stringify({deliveryMethod:method,slotDate,slotTime}),createdAt,orderId),
+      .bind(orderId,JSON.stringify({deliveryMethod:method,slotDate,slotTime,doorbell}),createdAt,orderId),
     ...items.map(item=>env.DB.prepare("INSERT INTO analytics_events(event_type,product_id,product_name,category,brand,visitor_hash,created_at) SELECT 'order_created',?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(item.productId,item.productName,item.category,item.manufacturer,customerKeyHash,createdAt,orderId))
   ];
@@ -567,7 +572,7 @@ async function categorySettings(env){
 async function publicSettings(env){
   const c=await getConfig(env);
   return {
-    storeName:c.storeName,currency:c.currency,pickupEnabled:c.pickupEnabled,
+    storeName:c.storeName,currency:c.currency,metroEnabled:c.metroEnabled!==false,pickupEnabled:c.pickupEnabled,
     deliveryEnabled:c.deliveryEnabled,deliveryFee:c.deliveryFee,minOrder:c.minOrder,
     address:c.address,phone:c.phone,daysAhead:c.daysAhead,
     brandTagline:c.brandTagline||"",logoUrl:c.logoUrl||"",heroTitle:c.heroTitle||"Каталог",heroSubtitle:c.heroSubtitle||"",
@@ -848,7 +853,7 @@ export default {
           if(!body||typeof body!=="object")return json({error:"Некорректные настройки"},400);
           const current=await getConfig(env);
           const next={...current};
-          const allowed=["storeName","currency","pickupEnabled","deliveryEnabled","slotMinutes","leadMinutes","daysAhead","slotCapacity","minOrder","deliveryFee","address","phone","weeklyHours","brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"];
+          const allowed=["storeName","currency","metroEnabled","pickupEnabled","deliveryEnabled","slotMinutes","leadMinutes","daysAhead","slotCapacity","minOrder","deliveryFee","address","phone","weeklyHours","brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"];
           for(const key of allowed)if(body[key]!==undefined)next[key]=body[key];
           next.slotMinutes=Math.max(15,Math.min(240,Number(next.slotMinutes)||60));
           next.leadMinutes=Math.max(0,Math.min(1440,Number(next.leadMinutes)||0));
@@ -856,6 +861,10 @@ export default {
           next.slotCapacity=Math.max(1,Math.min(100,Number(next.slotCapacity)||4));
           next.minOrder=Math.max(0,Number(next.minOrder)||0);
           next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
+          next.metroEnabled=next.metroEnabled!==false;
+          next.pickupEnabled=next.pickupEnabled!==false;
+          next.deliveryEnabled=next.deliveryEnabled===true;
+          if(!next.metroEnabled&&!next.pickupEnabled&&!next.deliveryEnabled)return json({error:"Оставьте включённым хотя бы один способ получения"},400);
           next.storeName=String(next.storeName||"Магазин").trim().slice(0,80);
           next.brandTagline=String(next.brandTagline||"").trim().slice(0,120);
           next.logoUrl=String(next.logoUrl||"").trim().slice(0,500);
@@ -879,7 +888,7 @@ export default {
           const date=String(body?.date||"");
           const start=String(body?.startTime||"00:00");
           const end=String(body?.endTime||"23:59");
-          const method=["pickup","delivery","all"].includes(body?.method)?body.method:"all";
+          const method=["metro","pickup","delivery","all"].includes(body?.method)?body.method:"all";
           if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||minutesOf(start)<0||minutesOf(end)<=minutesOf(start))return json({error:"Проверьте дату и время"},400);
           const id=randomId();
           await run(env,"INSERT INTO slot_blocks(id,slot_date,start_time,end_time,method,reason,created_by,created_at) VALUES(?,?,?,?,?,?,?,?)",
