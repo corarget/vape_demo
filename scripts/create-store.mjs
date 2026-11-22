@@ -43,7 +43,7 @@ async function main() {
   const rl = createInterface({ input: stdin, output: stdout });
   try {
     const slug = (await rl.question("Короткий ID магазина (латиница, например north-shop): ")).trim().toLowerCase();
-    if (!/^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/.test(slug)) {
+    if (!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(slug)) {
       throw new Error("ID должен содержать 3–32 символа: латиница, цифры и дефисы.");
     }
     const storeName = (await rl.question("Название магазина: ")).trim();
