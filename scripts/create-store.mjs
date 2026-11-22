@@ -108,16 +108,16 @@ async function main() {
     await writeFile(path.join(deploymentDir, ".gitignore"), "node_modules/\n.wrangler/\n.dev.vars\n", "utf8");
 
     console.log("Применяю миграции базы данных…");
-    runWrangler(["d1", "migrations", "apply", databaseName, "--remote", "--config", "wrangler.jsonc"], { cwd: deploymentDir });
+    const configPath = path.relative(ROOT, path.join(deploymentDir, "wrangler.jsonc"));
+    runWrangler(["d1", "migrations", "apply", databaseName, "--remote", "--config", configPath]);
 
     console.log("Публикую отдельный Worker…");
-    const deployOutput = runWrangler(["deploy", "--config", "wrangler.jsonc"], { cwd: deploymentDir });
+    const deployOutput = runWrangler(["deploy", "--config", configPath]);
     const url = deployedUrl(deployOutput);
 
     const bootstrapCode = randomBytes(24).toString("hex");
     console.log("Создаю одноразовый код первого владельца…");
-    runWrangler(["secret", "put", "BOOTSTRAP_CODE", "--config", "wrangler.jsonc"], {
-      cwd: deploymentDir,
+    runWrangler(["secret", "put", "BOOTSTRAP_CODE", "--config", configPath], {
       input: bootstrapCode + "\n"
     });
 
