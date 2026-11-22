@@ -2,7 +2,7 @@ import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
-const VERSION = "2.2.0";
+const VERSION = "2.3.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
 const STATUS_LABELS = {
@@ -17,7 +17,7 @@ const DEFAULT_CONFIG = {
   metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,slotMinutes:60,leadMinutes:60,
   daysAhead:7,slotCapacity:4,minOrder:0,deliveryFee:0,address:"",phone:"",
   brandTagline:"",logoUrl:"",heroTitle:"Каталог",heroSubtitle:"Выберите то, что вам нужно",
-  theme:{accent:"#80664D",accent2:"#A17D59",background:"#F6F2EA",panel:"#EEE8DE"},
+  theme:{accent:"#B7D86B",accent2:"#D2E69A",background:"#0E1011",panel:"#191D1F",panel2:"#24292B",text:"#E8ECE8",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Golos Text",headingFontFamily:"Golos Text"},
   defaultSort:"featured",analyticsEnabled:true,
   weeklyHours:{
     mon:{open:"10:00",close:"21:00",closed:false},
@@ -114,19 +114,65 @@ async function setSetting(env,key,value,updatedBy="system"){
 }
 async function getConfig(env){
   const saved=await getSetting(env,"store_config",{});
-  return {...DEFAULT_CONFIG,...saved,storeName:String(saved?.storeName||env.STORE_NAME||DEFAULT_CONFIG.storeName),theme:{...DEFAULT_CONFIG.theme,...(saved?.theme||{})},weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
+  return {...DEFAULT_CONFIG,...saved,storeName:String(saved?.storeName||env.STORE_NAME||DEFAULT_CONFIG.storeName),theme:sanitizeTheme(saved?.theme||{}),weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
 }
 async function getStaff(request,env){
   const token=parseCookie(request,COOKIE);
   if(!token)return null;
   const idHash=await sha256(token);
   const row=await first(env,
-    "SELECT s.id,s.display_name,s.role,s.telegram_id,s.active,ss.expires_at FROM sessions ss JOIN staff s ON s.id=ss.staff_id WHERE ss.id_hash=? AND ss.expires_at>? AND s.active=1",
+    "SELECT s.id,s.display_name,s.role,s.telegram_id,s.active,s.permissions_json,ss.expires_at FROM sessions ss JOIN staff s ON s.id=ss.staff_id WHERE ss.id_hash=? AND ss.expires_at>? AND s.active=1",
     [idHash,now()]);
   if(!row)return null;
-  return {id:row.id,name:row.display_name,role:row.role,telegramId:row.telegram_id||"",expiresAt:row.expires_at};
+  let permissions=[];try{permissions=JSON.parse(row.permissions_json||"[]");}catch{}
+  if(row.role==="manager"&&Array.isArray(permissions)&&permissions.length===0)permissions=DEFAULT_MANAGER_PERMISSIONS;
+  return {id:row.id,name:row.display_name,role:row.role,permissions:normalizePermissions(permissions,row.role),telegramId:row.telegram_id||"",expiresAt:row.expires_at};
 }
 function isManager(staff){return !!staff&&["owner","manager"].includes(staff.role);}
+const PERMISSION_KEYS=["overview","orders","orders.manage","schedule","catalog","catalog.manage","categories","categories.manage","analytics","branding","branding.manage","settings","team","logs","telegram"];
+const DEFAULT_MANAGER_PERMISSIONS=["overview","orders","orders.manage","schedule","catalog","catalog.manage"];
+const FONT_FAMILIES=["Golos Text","Manrope","Rubik","PT Sans"];
+function normalizePermissions(value,role="manager"){
+  if(role==="owner")return [...PERMISSION_KEYS];
+  if(role==="courier")return [];
+  const source=Array.isArray(value)?value:[];
+  const result=[...new Set(source.filter(item=>PERMISSION_KEYS.includes(item)))];
+  if(result.includes("orders.manage")&&!result.includes("orders"))result.push("orders");
+  if(result.includes("catalog.manage")&&!result.includes("catalog"))result.push("catalog");
+  if(result.includes("categories.manage")&&!result.includes("categories"))result.push("categories");
+  if(result.includes("branding.manage")&&!result.includes("branding"))result.push("branding");
+  return result;
+}
+function sanitizeTheme(value={},base=DEFAULT_CONFIG.theme){
+  const theme={...DEFAULT_CONFIG.theme,...(base||{}),...(value||{})};
+  const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""));
+  for(const key of ["accent","accent2","background","panel","panel2","text","muted","line"]){
+    if(!validColor(theme[key]))theme[key]=DEFAULT_CONFIG.theme[key];
+  }
+  if(!FONT_FAMILIES.includes(theme.fontFamily))theme.fontFamily=DEFAULT_CONFIG.theme.fontFamily;
+  if(!FONT_FAMILIES.includes(theme.headingFontFamily))theme.headingFontFamily=DEFAULT_CONFIG.theme.headingFontFamily;
+  return theme;
+}
+function permissionForAdminRoute(path,method){
+  if(path==="/api/admin/dashboard")return "overview";
+  if(path==="/api/admin/orders"||path.startsWith("/api/admin/orders/"))return method==="GET"?"orders":"orders.manage";
+  if(path==="/api/admin/slot-blocks"||path.startsWith("/api/admin/slot-blocks/"))return "schedule";
+  if(path==="/api/admin/staff"||path.startsWith("/api/admin/staff/")||path==="/api/admin/invites")return "team";
+  if(path==="/api/admin/analytics")return "analytics";
+  if(path==="/api/admin/categories")return method==="GET"?"categories":"categories.manage";
+  if(path==="/api/admin/branding")return method==="GET"?"branding":"branding.manage";
+  if(path==="/api/admin/settings"||path==="/api/admin/config/export"||path==="/api/admin/config/import")return "settings";
+  if(["/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs"].includes(path))return method==="GET"?"catalog":"catalog.manage";
+  if(path==="/api/admin/logs")return "logs";
+  if(path==="/api/admin/integrations"||path==="/api/admin/integrations/webhook")return "telegram";
+  return null;
+}
+function hasPermission(staff,permission){
+  if(!staff)return false;
+  if(staff.role==="owner")return true;
+  if(permission==="team")return false;
+  return Array.isArray(staff.permissions)&&staff.permissions.includes(permission);
+}
 function unauthorized(){return json({error:"Требуется вход в панель управления" },401);}
 async function requireManager(request,env){
   const staff=await getStaff(request,env);
@@ -530,29 +576,62 @@ async function staffLogin(request,env){
   const bootstrapUsed=await getSetting(env,"bootstrap_used",false);
   const storedBootstrapHash=await getSetting(env,"bootstrap_hash","");
   const bootstrapHash=storedBootstrapHash||(env.BOOTSTRAP_CODE?await sha256(env.BOOTSTRAP_CODE):"");
-  let staffId=randomId(),role="manager",displayName=String(body.displayName||"").trim().slice(0,80),telegramId="";
+  let staffId=randomId(),role="manager",displayName=String(body.displayName||"").trim().slice(0,80),telegramId="",permissions=[];
   if(!bootstrapUsed&&bootstrapHash&&safeEqual(codeHash,bootstrapHash)){
     if(displayName.length<2)return json({error:"Укажите имя владельца"},400);
-    role="owner";
+    role="owner";permissions=PERMISSION_KEYS;
     await setSetting(env,"bootstrap_used",true,"bootstrap");
     await setSetting(env,"bootstrap_hash","","bootstrap");
   }else{
     const invite=await first(env,"SELECT * FROM staff_invites WHERE code_hash=? AND active=1 AND used_at IS NULL AND expires_at>?",[codeHash,now()]);
     if(!invite)return json({error:"Код недействителен или уже использован"},401);
     role=invite.role;displayName=invite.display_name;telegramId=invite.telegram_id||"";
+    try{permissions=JSON.parse(invite.permissions_json||"[]");}catch{permissions=[];}
     await run(env,"UPDATE staff_invites SET active=0,used_at=? WHERE id=?",[now(),invite.id]);
   }
+  permissions=normalizePermissions(permissions,role);
   const created=now();
   try{
-    await run(env,"INSERT INTO staff(id,display_name,role,telegram_id,active,created_at,last_seen_at) VALUES(?,?,?,?,1,?,?)",
-      [staffId,displayName,role,telegramId||null,created,created]);
+    await run(env,"INSERT INTO staff(id,display_name,role,telegram_id,permissions_json,active,created_at,last_seen_at) VALUES(?,?,?,?,?,1,?,?)",
+      [staffId,displayName,role,telegramId||null,JSON.stringify(permissions),created,created]);
     const token=await createSession(env,staffId);
-    await logSystem(env,"info","auth","Вход сотрудника",{staffId,role});
-    return json({success:true,staff:{id:staffId,name:displayName,role}},200,{"Set-Cookie":cookieHeader(token)});
+    await logSystem(env,"info","auth","Вход сотрудника",{staffId,role,permissions});
+    return json({success:true,staff:{id:staffId,name:displayName,role,permissions}},200,{"Set-Cookie":cookieHeader(token)});
   }catch(error){
     await logSystem(env,"error","auth","Не удалось создать сессию сотрудника",{error:String(error)});
     return json({error:"Не удалось выполнить вход"},500);
   }
+}
+async function demoStaffLogin(request,env){
+  if(!env.DEMO_ADMIN_USERNAME||!env.DEMO_ADMIN_PASSWORD)return json({error:"Демо-вход отключён"},404);
+  const body=await bodyJson(request);
+  const username=String(body?.username||"").slice(0,80);
+  const password=String(body?.password||"").slice(0,256);
+  const ip=String(request.headers.get("CF-Connecting-IP")||"unknown");
+  const ipHash=await sha256(ip);
+  const attempt=await first(env,"SELECT attempts,window_started_at,locked_until FROM demo_login_attempts WHERE ip_hash=?",[ipHash]);
+  const timestamp=Date.now();
+  if(attempt?.locked_until&&Date.parse(attempt.locked_until)>timestamp)return json({error:"Слишком много попыток. Попробуйте через 15 минут."},429);
+  const withinWindow=attempt?.window_started_at&&timestamp-Date.parse(attempt.window_started_at)<15*60*1000;
+  if(!safeEqual(username,env.DEMO_ADMIN_USERNAME)||!safeEqual(password,env.DEMO_ADMIN_PASSWORD)){
+    const attempts=withinWindow?Number(attempt.attempts||0)+1:1;
+    const windowStarted=withinWindow?attempt.window_started_at:now();
+    const lockedUntil=attempts>=5?new Date(timestamp+15*60*1000).toISOString():null;
+    await run(env,"INSERT INTO demo_login_attempts(ip_hash,attempts,window_started_at,locked_until) VALUES(?,?,?,?) ON CONFLICT(ip_hash) DO UPDATE SET attempts=excluded.attempts,window_started_at=excluded.window_started_at,locked_until=excluded.locked_until",
+      [ipHash,attempts,windowStarted,lockedUntil]);
+    return json({error:"Неверный логин или пароль"},401);
+  }
+  await run(env,"DELETE FROM demo_login_attempts WHERE ip_hash=?",[ipHash]);
+  let owner=await first(env,"SELECT id,display_name FROM staff WHERE role='owner' AND active=1 ORDER BY created_at LIMIT 1");
+  if(!owner){
+    const id=randomId(),created=now();
+    await run(env,"INSERT INTO staff(id,display_name,role,telegram_id,permissions_json,active,created_at,last_seen_at) VALUES(?,?,'owner',NULL,?,1,?,?)",
+      [id,"Демо-администратор",JSON.stringify(PERMISSION_KEYS),created,created]);
+    owner={id,display_name:"Демо-администратор"};
+  }
+  const token=await createSession(env,owner.id);
+  await logSystem(env,"info","auth","Вход демо-администратора",{staffId:owner.id});
+  return json({success:true,staff:{id:owner.id,name:owner.display_name,role:"owner",permissions:PERMISSION_KEYS}},200,{"Set-Cookie":cookieHeader(token)});
 }
 async function sourceCategories(env){
   const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
@@ -576,7 +655,7 @@ async function publicSettings(env){
     deliveryEnabled:c.deliveryEnabled,deliveryFee:c.deliveryFee,minOrder:c.minOrder,
     address:c.address,phone:c.phone,daysAhead:c.daysAhead,
     brandTagline:c.brandTagline||"",logoUrl:c.logoUrl||"",heroTitle:c.heroTitle||"Каталог",heroSubtitle:c.heroSubtitle||"",
-    theme:c.theme||DEFAULT_CONFIG.theme,defaultSort:c.defaultSort||"featured",analyticsEnabled:c.analyticsEnabled!==false,
+    theme:sanitizeTheme(c.theme),defaultSort:c.defaultSort||"featured",analyticsEnabled:c.analyticsEnabled!==false,
     categories:await categorySettings(env)
   };
 }
@@ -678,6 +757,8 @@ export default {
         const detailed=await Promise.all(orders.map(row=>loadOrder(env,row.id)));
         return json({orders:detailed.filter(Boolean).map(customerOrder)});
       }
+      if(path==="/api/staff/login-options"&&request.method==="GET")return json({demoLoginEnabled:!!(env.DEMO_ADMIN_USERNAME&&env.DEMO_ADMIN_PASSWORD)});
+      if(path==="/api/staff/demo-login"&&request.method==="POST")return await demoStaffLogin(request,env);
       if(path==="/api/staff/login"&&request.method==="POST")return await staffLogin(request,env);
       if(path==="/api/staff/session"&&request.method==="GET"){
         const staff=await getStaff(request,env);
@@ -691,7 +772,6 @@ export default {
       if(path==="/api/telegram/webhook"&&request.method==="POST")return await telegramWebhook(request,env);
 
       const staff=await getStaff(request,env);
-      const adminOk=isManager(staff);
       const courierOk=staff?.role==="courier";
 
       if(path==="/api/courier/orders"&&request.method==="GET"){
@@ -711,7 +791,10 @@ export default {
       }
 
       if(path.startsWith("/api/admin/")){
-        if(!adminOk)return unauthorized();
+        if(!isManager(staff))return unauthorized();
+        const requiredPermission=permissionForAdminRoute(path,request.method);
+        if(!requiredPermission)return json({error:"Маршрут не найден"},404);
+        if(!hasPermission(staff,requiredPermission))return json({error:"Недостаточно прав для этого действия"},403);
         if(path==="/api/admin/analytics"&&request.method==="GET"){
           const days=Math.max(7,Math.min(90,Number(url.searchParams.get("days"))||30));
           return json(await adminAnalytics(env,days));
@@ -796,9 +879,7 @@ export default {
           const next={...current};
           for(const key of allowed)if(imported[key]!==undefined)next[key]=imported[key];
           next.storeName=String(next.storeName||"Магазин").trim().slice(0,80);
-          next.theme={...DEFAULT_CONFIG.theme,...(next.theme||{})};
-          const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""));
-          for(const key of Object.keys(DEFAULT_CONFIG.theme))if(!validColor(next.theme[key]))next.theme[key]=DEFAULT_CONFIG.theme[key];
+          next.theme=sanitizeTheme(next.theme);
           next.defaultSort=["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort)?next.defaultSort:"featured";
           next.minOrder=Math.max(0,Number(next.minOrder)||0);next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
           await setSetting(env,"store_config",next,staff.id);
@@ -847,6 +928,27 @@ export default {
           }
           return json({success:true,order:adminOrder(order)});
         }
+        if(path==="/api/admin/branding"&&request.method==="GET"){
+          const config=await getConfig(env);
+          return json({brandTagline:config.brandTagline||"",logoUrl:config.logoUrl||"",heroTitle:config.heroTitle||"Каталог",heroSubtitle:config.heroSubtitle||"",theme:sanitizeTheme(config.theme),defaultSort:config.defaultSort||"featured",analyticsEnabled:config.analyticsEnabled!==false});
+        }
+        if(path==="/api/admin/branding"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          if(!body||typeof body!=="object")return json({error:"Некорректные настройки оформления"},400);
+          const current=await getConfig(env);
+          const next={...current};
+          for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","defaultSort","analyticsEnabled"])if(body[key]!==undefined)next[key]=body[key];
+          next.brandTagline=String(next.brandTagline||"").trim().slice(0,120);
+          next.logoUrl=String(next.logoUrl||"").trim().slice(0,500);
+          next.heroTitle=String(next.heroTitle||"Каталог").trim().slice(0,80);
+          next.heroSubtitle=String(next.heroSubtitle||"").trim().slice(0,180);
+          next.theme=sanitizeTheme(body.theme||{},current.theme);
+          if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
+          next.analyticsEnabled=next.analyticsEnabled!==false;
+          await setSetting(env,"store_config",next,staff.id);
+          await logSystem(env,"info","branding","Обновлён интерфейс витрины",{staffId:staff.id});
+          return json({success:true,settings:{theme:next.theme}});
+        }
         if(path==="/api/admin/settings"&&request.method==="GET")return json(await getConfig(env));
         if(path==="/api/admin/settings"&&request.method==="PUT"){
           const body=await bodyJson(request);
@@ -870,10 +972,7 @@ export default {
           next.logoUrl=String(next.logoUrl||"").trim().slice(0,500);
           next.heroTitle=String(next.heroTitle||"Каталог").trim().slice(0,80);
           next.heroSubtitle=String(next.heroSubtitle||"").trim().slice(0,180);
-          const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""));
-          const theme={...DEFAULT_CONFIG.theme,...(current.theme||{}),...(body.theme||{})};
-          for(const key of Object.keys(DEFAULT_CONFIG.theme))if(!validColor(theme[key]))theme[key]=DEFAULT_CONFIG.theme[key];
-          next.theme=theme;
+          next.theme=sanitizeTheme(body.theme||{},current.theme);
           if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
           next.analyticsEnabled=next.analyticsEnabled!==false;
           await setSetting(env,"store_config",next,staff.id);
@@ -902,8 +1001,8 @@ export default {
           return json({success:true});
         }
         if(path==="/api/admin/staff"&&request.method==="GET"){
-          const members=await all(env,"SELECT id,display_name,role,telegram_id,active,created_at,last_seen_at FROM staff ORDER BY created_at");
-          return json({staff:members});
+          const members=await all(env,"SELECT id,display_name,role,telegram_id,permissions_json,active,created_at,last_seen_at FROM staff ORDER BY created_at");
+          return json({staff:members.map(member=>{let permissions=[];try{permissions=JSON.parse(member.permissions_json||"[]");}catch{}return {...member,permissions:normalizePermissions(permissions,member.role)};})});
         }
         if(path==="/api/admin/invites"&&request.method==="POST"){
           const body=await bodyJson(request);
@@ -911,17 +1010,28 @@ export default {
           const displayName=String(body?.displayName||"").trim().slice(0,80);
           const telegramId=String(body?.telegramId||"").trim().slice(0,40);
           if(displayName.length<2)return json({error:"Укажите имя сотрудника"},400);
+          const permissions=normalizePermissions(body?.permissions,role);
+          if(role==="manager"&&!permissions.length)return json({error:"Выберите хотя бы одно разрешение менеджеру"},400);
           const code=randomToken(16),id=randomId(),created=now(),expires=new Date(Date.now()+48*3600000).toISOString();
-          await run(env,"INSERT INTO staff_invites(id,code_hash,display_name,role,telegram_id,active,created_by,created_at,expires_at) VALUES(?,?,?,?,?,1,?,?,?)",
-            [id,await sha256(code),displayName,role,telegramId||null,staff.id,created,expires]);
-          return json({success:true,invite:{id,code,displayName,role,expiresAt:expires}});
+          await run(env,"INSERT INTO staff_invites(id,code_hash,display_name,role,telegram_id,permissions_json,active,created_by,created_at,expires_at) VALUES(?,?,?,?,?,?,1,?,?,?)",
+            [id,await sha256(code),displayName,role,telegramId||null,JSON.stringify(permissions),staff.id,created,expires]);
+          return json({success:true,invite:{id,code,displayName,role,permissions,expiresAt:expires}});
         }
         const staffMatch=path.match(/^\/api\/admin\/staff\/([^/]+)$/);
         if(staffMatch&&request.method==="PATCH"){
           const body=await bodyJson(request);
+          const target=await first(env,"SELECT id,role FROM staff WHERE id=?",[staffMatch[1]]);
+          if(!target)return json({error:"Сотрудник не найден"},404);
+          if(target.role==="owner")return json({error:"Права владельца нельзя изменить через список сотрудников"},403);
           if(staffMatch[1]===staff.id&&body?.active===false)return json({error:"Нельзя отключить текущую сессию"},400);
           if(body?.telegramId!==undefined){await run(env,"UPDATE staff SET telegram_id=? WHERE id=?",[String(body.telegramId||"").trim()||null,staffMatch[1]]);}
           if(body?.active!==undefined){await run(env,"UPDATE staff SET active=? WHERE id=?",[body.active===false?0:1,staffMatch[1]]);if(body.active===false)await run(env,"DELETE FROM sessions WHERE staff_id=?",[staffMatch[1]]);}
+          if(body?.permissions!==undefined){
+            const permissions=normalizePermissions(body.permissions,target.role);
+            if(target.role==="manager"&&!permissions.length)return json({error:"Выберите хотя бы одно разрешение менеджеру"},400);
+            await run(env,"UPDATE staff SET permissions_json=? WHERE id=?",[JSON.stringify(permissions),staffMatch[1]]);
+            await run(env,"DELETE FROM sessions WHERE staff_id=?",[staffMatch[1]]);
+          }
           return json({success:true});
         }
         if(path==="/api/admin/sync-settings"&&request.method==="GET")return json(await getCatalogConfig(env));
