@@ -67,7 +67,7 @@ The public VIOLET demo Worker has a temporary demo login: **admin / admin**. Thi
 
 New customer stores use a one-time owner bootstrap code provided separately at deployment. Enter the code and the owner's display name. The code is stored only as a SHA-256 hash in D1 and is invalidated after the first successful owner login.
 
-The owner can create one-time staff invitations and assign granular permissions: overview, order viewing and management, schedule, catalog viewing and management, categories, analytics, branding and theme editing, store settings, logs and Telegram. Team and permission management remain owner-only. Couriers see only their assigned deliveries. Invitations expire after 48 hours; permission changes invalidate the affected employee's current sessions.
+The owner can create one-time staff invitations and assign granular permissions: separate viewing and editing rights for orders, schedule, catalog, categories, branding, store settings and Telegram, plus read-only analytics and logs. Team and permission management remain owner-only. Couriers see only their assigned deliveries. Invitations expire after 48 hours; permission changes invalidate the affected employee's current sessions.
 
 The advanced storefront theme editor is tucked into **Branding → Расширенная настройка интерфейса**. It controls body and heading fonts, background, surfaces, text, borders and two accent colours.
 
@@ -146,7 +146,7 @@ Database: `violet-shop-db`
 Database ID: `a8aaafe7-93ff-43f0-892e-3c22d1d37ad5`  
 Jurisdiction: EU; primary region: Eastern Europe.
 
-Schema sources: `migrations/0001_init.sql` and `migrations/0002_analytics.sql`.
+Schema sources: `migrations/0001_init.sql` through `migrations/0005_admin_permission_levels.sql`.
 
 ## Development and deployment
 
