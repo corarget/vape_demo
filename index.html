@@ -488,7 +488,7 @@ function eligibleCartPromotion(entries){
   .sort((a,b)=>b.minimum-a.minimum)[0];
  if(!best)return null;
  const brand=best.giftBrand.toLowerCase();
- const available=products.some(item=>item.category==='Жидкости'&&(!brand||item.manufacturer.toLowerCase()===brand)&&!/(?:^|\s)0\s*мг(?:\s|$)/iu.test(item.name)&&item.options.some(option=>option.available&&option.price>0&&String(option.attributes?.strength_mg??'')!=='0'));
+ const available=products.some(item=>item.category==='Жидкости'&&(!brand||item.manufacturer.toLowerCase()===brand)&&!/(?:^|\s)0\s*мг(?:\s|$)/iu.test(item.name)&&item.options.some(option=>option.available&&option.price>0&&Number(option.attributes?.strength_mg)>0));
  return available?best:null;
 }
 function renderPromos(){
