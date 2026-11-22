@@ -283,14 +283,18 @@ function normalSort(a,b){
 }
 function filtered(){
  const base=products.filter(item=>{const meta=categoryMeta[item.category]||{};return meta.active!==false&&(state.category==="all"||item.category===state.category)&&(state.brand==="all"||item.manufacturer===state.brand);});
- const queries=[state.query,state.categoryQuery].map(value=>String(value||"").trim()).filter(Boolean);
+ const globalQuery=String(state.query||"").trim(),categoryQuery=String(state.categoryQuery||"").trim();
  state.searchFallback=false;
- if(!queries.length)return base.sort(normalSort);
- const ranked=base.map(item=>({item,score:queries.reduce((sum,query)=>sum+searchScore(item,query),0)/queries.length}));
- const relevant=ranked.filter(row=>row.score>=.43);
- const chosen=(relevant.length?relevant:ranked.sort((a,b)=>b.score-a.score||normalSort(a.item,b.item)).slice(0,Math.min(12,ranked.length)));
- state.searchFallback=!relevant.length;
- return chosen.sort((a,b)=>b.score-a.score||normalSort(a.item,b.item)).map(row=>row.item);
+ if(!globalQuery&&!categoryQuery)return base.sort(normalSort);
+ const ranked=base.map(item=>({item,globalScore:globalQuery?searchScore(item,globalQuery):1,categoryScore:categoryQuery?searchScore(item,categoryQuery):1}));
+ const matches=ranked.filter(row=>row.globalScore>=.43&&row.categoryScore>=.43);
+ let chosen=matches;
+ if(!chosen.length){
+  state.searchFallback=true;
+  const priority=categoryQuery?"categoryScore":"globalScore";
+  chosen=ranked.sort((a,b)=>b[priority]-a[priority]||normalSort(a.item,b.item)).slice(0,Math.min(12,ranked.length));
+ }
+ return chosen.sort((a,b)=>((b.globalScore+b.categoryScore)-(a.globalScore+a.categoryScore))||normalSort(a.item,b.item)).map(row=>row.item);
 }
 function art(item){const image=safeImageURL(item.image);return image?'<img src="'+escapeHTML(image)+'" alt="'+escapeHTML(cleanUiText(item.name))+'" loading="lazy" referrerpolicy="no-referrer">':item.icon;}
 function renderCatalog(){renderCategories();const rows=filtered();$('result-count').textContent=state.searchFallback?'Похожие товары':rows.length+' товаров';if(!rows.length){$('products').innerHTML='<div class="empty">Товары пока не найдены</div>';return;}$('products').replaceChildren(...rows.map(item=>{const card=document.createElement('article');card.className='card'+(item.available?'':' soldout');card.tabIndex=0;const min=item.priceMin??item.price;const max=item.priceMax??min;const priceLabel=max>min?'от '+money(min):money(min);card.innerHTML=(item.available?'':'<span class="soldout-label">Нет в наличии</span>')+'<div class="card-art">'+art(item)+'</div><div class="card-body"><small>'+escapeHTML(item.manufacturer||item.category||'Другое')+'</small><h3>'+escapeHTML(cleanUiText(item.name))+'</h3><div class="price-row"><span class="price">'+priceLabel+'</span><span class="stock '+(item.available?'':'no')+'">'+(item.available?'● в наличии':'Нет в наличии')+'</span></div></div>';card.onclick=()=>openDetail(item.id);card.onkeydown=e=>{if(e.key==='Enter'||e.key===' ')openDetail(item.id)};return card;}));}
