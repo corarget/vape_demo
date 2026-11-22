@@ -131,7 +131,7 @@ table th,table td{border-color:#363D3F}
  
 /* VIOLETSHOP admin design system */
 :root{color-scheme:dark;--admin-bg:#101112;--admin-sidebar:#151819;--admin-panel:#191D1F;--admin-panel-2:#24292B;--admin-line:#363D3F;--admin-text:#E8ECEF;--admin-muted:#A0AAA4;--admin-accent:#E5E7EB;--admin-radius:14px;--admin-sidebar-width:230px;--admin-font:"Inter",system-ui,sans-serif;--admin-heading-font:"Manrope",system-ui,sans-serif;--bg:var(--admin-bg);--panel:var(--admin-panel);--panel2:var(--admin-panel-2);--line:var(--admin-line);--muted:var(--admin-muted);--violet:var(--admin-accent);--pink:var(--admin-accent)}
-html,body{background:var(--admin-bg)!important;color:var(--admin-text)!important;font-family:var(--admin-font)!important}
+html,body{background:var(--admin-bg)!important;color:var(--admin-text)!important;font-family:var(--admin-font)!important;font-size:var(--admin-font-scale,100%)!important}
 body,.shell,.main{background:var(--admin-bg)!important;color:var(--admin-text)!important;font-family:var(--admin-font)!important}
 .shell{grid-template-columns:var(--admin-sidebar-width) minmax(0,1fr)!important}
 .side{background:var(--admin-sidebar)!important;border-color:var(--admin-line)!important}
@@ -345,6 +345,7 @@ tr:hover td{background:color-mix(in srgb,var(--admin-panel-2) 55%,transparent)}
           <label>Скругления<select id="admin-radius"><option value="10">10 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="18">18 px</option><option value="22">22 px</option></select></label>
           <label>Плотность интерфейса<select id="admin-density"><option value="comfortable">Обычная</option><option value="compact">Компактная</option></select></label>
           <label>Ширина боковой панели<select id="admin-sidebar-width"><option value="200">Узкая</option><option value="230">Стандартная</option><option value="260">Широкая</option></select></label>
+          <label>Масштаб текста<select id="admin-font-scale"><option value="90">90%</option><option value="100">100%</option><option value="110">110%</option><option value="120">120%</option></select></label>
           <div class="full">
             <div id="admin-appearance-preview" class="admin-appearance-preview">
               <div><small>ПРЕДПРОСМОТР</small><strong>Обзор магазина</strong><p>Карточки, таблицы и кнопки будут использовать выбранные настройки.</p></div>
@@ -768,20 +769,20 @@ async function loadAnalytics(){
  $("analytics-daily").innerHTML=data.daily.length?'<div class="analytics-bars">'+data.daily.map(day=>'<div class="analytics-day"><div class="analytics-stack"><span class="analytics-bar h-'+Math.round(Math.max(2,Math.min(100,Number(day.views||0)/max*100)))+'"></span></div><b>'+day.views+'</b><small>'+esc(day.day.slice(5))+'</small></div>').join("")+'</div><div class="muted small">Высота столбца отражает просмотры карточек. Добавления в корзину: '+data.totals.cartAdds+' · Заказы: '+data.totals.orders+'</div>':'<div class="empty">Динамика появится после первых событий</div>';
 }
 $("analytics-days").onchange=loadAnalytics;$("analytics-reload").onclick=loadAnalytics;
-const DEFAULT_ADMIN_APPEARANCE={background:"#101112",sidebar:"#151819",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",accent:"#E5E7EB",fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230};
+const DEFAULT_ADMIN_APPEARANCE={background:"#101112",sidebar:"#151819",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",accent:"#E5E7EB",fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230,fontScale:100};
 const ADMIN_APPEARANCE_PRESETS={
  graphite:{...DEFAULT_ADMIN_APPEARANCE},
  contrast:{...DEFAULT_ADMIN_APPEARANCE,background:"#090A0B",sidebar:"#101213",panel:"#171A1C",panel2:"#282D30",text:"#FFFFFF",muted:"#C0C6CA",line:"#535A5E",accent:"#FFFFFF",radius:12},
  soft:{...DEFAULT_ADMIN_APPEARANCE,background:"#17191B",sidebar:"#1D2022",panel:"#24282A",panel2:"#2D3235",text:"#ECEFF1",muted:"#B2B9BD",line:"#454C50",accent:"#D5D9DC",radius:18}
 };
-function adminAppearanceFromForm(){return {background:$("admin-background").value,sidebar:$("admin-sidebar").value,panel:$("admin-panel").value,panel2:$("admin-panel2").value,text:$("admin-text").value,muted:$("admin-muted").value,line:$("admin-line").value,accent:$("admin-accent").value,fontFamily:$("admin-font-family").value,headingFontFamily:$("admin-heading-font").value,radius:Number($("admin-radius").value),density:$("admin-density").value,sidebarWidth:Number($("admin-sidebar-width").value)};}
+function adminAppearanceFromForm(){return {background:$("admin-background").value,sidebar:$("admin-sidebar").value,panel:$("admin-panel").value,panel2:$("admin-panel2").value,text:$("admin-text").value,muted:$("admin-muted").value,line:$("admin-line").value,accent:$("admin-accent").value,fontFamily:$("admin-font-family").value,headingFontFamily:$("admin-heading-font").value,radius:Number($("admin-radius").value),density:$("admin-density").value,sidebarWidth:Number($("admin-sidebar-width").value),fontScale:Number($("admin-font-scale").value)};}
 function applyAdminAppearance(appearance={}){
  const value={...DEFAULT_ADMIN_APPEARANCE,...appearance},validColor=color=>/^#[0-9a-f]{6}$/i.test(String(color||""));
  for(const key of ["background","sidebar","panel","panel2","text","muted","line","accent"])if(!validColor(value[key]))value[key]=DEFAULT_ADMIN_APPEARANCE[key];
  const fonts=["Inter","Open Sans"],headingFonts=["Manrope","Montserrat"];
  if(!fonts.includes(value.fontFamily))value.fontFamily="Inter";if(!headingFonts.includes(value.headingFontFamily))value.headingFontFamily="Manrope";
  const root=document.documentElement;
- const vars={"--admin-bg":value.background,"--admin-sidebar":value.sidebar,"--admin-panel":value.panel,"--admin-panel-2":value.panel2,"--admin-text":value.text,"--admin-muted":value.muted,"--admin-line":value.line,"--admin-accent":value.accent,"--admin-font":'"'+value.fontFamily+'",system-ui,sans-serif',"--admin-heading-font":'"'+value.headingFontFamily+'",system-ui,sans-serif',"--admin-radius":Math.max(8,Math.min(24,Number(value.radius)||14))+"px","--admin-sidebar-width":Math.max(190,Math.min(280,Number(value.sidebarWidth)||230))+"px"};
+ const vars={"--admin-bg":value.background,"--admin-sidebar":value.sidebar,"--admin-panel":value.panel,"--admin-panel-2":value.panel2,"--admin-text":value.text,"--admin-muted":value.muted,"--admin-line":value.line,"--admin-accent":value.accent,"--admin-font":'"'+value.fontFamily+'",system-ui,sans-serif',"--admin-heading-font":'"'+value.headingFontFamily+'",system-ui,sans-serif',"--admin-radius":Math.max(8,Math.min(24,Number(value.radius)||14))+"px","--admin-sidebar-width":Math.max(190,Math.min(280,Number(value.sidebarWidth)||230))+"px","--admin-font-scale":[90,100,110,120].includes(Number(value.fontScale))?Number(value.fontScale)+"%":"100%"};
  for(const [key,color] of Object.entries(vars))root.style.setProperty(key,color);
  root.dataset.adminDensity=value.density==="compact"?"compact":"comfortable";
 }
@@ -792,7 +793,7 @@ function updateAdminAppearancePreview(){
 }
 function fillAdminAppearance(appearance={}){
  const value={...DEFAULT_ADMIN_APPEARANCE,...appearance};
- for(const [key,id] of Object.entries({background:"admin-background",sidebar:"admin-sidebar",panel:"admin-panel",panel2:"admin-panel2",text:"admin-text",muted:"admin-muted",line:"admin-line",accent:"admin-accent",fontFamily:"admin-font-family",headingFontFamily:"admin-heading-font",radius:"admin-radius",density:"admin-density",sidebarWidth:"admin-sidebar-width"}))$(id).value=value[key];
+ for(const [key,id] of Object.entries({background:"admin-background",sidebar:"admin-sidebar",panel:"admin-panel",panel2:"admin-panel2",text:"admin-text",muted:"admin-muted",line:"admin-line",accent:"admin-accent",fontFamily:"admin-font-family",headingFontFamily:"admin-heading-font",radius:"admin-radius",density:"admin-density",sidebarWidth:"admin-sidebar-width",fontScale:"admin-font-scale"}))$(id).value=value[key];
  state.adminAppearance=value;applyAdminAppearance(value);updateAdminAppearancePreview();
 }
 async function loadAdminAppearance(){
