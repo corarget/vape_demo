@@ -14,9 +14,10 @@ const STATUS_LABELS = {
 const ACTIVE_STATUSES = ["new","confirmed","preparing","ready","assigned","picked_up","on_the_way"];
 
 const DEFAULT_ADMIN_APPEARANCE={
-  background:"#101112",sidebar:"#151819",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",accent:"#E5E7EB",
+  background:"#11151D",sidebar:"#151A24",panel:"#1B2230",panel2:"#222C3C",text:"#F0F3F8",muted:"#AAB6CA",line:"#36445A",accent:"#A8C5FF",
   fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230,fontScale:100
 };
+const DEFAULT_STOREFRONT_LAYOUT={showHero:true,mobileColumns:2,desktopColumns:3};
 const DEFAULT_CONFIG = {
   timezone:"Europe/Minsk",currency:"BYN",storeName:"VIOLET SHOP",
   metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,slotMinutes:60,leadMinutes:60,
@@ -25,6 +26,7 @@ const DEFAULT_CONFIG = {
   maxItemQuantity:10,metroMeetingHint:"",
   brandTagline:"",logoUrl:"",heroTitle:"Каталог",heroSubtitle:"Выберите то, что вам нужно",
   theme:{accent:"#E5E7EB",accent2:"#C4C9CC",background:"#101112",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Inter",headingFontFamily:"Manrope"},
+  storefrontLayout:DEFAULT_STOREFRONT_LAYOUT,
   defaultSort:"featured",analyticsEnabled:true,
   weeklyHours:{
     mon:{open:"10:00",close:"21:00",closed:false},
@@ -121,7 +123,7 @@ async function setSetting(env,key,value,updatedBy="system"){
 }
 async function getConfig(env){
   const saved=await getSetting(env,"store_config",{});
-  return {...DEFAULT_CONFIG,...saved,storeName:String(saved?.storeName||env.STORE_NAME||DEFAULT_CONFIG.storeName),theme:sanitizeTheme(saved?.theme||{}),weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
+  return {...DEFAULT_CONFIG,...saved,storeName:String(saved?.storeName||env.STORE_NAME||DEFAULT_CONFIG.storeName),theme:sanitizeTheme(saved?.theme||{}),storefrontLayout:sanitizeStorefrontLayout(saved?.storefrontLayout),weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
 }
 async function getStaff(request,env){
   const token=parseCookie(request,COOKIE);
@@ -163,6 +165,21 @@ function sanitizeTheme(value={},base=DEFAULT_CONFIG.theme){
   if(!FONT_FAMILIES.includes(theme.headingFontFamily))theme.headingFontFamily=DEFAULT_CONFIG.theme.headingFontFamily;
   return theme;
 }
+function sanitizeStorefrontLayout(value,base=DEFAULT_STOREFRONT_LAYOUT){
+  return {
+    showHero:typeof value?.showHero==="boolean"?value.showHero:base.showHero,
+    mobileColumns:[1,2].includes(value?.mobileColumns)?value.mobileColumns:base.mobileColumns,
+    desktopColumns:[2,3,4].includes(value?.desktopColumns)?value.desktopColumns:base.desktopColumns
+  };
+}
+function storefrontAppearance(config){
+  return {
+    storeName:config.storeName,brandTagline:config.brandTagline||"",logoUrl:config.logoUrl||"",
+    heroTitle:config.heroTitle||"Каталог",heroSubtitle:config.heroSubtitle||"",
+    theme:config.theme,storefrontLayout:config.storefrontLayout,
+    defaultSort:config.defaultSort||"featured",analyticsEnabled:config.analyticsEnabled!==false
+  };
+}
 function sanitizeAdminAppearance(value={}){
   const appearance={...DEFAULT_ADMIN_APPEARANCE,...(value||{})};
   const validColor=color=>/^#[0-9a-f]{6}$/i.test(String(color||""));
@@ -185,7 +202,7 @@ function permissionForAdminRoute(path,method){
   if(path==="/api/admin/analytics")return "analytics";
   if(path==="/api/admin/categories")return method==="GET"?"categories":"categories.manage";
   if(path==="/api/admin/branding")return method==="GET"?"branding":"branding.manage";
-  if(path==="/api/admin/appearance")return method==="GET"?"overview":"branding.manage";
+  if(path==="/api/admin/appearance"&&method==="PUT")return "branding.manage";
   if(path==="/api/admin/settings"||path==="/api/admin/promotions")return method==="GET"?"settings":"settings.manage";
   if(path==="/api/admin/config/export")return "settings";
   if(path==="/api/admin/config/import")return "settings.manage";
@@ -797,13 +814,11 @@ async function getPromotions(env){
 async function publicSettings(env){
   const c=await getConfig(env);
   return {
-    storeName:c.storeName,currency:c.currency,metroEnabled:c.metroEnabled!==false,pickupEnabled:c.pickupEnabled,
+    ...storefrontAppearance(c),currency:c.currency,metroEnabled:c.metroEnabled!==false,pickupEnabled:c.pickupEnabled,
     deliveryEnabled:c.deliveryEnabled,deliveryFee:c.deliveryFee,minOrder:c.minOrder,
     ageGateEnabled:c.ageGateEnabled!==false,cashPaymentEnabled:c.cashPaymentEnabled!==false,
     transferPaymentEnabled:c.transferPaymentEnabled===true&&!!c.transferDetails,
     address:c.address,phone:c.phone,daysAhead:c.daysAhead,maxItemQuantity:c.maxItemQuantity,metroMeetingHint:c.metroMeetingHint,
-    brandTagline:c.brandTagline||"",logoUrl:c.logoUrl||"",heroTitle:c.heroTitle||"Каталог",heroSubtitle:c.heroSubtitle||"",
-    theme:sanitizeTheme(c.theme),defaultSort:c.defaultSort||"featured",analyticsEnabled:c.analyticsEnabled!==false,
     categories:await categorySettings(env),promotions:(await getPromotions(env)).filter(rule=>rule.active),
     telegramCheckoutEnabled:!!env.BOT_TOKEN
   };
@@ -964,6 +979,9 @@ export default {
 
       if(path.startsWith("/api/admin/")){
         if(!isManager(staff))return unauthorized();
+        if(path==="/api/admin/appearance"&&request.method==="GET"){
+          return json({appearance:sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE))});
+        }
         const requiredPermission=permissionForAdminRoute(path,request.method);
         if(!requiredPermission)return json({error:"Маршрут не найден"},404);
         if(!hasPermission(staff,requiredPermission))return json({error:"Недостаточно прав для этого действия"},403);
@@ -987,9 +1005,6 @@ export default {
         if(path==="/api/admin/analytics"&&request.method==="GET"){
           const days=Math.max(7,Math.min(90,Number(url.searchParams.get("days"))||30));
           return json(await adminAnalytics(env,days));
-        }
-        if(path==="/api/admin/appearance"&&request.method==="GET"){
-          return json({appearance:sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE))});
         }
         if(path==="/api/admin/appearance"&&request.method==="PUT"){
           const body=await bodyJson(request);
@@ -1070,7 +1085,7 @@ export default {
         if(path==="/api/admin/config/export"&&request.method==="GET"){
           const config={...await getConfig(env)};
           if(!hasPermission(staff,"schedule"))for(const key of ["weeklyHours","slotMinutes","leadMinutes","daysAhead","slotCapacity"])delete config[key];
-          if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"])delete config[key];
+          if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","storefrontLayout","defaultSort","analyticsEnabled"])delete config[key];
           delete config.transferDetails;
           const template=hasPermission(staff,"catalog")?await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}}):{name:"",headers:[],columnMapping:{}};
           const categories=hasPermission(staff,"categories")?await getSetting(env,"category_config",{}):{};
@@ -1083,12 +1098,13 @@ export default {
           const current=await getConfig(env);
           const imported=body.store&&typeof body.store==="object"?body.store:{};
           const allowed=["storeName","currency","metroEnabled","pickupEnabled","deliveryEnabled","minOrder","deliveryFee","address","phone"];
-          if(hasPermission(staff,"branding.manage"))allowed.push("brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled");
+          if(hasPermission(staff,"branding.manage"))allowed.push("brandTagline","logoUrl","heroTitle","heroSubtitle","theme","storefrontLayout","defaultSort","analyticsEnabled");
           if(hasPermission(staff,"schedule.manage"))allowed.push("weeklyHours","slotMinutes","leadMinutes","daysAhead","slotCapacity");
           const next={...current};
           for(const key of allowed)if(imported[key]!==undefined)next[key]=imported[key];
           next.storeName=String(next.storeName||"Магазин").trim().slice(0,80);
           next.theme=sanitizeTheme(next.theme);
+          next.storefrontLayout=sanitizeStorefrontLayout(next.storefrontLayout,current.storefrontLayout);
           next.defaultSort=["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort)?next.defaultSort:"featured";
           next.minOrder=Math.max(0,Number(next.minOrder)||0);next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
           await setSetting(env,"store_config",next,staff.id);
@@ -1139,8 +1155,7 @@ export default {
           return json({success:true,order:adminOrder(order)});
         }
         if(path==="/api/admin/branding"&&request.method==="GET"){
-          const config=await getConfig(env);
-          return json({brandTagline:config.brandTagline||"",logoUrl:config.logoUrl||"",heroTitle:config.heroTitle||"Каталог",heroSubtitle:config.heroSubtitle||"",theme:sanitizeTheme(config.theme),defaultSort:config.defaultSort||"featured",analyticsEnabled:config.analyticsEnabled!==false});
+          return json(storefrontAppearance(await getConfig(env)));
         }
         if(path==="/api/admin/branding"&&request.method==="PUT"){
           const body=await bodyJson(request);
@@ -1153,11 +1168,12 @@ export default {
           next.heroTitle=String(next.heroTitle||"Каталог").trim().slice(0,80);
           next.heroSubtitle=String(next.heroSubtitle||"").trim().slice(0,180);
           next.theme=sanitizeTheme(body.theme||{},current.theme);
+          next.storefrontLayout=sanitizeStorefrontLayout(body.storefrontLayout,current.storefrontLayout);
           if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
           next.analyticsEnabled=next.analyticsEnabled!==false;
           await setSetting(env,"store_config",next,staff.id);
           await logSystem(env,"info","branding","Обновлён интерфейс витрины",{staffId:staff.id});
-          return json({success:true,settings:{theme:next.theme}});
+          return json({success:true,settings:storefrontAppearance(next)});
         }
         if(path==="/api/admin/schedule-settings"&&request.method==="GET"){
           const config=await getConfig(env);
