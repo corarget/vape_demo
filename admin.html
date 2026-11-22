@@ -405,7 +405,10 @@ async function loadDashboard(){
  $("system-health").querySelector("[data-goto]").onclick=()=>setPage("logs");
 }
 async function loadOrders(){
- if(!state.staffList.length){const team=await api("/api/admin/staff");state.staffList=team.staff;}
+ if(!state.staffList.length){
+  if(canPermission("team")){const team=await api("/api/admin/staff");state.staffList=team.staff;}
+  else if(canPermission("orders.manage")){const team=await api("/api/admin/couriers");state.staffList=team.couriers;}
+ }
  const status=$("order-filter").value;
  const data=await api("/api/admin/orders"+(status?"?status="+encodeURIComponent(status):""));
  state.orders=data.orders;
@@ -431,6 +434,7 @@ function renderOrderDetail(o){
   actions+='<select id="assign-courier" class="compact-select"><option value="">Выбрать курьера</option>'+state.staffList.filter(s=>s.role==="courier"&&s.active).map(s=>'<option value="'+esc(s.id)+'" '+(s.id===o.courierId?'selected':'')+'>'+esc(s.display_name)+'</option>').join("")+'</select><button class="btn primary" data-status="assigned">'+(o.status==="assigned"?"Переназначить":"Назначить")+'</button>';
  }
  $("order-detail").innerHTML='<div class="panel-head"><div><div class="muted small">ЗАКАЗ #'+esc(o.number)+'</div><h2 class="order-customer">'+esc(o.customerName)+'</h2></div>'+statusPill(o.status)+'</div><div class="info"><div><small>Телефон</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong></div><div><small>Получение</small><strong>'+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[o.deliveryMethod]||"Самовывоз")+'</strong></div><div><small>Дата и время</small><strong>'+esc(o.slotDate)+' '+esc(o.slotTime)+'</strong></div><div><small>Доставка</small><strong>'+money(o.deliveryFee)+'</strong></div><div><small>Сумма</small><strong>'+money(o.total)+'</strong></div><div class="full"><small>Адрес</small><strong>'+esc(o.address||(o.deliveryMethod==="metro"?"Метро":"Самовывоз"))+'</strong></div>'+(o.doorbell?'<div><small>Домофон</small><strong>'+esc(o.doorbell)+'</strong></div>':'')+'<div><small>Оплата</small><strong>'+esc(o.paymentMethod)+' · '+esc(o.paymentStatus)+'</strong></div><div><small>Курьер</small><strong>'+esc(o.courierName||"Не назначен")+'</strong></div></div><h3>Состав заказа</h3><div class="items">'+items.map(item=>'<div class="item"><span><b>'+esc(item.product_name)+'</b><br><span class="muted">'+esc(item.option_label)+' · SKU '+esc(item.sku)+'</span><br><span class="muted">× '+item.quantity+'</span></span><b>'+money(item.line_total)+'</b></div>').join("")+'</div>'+(o.comment?'<p class="muted">Комментарий: '+esc(o.comment)+'</p>':'')+'<div class="actions">'+actions+'</div><div class="actions actions-centered"><select id="payment-status" class="compact-select"><option value="unpaid">Не оплачено</option><option value="paid">Оплачено</option><option value="refunded">Возврат</option><option value="failed">Ошибка оплаты</option></select><button class="btn" id="save-payment">Сохранить оплату</button></div><h3 class="history-heading">История</h3><div class="items">'+(o.events||[]).map(e=>'<div class="item"><span>'+esc(e.message||labels[e.to_status]||e.event_type)+'</span><small class="muted">'+new Date(e.created_at).toLocaleString("ru-BY")+'</small></div>').join("")+'</div>';
+ if(!canPermission("orders.manage"))$("order-detail").querySelectorAll("[data-status],#assign-courier,#payment-status,#save-payment").forEach(element=>element.remove());
  $("order-detail").querySelectorAll("[data-status]").forEach(button=>button.onclick=async()=>{
   let courierId=null;if(button.dataset.status==="assigned")courierId=$("assign-courier")?.value;
   try{await api("/api/admin/orders/"+encodeURIComponent(o.id),{method:"PATCH",body:JSON.stringify({status:button.dataset.status,courierId})});toast("Статус заказа обновлён");await loadOrders();}catch(error){toast(error.message);}
@@ -540,6 +544,9 @@ async function saveCatalogConnection(){
  return {spreadsheetId,catalogGid,columnMapping:mapping};
 }
 async function loadCatalog(){
+ const canManageCatalog=canPermission("catalog.manage");
+ $("page-catalog").querySelectorAll("button,input,select").forEach(element=>{element.disabled=!canManageCatalog;});
+ $("page-catalog").querySelectorAll("form").forEach(form=>form.hidden=!canManageCatalog);
  const [runs,settings,template]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template")]);
  const latest=runs.runs[0];state.catalogTemplate=template||{headers:[],columnMapping:{}};
  $("sync-state").textContent=latest?.status==="success"?"Синхронизирован":latest?.status==="error"?"Ошибка":"Ожидает проверки";
@@ -559,8 +566,12 @@ $("download-template").onclick=()=>{const headers=catalogFields.map(field=>field
 $("download-attached-template").onclick=async()=>{try{const response=await fetch("/api/admin/catalog-template/file",{credentials:"same-origin"});if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||"Файл шаблона не найден");}const blob=await response.blob();const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=state.catalogTemplate.name||"catalog-template.csv";link.click();URL.revokeObjectURL(link.href);}catch(error){toast(error.message);}};
 $("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="Синхронизация…";try{await saveCatalogConnection();const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast("Обновлено: "+d.summary.productFamilies+" карточек, "+d.summary.variants+" вариантов");await loadCatalog();await loadCategories();}catch(error){toast(error.message);await loadCatalog();}finally{b.disabled=false;b.textContent="↻ Синхронизировать сейчас";}};
 async function loadCategories(){
+ const canManageCategories=canPermission("categories.manage");
+ $("categories-reload").hidden=!canManageCategories;
+ $("save-categories").hidden=!canManageCategories;
  const data=await api("/api/admin/categories");state.categories=data.categories||[];
  $("categories-list").innerHTML=state.categories.length?state.categories.map((category,index)=>'<div class="panel category-editor" data-category-key="'+esc(category.key)+'"><div class="row"><div><b>'+esc(category.key)+'</b><div class="muted small">В таблице: '+esc(category.sourceLabel||category.key)+'</div></div><label class="field-row"><input type="checkbox" data-category-field="active" '+(category.active?'checked':'')+'> Показывать</label></div><div class="form-grid mt-12"><label>Название на витрине<input data-category-field="label" value="'+esc(category.label)+'" maxlength="80"></label><label>Порядок<input data-category-field="sortOrder" type="number" min="0" max="999" value="'+Number(category.sortOrder??index)+'"></label><label>Иконка / emoji<input data-category-field="icon" value="'+esc(category.icon||"")+'" maxlength="8" placeholder="Авто"></label><label>URL картинки<input data-category-field="image" type="url" value="'+esc(category.image||"")+'" placeholder="https://…"></label></div></div>').join(""):'<div class="empty">Категории появятся после первой синхронизации каталога</div>';
+ if(!canManageCategories)$("categories-list").querySelectorAll("input").forEach(input=>input.disabled=true);
 }
 $("categories-reload").onclick=async()=>{try{await api("/api/admin/sync",{method:"POST",body:"{}"});await loadCatalog();await loadCategories();toast("Категории обновлены из таблицы");}catch(error){toast(error.message);}};
 $("save-categories").onclick=async()=>{const categories=[...$("categories-list").querySelectorAll(".category-editor")].map(card=>{const value=key=>card.querySelector('[data-category-field="'+key+'"]');return{key:card.dataset.categoryKey,label:value("label").value,sortOrder:Number(value("sortOrder").value),icon:value("icon").value,image:value("image").value,active:value("active").checked};});try{await api("/api/admin/categories",{method:"PUT",body:JSON.stringify({categories})});toast("Категории сохранены");}catch(error){toast(error.message);}};
