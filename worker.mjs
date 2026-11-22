@@ -157,6 +157,7 @@ function permissionForAdminRoute(path,method){
   if(path==="/api/admin/dashboard")return "overview";
   if(path==="/api/admin/orders"||path.startsWith("/api/admin/orders/"))return method==="GET"?"orders":"orders.manage";
   if(path==="/api/admin/slot-blocks"||path.startsWith("/api/admin/slot-blocks/"))return "schedule";
+  if(path==="/api/admin/couriers")return "orders.manage";
   if(path==="/api/admin/staff"||path.startsWith("/api/admin/staff/")||path==="/api/admin/invites")return "team";
   if(path==="/api/admin/analytics")return "analytics";
   if(path==="/api/admin/categories")return method==="GET"?"categories":"categories.manage";
@@ -999,6 +1000,10 @@ export default {
         if(blockMatch&&request.method==="DELETE"){
           await run(env,"DELETE FROM slot_blocks WHERE id=?",[blockMatch[1]]);
           return json({success:true});
+        }
+        if(path==="/api/admin/couriers"&&request.method==="GET"){
+          const couriers=await all(env,"SELECT id,display_name,active FROM staff WHERE role='courier' AND active=1 ORDER BY display_name");
+          return json({couriers});
         }
         if(path==="/api/admin/staff"&&request.method==="GET"){
           const members=await all(env,"SELECT id,display_name,role,telegram_id,permissions_json,active,created_at,last_seen_at FROM staff ORDER BY created_at");
