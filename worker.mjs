@@ -543,7 +543,7 @@ async function createOrder(request,env){
     ...orderItems.map(item=>env.DB.prepare("INSERT INTO order_items(order_id,product_id,product_key,sku,product_name,manufacturer,option_label,attributes_json,quantity,unit_price,line_total) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(orderId,item.productId,item.productKey,item.sku,item.productName,item.manufacturer,item.optionLabel,JSON.stringify(item.attributes),String(item.quantity),String(item.unitPrice),String(item.lineTotal),orderId)),
     env.DB.prepare("INSERT INTO order_events(order_id,actor_role,event_type,to_status,message,metadata_json,created_at) SELECT ?,'customer','created','new','Заказ оформлен',?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
-      .bind(orderId,JSON.stringify({deliveryMethod:method,slotDate,slotTime,doorbell}),createdAt,orderId),
+      .bind(orderId,JSON.stringify({deliveryMethod:method,slotDate,slotTime,doorbell,promotion:gift?{id:rule.id,title:rule.title,giftProductId:gift.product.id,giftVariantId:gift.option.variantId}:null}),createdAt,orderId),
     ...items.map(item=>env.DB.prepare("INSERT INTO analytics_events(event_type,product_id,product_name,category,brand,visitor_hash,created_at) SELECT 'order_created',?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)")
       .bind(item.productId,item.productName,item.category,item.manufacturer,customerKeyHash,createdAt,orderId))
   ];
