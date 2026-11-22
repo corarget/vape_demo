@@ -3,7 +3,7 @@ import { DEMO_PROMOTIONS, highestPromotion, normalizePromotion, promotionGiftOpt
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
-const VERSION = "2.4.0";
+const VERSION = "2.5.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
 const STATUS_LABELS = {
@@ -13,12 +13,16 @@ const STATUS_LABELS = {
 };
 const ACTIVE_STATUSES = ["new","confirmed","preparing","ready","assigned","picked_up","on_the_way"];
 
+const DEFAULT_ADMIN_APPEARANCE={
+  background:"#101112",sidebar:"#151819",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",accent:"#E5E7EB",
+  fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230
+};
 const DEFAULT_CONFIG = {
   timezone:"Europe/Minsk",currency:"BYN",storeName:"VIOLET SHOP",
   metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,slotMinutes:60,leadMinutes:60,
   daysAhead:7,slotCapacity:4,minOrder:0,deliveryFee:0,address:"",phone:"",
   brandTagline:"",logoUrl:"",heroTitle:"Каталог",heroSubtitle:"Выберите то, что вам нужно",
-  theme:{accent:"#B7D86B",accent2:"#D2E69A",background:"#0E1011",panel:"#191D1F",panel2:"#24292B",text:"#E8ECE8",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Golos Text",headingFontFamily:"Golos Text"},
+  theme:{accent:"#E5E7EB",accent2:"#C4C9CC",background:"#101112",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Inter",headingFontFamily:"Manrope"},
   defaultSort:"featured",analyticsEnabled:true,
   weeklyHours:{
     mon:{open:"10:00",close:"21:00",closed:false},
@@ -132,7 +136,7 @@ async function getStaff(request,env){
 function isManager(staff){return !!staff&&["owner","manager"].includes(staff.role);}
 const PERMISSION_KEYS=["overview","orders","orders.manage","schedule","schedule.manage","catalog","catalog.manage","categories","categories.manage","analytics","branding","branding.manage","settings","settings.manage","team","logs","telegram","telegram.manage"];
 const DEFAULT_MANAGER_PERMISSIONS=["overview","orders","orders.manage","schedule","schedule.manage","catalog","catalog.manage"];
-const FONT_FAMILIES=["Golos Text","Manrope","Rubik","PT Sans"];
+const FONT_FAMILIES=["Inter","Open Sans","Manrope","Montserrat"];
 function normalizePermissions(value,role="manager"){
   if(role==="owner")return [...PERMISSION_KEYS];
   if(role==="courier")return [];
@@ -157,6 +161,17 @@ function sanitizeTheme(value={},base=DEFAULT_CONFIG.theme){
   if(!FONT_FAMILIES.includes(theme.headingFontFamily))theme.headingFontFamily=DEFAULT_CONFIG.theme.headingFontFamily;
   return theme;
 }
+function sanitizeAdminAppearance(value={}){
+  const appearance={...DEFAULT_ADMIN_APPEARANCE,...(value||{})};
+  const validColor=color=>/^#[0-9a-f]{6}$/i.test(String(color||""));
+  for(const key of ["background","sidebar","panel","panel2","text","muted","line","accent"])if(!validColor(appearance[key]))appearance[key]=DEFAULT_ADMIN_APPEARANCE[key];
+  if(!["Inter","Open Sans"].includes(appearance.fontFamily))appearance.fontFamily="Inter";
+  if(!["Manrope","Montserrat"].includes(appearance.headingFontFamily))appearance.headingFontFamily="Manrope";
+  appearance.radius=[10,12,14,18,22].includes(Number(appearance.radius))?Number(appearance.radius):14;
+  appearance.density=appearance.density==="compact"?"compact":"comfortable";
+  appearance.sidebarWidth=[200,230,260].includes(Number(appearance.sidebarWidth))?Number(appearance.sidebarWidth):230;
+  return appearance;
+}
 function permissionForAdminRoute(path,method){
   if(path==="/api/admin/dashboard")return "overview";
   if(path==="/api/admin/orders"||path.startsWith("/api/admin/orders/"))return method==="GET"?"orders":"orders.manage";
@@ -167,6 +182,7 @@ function permissionForAdminRoute(path,method){
   if(path==="/api/admin/analytics")return "analytics";
   if(path==="/api/admin/categories")return method==="GET"?"categories":"categories.manage";
   if(path==="/api/admin/branding")return method==="GET"?"branding":"branding.manage";
+  if(path==="/api/admin/appearance")return method==="GET"?"overview":"branding.manage";
   if(path==="/api/admin/settings"||path==="/api/admin/promotions")return method==="GET"?"settings":"settings.manage";
   if(path==="/api/admin/config/export")return "settings";
   if(path==="/api/admin/config/import")return "settings.manage";
@@ -669,14 +685,14 @@ async function sourceCategories(env){
   const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
   let categories=[];
   try{categories=JSON.parse(latest?.details_json||"{}").categories||[];}catch{}
-  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||""),sortOrder:index});
+  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"",color:"#D8DDE0",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||""),color:"#D8DDE0",sortOrder:index});
 }
 async function categorySettings(env){
   const [source,saved]=await Promise.all([sourceCategories(env),getSetting(env,"category_config",{})]);
   const result={};
   source.forEach((category,index)=>{
     const override=saved[category.key]||{};
-    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,active:override.active!==false,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
+    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
   });
   return result;
 }
@@ -853,6 +869,17 @@ export default {
           const days=Math.max(7,Math.min(90,Number(url.searchParams.get("days"))||30));
           return json(await adminAnalytics(env,days));
         }
+        if(path==="/api/admin/appearance"&&request.method==="GET"){
+          return json({appearance:sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE))});
+        }
+        if(path==="/api/admin/appearance"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          if(!body||typeof body!=="object")return json({error:"Некорректные настройки интерфейса"},400);
+          const appearance=sanitizeAdminAppearance(body.appearance||{});
+          await setSetting(env,"admin_appearance",appearance,staff.id);
+          await logSystem(env,"info","appearance","Обновлено оформление панели управления",{staffId:staff.id});
+          return json({success:true,appearance});
+        }
         if(path==="/api/admin/categories"&&request.method==="GET"){
           return json({categories:Object.values(await categorySettings(env))});
         }
@@ -864,14 +891,16 @@ export default {
           for(const [index,item] of body.categories.entries()){
             const key=String(item?.key||"").trim().slice(0,100);
             if(!key)continue;
-            const source=sourceMap.get(key)||{label:key,image:"",icon:""};
+            const source=sourceMap.get(key)||{label:key,image:"",icon:"",color:"#D8DDE0"};
             const label=String(item.label||source.label||key).trim().slice(0,80);
             const image=String(item.image||"").trim().slice(0,500);
             const icon=String(item.icon||source.icon||"").trim().slice(0,8);
+            const color=String(item.color||source.color||"#D8DDE0");
             const override={};
             if(label!==source.label)override.label=label;
             if(image!==source.image)override.image=/^https:\/\//i.test(image)?image:"";
             if(icon!==source.icon)override.icon=icon;
+            if(/^#[0-9a-f]{6}$/i.test(color)&&color!==source.color)override.color=color;
             if(item.active===false)override.active=false;
             const rawSortOrder=Number(item.sortOrder);const sortOrder=Math.max(0,Math.min(999,Number.isFinite(rawSortOrder)?rawSortOrder:index));
             if(sortOrder!==source.sortOrder)override.sortOrder=sortOrder;
@@ -925,7 +954,8 @@ export default {
           if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"])delete config[key];
           const template=hasPermission(staff,"catalog")?await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}}):{name:"",headers:[],columnMapping:{}};
           const categories=hasPermission(staff,"categories")?await getSetting(env,"category_config",{}):{};
-          return json({schemaVersion:1,exportedAt:now(),store:config,categories,catalogTemplate:template});
+          const adminAppearance=hasPermission(staff,"branding")?sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE)):null;
+          return json({schemaVersion:1,exportedAt:now(),store:config,categories,catalogTemplate:template,adminAppearance});
         }
         if(path==="/api/admin/config/import"&&request.method==="POST"){
           const body=await bodyJson(request);
@@ -942,6 +972,7 @@ export default {
           next.defaultSort=["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort)?next.defaultSort:"featured";
           next.minOrder=Math.max(0,Number(next.minOrder)||0);next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
           await setSetting(env,"store_config",next,staff.id);
+          if(body.adminAppearance&&hasPermission(staff,"branding.manage"))await setSetting(env,"admin_appearance",sanitizeAdminAppearance(body.adminAppearance),staff.id);
           if(body.categories&&typeof body.categories==="object"&&hasPermission(staff,"categories.manage"))await setSetting(env,"category_config",body.categories,staff.id);
           if(body.catalogTemplate&&Array.isArray(body.catalogTemplate.headers)&&hasPermission(staff,"catalog.manage")){
             const headers=body.catalogTemplate.headers.slice(0,100).map(value=>String(value).slice(0,100));
