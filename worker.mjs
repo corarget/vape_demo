@@ -129,8 +129,8 @@ async function getStaff(request,env){
   return {id:row.id,name:row.display_name,role:row.role,permissions:normalizePermissions(permissions,row.role),telegramId:row.telegram_id||"",expiresAt:row.expires_at};
 }
 function isManager(staff){return !!staff&&["owner","manager"].includes(staff.role);}
-const PERMISSION_KEYS=["overview","orders","orders.manage","schedule","catalog","catalog.manage","categories","categories.manage","analytics","branding","branding.manage","settings","team","logs","telegram"];
-const DEFAULT_MANAGER_PERMISSIONS=["overview","orders","orders.manage","schedule","catalog","catalog.manage"];
+const PERMISSION_KEYS=["overview","orders","orders.manage","schedule","schedule.manage","catalog","catalog.manage","categories","categories.manage","analytics","branding","branding.manage","settings","settings.manage","team","logs","telegram","telegram.manage"];
+const DEFAULT_MANAGER_PERMISSIONS=["overview","orders","orders.manage","schedule","schedule.manage","catalog","catalog.manage"];
 const FONT_FAMILIES=["Golos Text","Manrope","Rubik","PT Sans"];
 function normalizePermissions(value,role="manager"){
   if(role==="owner")return [...PERMISSION_KEYS];
@@ -141,6 +141,9 @@ function normalizePermissions(value,role="manager"){
   if(result.includes("catalog.manage")&&!result.includes("catalog"))result.push("catalog");
   if(result.includes("categories.manage")&&!result.includes("categories"))result.push("categories");
   if(result.includes("branding.manage")&&!result.includes("branding"))result.push("branding");
+  if(result.includes("schedule.manage")&&!result.includes("schedule"))result.push("schedule");
+  if(result.includes("settings.manage")&&!result.includes("settings"))result.push("settings");
+  if(result.includes("telegram.manage")&&!result.includes("telegram"))result.push("telegram");
   return result;
 }
 function sanitizeTheme(value={},base=DEFAULT_CONFIG.theme){
@@ -156,16 +159,20 @@ function sanitizeTheme(value={},base=DEFAULT_CONFIG.theme){
 function permissionForAdminRoute(path,method){
   if(path==="/api/admin/dashboard")return "overview";
   if(path==="/api/admin/orders"||path.startsWith("/api/admin/orders/"))return method==="GET"?"orders":"orders.manage";
-  if(path==="/api/admin/slot-blocks"||path.startsWith("/api/admin/slot-blocks/"))return "schedule";
+  if(path==="/api/admin/schedule-settings")return method==="GET"?"schedule":"schedule.manage";
+  if(path==="/api/admin/slot-blocks"||path.startsWith("/api/admin/slot-blocks/"))return method==="GET"?"schedule":"schedule.manage";
   if(path==="/api/admin/couriers")return "orders.manage";
   if(path==="/api/admin/staff"||path.startsWith("/api/admin/staff/")||path==="/api/admin/invites")return "team";
   if(path==="/api/admin/analytics")return "analytics";
   if(path==="/api/admin/categories")return method==="GET"?"categories":"categories.manage";
   if(path==="/api/admin/branding")return method==="GET"?"branding":"branding.manage";
-  if(path==="/api/admin/settings"||path==="/api/admin/config/export"||path==="/api/admin/config/import")return "settings";
+  if(path==="/api/admin/settings")return method==="GET"?"settings":"settings.manage";
+  if(path==="/api/admin/config/export")return "settings";
+  if(path==="/api/admin/config/import")return "settings.manage";
   if(["/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs"].includes(path))return method==="GET"?"catalog":"catalog.manage";
   if(path==="/api/admin/logs")return "logs";
-  if(path==="/api/admin/integrations"||path==="/api/admin/integrations/webhook")return "telegram";
+  if(path==="/api/admin/integrations")return method==="GET"?"telegram":"telegram.manage";
+  if(path==="/api/admin/integrations/webhook")return "telegram.manage";
   return null;
 }
 function hasPermission(staff,permission){
@@ -867,16 +874,21 @@ export default {
           return json({success:true,template});
         }
         if(path==="/api/admin/config/export"&&request.method==="GET"){
-          const config=await getConfig(env);
-          const template=await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}});
-          return json({schemaVersion:1,exportedAt:now(),store:config,categories:await getSetting(env,"category_config",{}),catalogTemplate:template});
+          const config={...await getConfig(env)};
+          if(!hasPermission(staff,"schedule"))for(const key of ["weeklyHours","slotMinutes","leadMinutes","daysAhead","slotCapacity"])delete config[key];
+          if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"])delete config[key];
+          const template=hasPermission(staff,"catalog")?await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}}):{name:"",headers:[],columnMapping:{}};
+          const categories=hasPermission(staff,"categories")?await getSetting(env,"category_config",{}):{};
+          return json({schemaVersion:1,exportedAt:now(),store:config,categories,catalogTemplate:template});
         }
         if(path==="/api/admin/config/import"&&request.method==="POST"){
           const body=await bodyJson(request);
           if(!body||body.schemaVersion!==1)return json({error:"Неподдерживаемая версия файла настроек"},400);
           const current=await getConfig(env);
           const imported=body.store&&typeof body.store==="object"?body.store:{};
-          const allowed=["storeName","currency","pickupEnabled","deliveryEnabled","minOrder","deliveryFee","address","phone","weeklyHours","brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled","slotMinutes","leadMinutes","daysAhead","slotCapacity"];
+          const allowed=["storeName","currency","metroEnabled","pickupEnabled","deliveryEnabled","minOrder","deliveryFee","address","phone"];
+          if(hasPermission(staff,"branding.manage"))allowed.push("brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled");
+          if(hasPermission(staff,"schedule.manage"))allowed.push("weeklyHours","slotMinutes","leadMinutes","daysAhead","slotCapacity");
           const next={...current};
           for(const key of allowed)if(imported[key]!==undefined)next[key]=imported[key];
           next.storeName=String(next.storeName||"Магазин").trim().slice(0,80);
@@ -884,8 +896,8 @@ export default {
           next.defaultSort=["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort)?next.defaultSort:"featured";
           next.minOrder=Math.max(0,Number(next.minOrder)||0);next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
           await setSetting(env,"store_config",next,staff.id);
-          if(body.categories&&typeof body.categories==="object")await setSetting(env,"category_config",body.categories,staff.id);
-          if(body.catalogTemplate&&Array.isArray(body.catalogTemplate.headers)){
+          if(body.categories&&typeof body.categories==="object"&&hasPermission(staff,"categories.manage"))await setSetting(env,"category_config",body.categories,staff.id);
+          if(body.catalogTemplate&&Array.isArray(body.catalogTemplate.headers)&&hasPermission(staff,"catalog.manage")){
             const headers=body.catalogTemplate.headers.slice(0,100).map(value=>String(value).slice(0,100));
             const mapping={};
             for(const [field,source] of Object.entries(body.catalogTemplate.columnMapping||{}))if(headers.includes(String(source)))mapping[field]=String(source);
@@ -950,13 +962,45 @@ export default {
           await logSystem(env,"info","branding","Обновлён интерфейс витрины",{staffId:staff.id});
           return json({success:true,settings:{theme:next.theme}});
         }
-        if(path==="/api/admin/settings"&&request.method==="GET")return json(await getConfig(env));
+        if(path==="/api/admin/schedule-settings"&&request.method==="GET"){
+          const config=await getConfig(env);
+          return json({weeklyHours:config.weeklyHours||DEFAULT_CONFIG.weeklyHours,slotMinutes:config.slotMinutes,leadMinutes:config.leadMinutes,daysAhead:config.daysAhead,slotCapacity:config.slotCapacity});
+        }
+        if(path==="/api/admin/schedule-settings"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          if(!body||typeof body!=="object")return json({error:"Некорректные настройки расписания"},400);
+          const current=await getConfig(env),next={...current};
+          if(body.weeklyHours&&typeof body.weeklyHours==="object"){
+            const days=["mon","tue","wed","thu","fri","sat","sun"],hours={};
+            for(const day of days){
+              const previous=current.weeklyHours?.[day]||DEFAULT_CONFIG.weeklyHours[day],value=body.weeklyHours[day]||previous;
+              const open=String(value.open??previous.open),close=String(value.close??previous.close),closed=value.closed===true;
+              if(minutesOf(open)<0||minutesOf(close)<0||(!closed&&minutesOf(close)<=minutesOf(open)))return json({error:"Проверьте время работы для "+day},400);
+              hours[day]={open,close,closed};
+            }
+            next.weeklyHours=hours;
+          }
+          const bounded=(value,previous,min,max)=>{if(value===undefined)return previous;const number=Number(value);return Number.isFinite(number)?Math.max(min,Math.min(max,Math.round(number))):previous;};
+          next.slotMinutes=bounded(body.slotMinutes,current.slotMinutes,15,240);
+          next.leadMinutes=bounded(body.leadMinutes,current.leadMinutes,0,1440);
+          next.daysAhead=bounded(body.daysAhead,current.daysAhead,1,30);
+          next.slotCapacity=bounded(body.slotCapacity,current.slotCapacity,1,100);
+          await setSetting(env,"store_config",next,staff.id);
+          await logSystem(env,"info","schedule","Обновлено расписание магазина",{staffId:staff.id});
+          return json({success:true,settings:{weeklyHours:next.weeklyHours,slotMinutes:next.slotMinutes,leadMinutes:next.leadMinutes,daysAhead:next.daysAhead,slotCapacity:next.slotCapacity}});
+        }
+        if(path==="/api/admin/settings"&&request.method==="GET"){
+          const config={...await getConfig(env)};
+          if(!hasPermission(staff,"schedule"))for(const key of ["weeklyHours","slotMinutes","leadMinutes","daysAhead","slotCapacity"])delete config[key];
+          if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"])delete config[key];
+          return json(config);
+        }
         if(path==="/api/admin/settings"&&request.method==="PUT"){
           const body=await bodyJson(request);
           if(!body||typeof body!=="object")return json({error:"Некорректные настройки"},400);
           const current=await getConfig(env);
           const next={...current};
-          const allowed=["storeName","currency","metroEnabled","pickupEnabled","deliveryEnabled","slotMinutes","leadMinutes","daysAhead","slotCapacity","minOrder","deliveryFee","address","phone","weeklyHours","brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"];
+          const allowed=["storeName","currency","metroEnabled","pickupEnabled","deliveryEnabled","minOrder","deliveryFee","address","phone"];
           for(const key of allowed)if(body[key]!==undefined)next[key]=body[key];
           next.slotMinutes=Math.max(15,Math.min(240,Number(next.slotMinutes)||60));
           next.leadMinutes=Math.max(0,Math.min(1440,Number(next.leadMinutes)||0));
