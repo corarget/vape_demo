@@ -227,7 +227,7 @@ function normalizeSearch(value){return String(value??"").toLowerCase().replace(/
 const LATIN_MAP={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ё:"yo",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
 const CYRILLIC_MAP={a:"а",b:"б",v:"в",g:"г",d:"д",e:"е",z:"з",i:"и",j:"й",k:"к",l:"л",m:"м",n:"н",o:"о",p:"п",r:"р",s:"с",t:"т",u:"у",f:"ф",h:"х",c:"с",q:"к",w:"в",x:"кс",y:"ы"};
 function toLatin(value){return value.replace(/[а-яё]/g,char=>LATIN_MAP[char]??char);}
-function toCyrillic(value){return value.replace(/shch|yo|zh|kh|ts|ch|sh|yu|ya|[a-z]/g,part=>({shch:"щ",yo:"ё",zh:"ж",kh:"х",ts:"ц",ch:"ч",sh:"ш",yu:"ю",ya:"я"}[part]||CYRILLIC_MAP[part]||part));}
+function toCyrillic(value){return value.replace(/shch|yo|jo|zh|kh|ts|ch|sh|yu|ya|iu|ia|[a-z]/g,part=>({shch:"щ",yo:"ё",jo:"ё",zh:"ж",kh:"х",ts:"ц",ch:"ч",sh:"ш",yu:"ю",ya:"я",iu:"ю",ia:"я"}[part]||CYRILLIC_MAP[part]||part));}
 function swapKeyboard(value,from,to){let result="";for(const char of value){const index=from.indexOf(char);result+=index<0?char:to[index]||char;}return result;}
 const EN_KEYS="qwertyuiop[]asdfghjkl;'zxcvbnm,.";
 const RU_KEYS="йцукенгшщзхъфывапролджэячсмитьбю";
