@@ -240,9 +240,14 @@ function searchForms(value){
 }
 function editDistance(a,b){
  if(a===b)return 0;if(!a)return b.length;if(!b)return a.length;
- let previous=Array.from({length:b.length+1},(_,i)=>i),current=new Array(b.length+1);
- for(let i=1;i<=a.length;i++){current[0]=i;for(let j=1;j<=b.length;j++)current[j]=Math.min(current[j-1]+1,previous[j]+1,previous[j-1]+(a[i-1]===b[j-1]?0:1));[previous,current]=[current,previous];}
- return previous[b.length];
+ const matrix=Array.from({length:a.length+1},()=>new Array(b.length+1).fill(0));
+ for(let i=0;i<=a.length;i++)matrix[i][0]=i;
+ for(let j=0;j<=b.length;j++)matrix[0][j]=j;
+ for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++){
+  matrix[i][j]=Math.min(matrix[i-1][j]+1,matrix[i][j-1]+1,matrix[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+  if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])matrix[i][j]=Math.min(matrix[i][j],matrix[i-2][j-2]+1);
+ }
+ return matrix[a.length][b.length];
 }
 function wordSimilarity(a,b){
  if(a===b)return 1;if(!a||!b)return 0;
@@ -370,7 +375,8 @@ function orderPanel(order,manager=false){const panel=document.createElement('div
 async function renderOrders(){const token=customerToken();try{const response=await fetch('/api/orders',{headers:{'X-Customer-Token':token,'X-Telegram-Init-Data':telegram?.initData||''}});const data=await response.json();if(!response.ok)throw new Error(data.error||'Не удалось загрузить заказы');const orders=data.orders||[];if(!orders.length){$('orders').innerHTML='<div class="empty">Заказов пока нет</div>';return;}const labels={new:'Новый',confirmed:'Подтверждён',preparing:'Собирается',ready:'Готов к получению',assigned:'Назначен курьер',picked_up:'У курьера',on_the_way:'В пути',delivered:'Доставлен',completed:'Завершён',cancelled:'Отменён',rejected:'Отклонён'};$('orders').innerHTML=[...orders].map(order=>'<div class="panel"><div class="row"><strong>Заказ №'+escapeHTML(order.number)+'</strong><span class="stock">'+escapeHTML(labels[order.status]||order.status)+'</span></div><p class="muted order-time">'+escapeHTML(order.slotDate)+' · '+escapeHTML(order.slotTime)+' · '+checkoutMethodLabel(order.deliveryMethod)+'</p><div class="items">'+order.items.map(item=>'<div class="item"><span>'+escapeHTML(cleanUiText(item.name))+'<br><small class="muted">'+escapeHTML(item.variant)+' × '+item.quantity+'</small></span><b>'+money(item.lineTotal)+'</b></div>').join('')+'</div>'+(order.deliveryFee?'<div class="row"><span class="muted">Доставка</span><span>'+money(order.deliveryFee)+'</span></div>':'')+'<div class="row"><span class="muted">Итого</span><strong>'+money(order.total)+'</strong></div><div class="muted small order-events">'+(order.events||[]).map(event=>escapeHTML(event.message||labels[event.status]||'')).filter(Boolean).join(' · ')+'</div>'+(order.status==='new'?'<button class="btn cancel-order" data-cancel-order="'+escapeHTML(order.id)+'">Отменить заказ</button>':'')+'</div>').join('');$('orders').querySelectorAll('[data-cancel-order]').forEach(button=>button.onclick=async()=>{if(!confirm('Отменить этот заказ?'))return;try{const result=await fetch('/api/orders/'+encodeURIComponent(button.dataset.cancelOrder)+'/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerToken:token})});const payload=await result.json();if(!result.ok)throw new Error(payload.error||'Не удалось отменить заказ');showNotice('Заказ отменён');await renderOrders();}catch(error){showNotice(error.message);}});}catch(error){$('orders').innerHTML='<div class="empty">'+escapeHTML(error.message)+'</div>';}}
 function renderManager(){}
 function isDiscounted(item){
- const oldPrice=Number(item.oldPrice??item.compareAtPrice??item.originalPrice??0),salePrice=Number(item.salePrice??item.discountPrice??0),percent=Number(item.discountPercent??item.discount??0);
+ const attributes=item.attributes||{};
+ const oldPrice=Number(item.oldPrice??item.compareAtPrice??item.originalPrice??0),salePrice=Number(item.salePrice??item.discountPrice??0),percent=Number(item.discountPercent??item.discount??attributes.discount_percent??attributes.discount??0);
  return item.discounted===true||item.isPromo===true||percent>0||(oldPrice>0&&oldPrice>Number(item.price||0))||(salePrice>0&&salePrice<Number(item.price||0));
 }
 function renderPromos(){

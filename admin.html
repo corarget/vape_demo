@@ -185,7 +185,7 @@ table th,table td{border-color:#363D3F}
       <div class="grid two">
         <div class="panel"><div class="panel-head"><div><h2>Команда магазина</h2><p>Менеджеры и курьеры с отдельными правами</p></div><button class="btn" id="team-reload">Обновить</button></div><div id="team-list"></div></div>
         <div class="panel"><div class="panel-head"><div><h2>Пригласить сотрудника</h2><p>Одноразовый код действует 48 часов</p></div></div><form id="invite-form" class="grid"><label>Имя сотрудника<input id="invite-name" required placeholder="Например, Алексей"></label><label>Роль<select id="invite-role"><option value="courier">Курьер</option><option value="manager">Менеджер</option></select></label><label>Telegram ID (необязательно)<input id="invite-telegram" inputmode="numeric" placeholder="Для уведомлений"></label>
-          <fieldset id="invite-permissions" class="permission-panel">
+          <fieldset id="invite-permissions" class="permission-panel" hidden>
             <legend>Доступы менеджера</legend>
             <div class="permission-grid">
               <label><input type="checkbox" data-invite-permission="overview" checked>Обзор</label>
@@ -472,6 +472,7 @@ async function loadTeam(){
 }
 $("team-reload").onclick=loadTeam;
 $("invite-role").onchange=()=>{$("invite-permissions").hidden=$("invite-role").value==="courier";};
+$("invite-role").onchange();
 $("invite-form").onsubmit=async e=>{
  e.preventDefault();$("invite-result").innerHTML="";
  try{
@@ -579,6 +580,9 @@ function fillUiTheme(theme={}){const value={...DEFAULT_UI_THEME,...theme};for(co
 function updateThemePreview(){const theme=uiThemeFromForm(),preview=$("ui-theme-preview");for(const [key,value] of Object.entries({"--preview-accent":theme.accent,"--preview-panel":theme.panel,"--preview-text":theme.text,"--preview-muted":theme.muted,"--preview-line":theme.line}))preview.style.setProperty(key,value);preview.style.fontFamily='"'+theme.fontFamily+'",sans-serif';preview.querySelector("strong").style.fontFamily='"'+theme.headingFontFamily+'",sans-serif';}
 async function loadBranding(){
  const config=await api("/api/admin/branding");state.config=config;
+ const canEditBranding=canPermission("branding.manage");
+ $("branding-form").hidden=!canEditBranding;
+ $("ui-theme-form").hidden=!canEditBranding;
  $("brand-tagline").value=config.brandTagline||"";$("brand-logo").value=config.logoUrl||"";
  $("brand-hero-title").value=config.heroTitle||"Каталог";$("brand-hero-subtitle").value=config.heroSubtitle||"";
  $("brand-default-sort").value=config.defaultSort||"featured";$("brand-analytics").checked=config.analyticsEnabled!==false;
