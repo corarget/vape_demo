@@ -15,7 +15,7 @@ const ACTIVE_STATUSES = ["new","confirmed","preparing","ready","assigned","picke
 
 const DEFAULT_ADMIN_APPEARANCE={
   background:"#101112",sidebar:"#151819",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",accent:"#E5E7EB",
-  fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230
+  fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230,fontScale:100
 };
 const DEFAULT_CONFIG = {
   timezone:"Europe/Minsk",currency:"BYN",storeName:"VIOLET SHOP",
@@ -170,6 +170,7 @@ function sanitizeAdminAppearance(value={}){
   appearance.radius=[10,12,14,18,22].includes(Number(appearance.radius))?Number(appearance.radius):14;
   appearance.density=appearance.density==="compact"?"compact":"comfortable";
   appearance.sidebarWidth=[200,230,260].includes(Number(appearance.sidebarWidth))?Number(appearance.sidebarWidth):230;
+  appearance.fontScale=[90,100,110,120].includes(Number(appearance.fontScale))?Number(appearance.fontScale):100;
   return appearance;
 }
 function permissionForAdminRoute(path,method){
