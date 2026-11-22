@@ -875,6 +875,9 @@ export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url);
     const path=url.pathname;
+    if(path==="/favicon.ico"&&["GET","HEAD"].includes(request.method)){
+      return new Response(null,{status:204,headers:{"Cache-Control":"public, max-age=86400"}});
+    }
     if(request.method==="OPTIONS")return new Response(null,{status:204,headers:{"Allow":"GET,POST,PUT,PATCH,DELETE,OPTIONS"}});
     if(["POST","PUT","PATCH","DELETE"].includes(request.method)&&!validOrigin(request))return json({error:"Origin not allowed"},403);
 
