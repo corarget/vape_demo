@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#11151D">
-<title>VIOLET SHOP - �ࠢ�����</title>
+<title>VIOLET SHOP — управление</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -200,23 +200,23 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
 <body>
 <div id="login-view" class="login">
   <div class="logo">VIOLET<b>SHOP</b></div>
-  <div class="pill login-pill"><span class="dot"></span> ������ �����</div>
-  <h1>���� �ࠢ�����</h1>
-  <p>������ �� ����ࠧ����� ���� �������� ��� �ਣ��襭�� ���㤭���. ���㯠⥫� �� ����� ����㯠 � �⮩ ������.</p>
+  <div class="pill login-pill"><span class="dot"></span> Защищённый доступ</div>
+  <h1>Пульт управления</h1>
+  <p>Войдите по одноразовому коду владельца или приглашению сотрудника. Покупатели не имеют доступа к этой панели.</p>
   <div id="demo-login-panel" hidden>
     <form id="demo-login-form" class="grid">
-      <label>�����<input id="demo-username" autocomplete="username" value="admin" required></label>
+      <label>Логин<input id="demo-username" autocomplete="username" value="admin" required></label>
       <label>��஫�<input id="demo-password" type="password" autocomplete="current-password" placeholder="admin" required></label>
       <button class="btn primary" type="submit">����</button>
-      <button class="btn" type="submit" name="demo-mode" value="courier">���� ����-����஬</button>
+      <button class="btn" type="submit" name="demo-mode" value="courier">Войти демо-курьером</button>
       <div id="demo-login-error" class="small login-error"></div>
     </form>
-    <p class="small muted demo-login-note">����-�����: <b>admin / admin</b>. �� �ᯮ���� �� ����� � ������᪨� ���������.</p>
+    <p class="small muted demo-login-note">Демо-доступ: <b>admin / admin</b>. Не используйте эти данные в клиентских магазинах.</p>
   </div>
   <details id="code-login-details" class="login-details">
-    <summary>���� �� ���� �ਣ��襭��</summary>
+    <summary>Войти по коду приглашения</summary>
     <form id="login-form">
-      <label>��� ��� ��ࢮ� ����ன��<input id="login-name" autocomplete="name" placeholder="��� ��������"></label>
+      <label>Имя для первой настройки<input id="login-name" autocomplete="name" placeholder="Имя владельца"></label>
       <label>��� ����㯠<input id="login-code" type="password" autocomplete="one-time-code" placeholder="��⠢�� ���" required></label>
       <button class="btn primary" type="submit">���� �� ����</button>
       <div id="login-error" class="small login-error"></div>
@@ -227,42 +227,42 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
 
 <div id="app-view" class="shell hidden">
   <aside class="side">
-    <div class="side-brand"><div class="logo">VIOLET <b>SHOP</b></div><small>��ࠢ����� ���������</small></div>
-    <nav class="nav" id="side-nav" aria-label="��ࠢ�����"></nav>
-    <div class="side-foot"><div id="staff-name" class="staff-name"></div><div id="staff-role" class="muted small staff-role"></div><button class="btn ghost logout" id="logout">���</button></div>
+    <div class="side-brand"><div class="logo">VIOLET <b>SHOP</b></div><small>Управление магазином</small></div>
+    <nav class="nav" id="side-nav" aria-label="Управление"></nav>
+    <div class="side-foot"><div id="staff-name" class="staff-name"></div><div id="staff-role" class="muted small staff-role"></div><button class="btn ghost logout" id="logout">Выйти</button></div>
   </aside>
   <main class="main">
     <header class="top">
-      <h1 id="page-title">�����</h1>
-      <div class="top-right"><span class="pill" id="role-pill">����㤭��</span><button class="btn ghost" id="refresh">? ��������</button></div>
+      <h1 id="page-title">Обзор</h1>
+      <div class="top-right"><span class="pill" id="role-pill">Сотрудник</span><button class="btn ghost" id="refresh">↻ Обновить</button></div>
     </header>
 
     <section id="page-overview" class="section active">
       <div class="grid metrics" id="metrics"></div>
       <div class="grid two">
-        <div class="panel"><div class="panel-head"><div><h2>��᫥���� ������</h2><p>����� ��।� ��������</p></div><button class="btn" data-goto="orders">�� ������</button></div><div class="table-wrap" id="latest-orders"></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Последние заказы</h2><p>Живая очередь магазина</p></div><button class="btn" data-goto="orders">Все заказы</button></div><div class="table-wrap" id="latest-orders"></div></div>
         <div class="panel"><div class="panel-head"><div><h2>����ﭨ� ��⥬�</h2><p>����஭����� � �訡��</p></div></div><div id="system-health"></div></div>
       </div>
     </section>
 
     <section id="page-orders" class="section">
-      <div class="toolbar"><select id="order-filter"><option value="">�� ������</option><option value="new">����</option><option value="confirmed">���⢥ত���</option><option value="preparing">���������</option><option value="ready">��⮢�</option><option value="assigned">� �����</option><option value="on_the_way">� ���</option><option value="delivered">���⠢����</option><option value="cancelled">�⬥����</option><option value="rejected">�⪫�����</option></select><button class="btn" id="orders-reload">�������� ��।�</button></div>
-      <div class="order-layout"><div class="order-list" id="order-list"></div><div class="panel detail-box" id="order-detail"><div class="empty">�롥�� �����, �⮡� ��ᬮ���� ��⠫� � �������� �����</div></div></div>
+      <div class="toolbar"><select id="order-filter"><option value="">Все заказы</option><option value="new">Новые</option><option value="confirmed">Подтверждены</option><option value="preparing">Собираются</option><option value="ready">Готовы</option><option value="assigned">У курьера</option><option value="on_the_way">В пути</option><option value="delivered">Доставлены</option><option value="cancelled">Отменены</option><option value="rejected">Отклонены</option></select><button class="btn" id="orders-reload">Обновить очередь</button></div>
+      <div class="order-layout"><div class="order-list" id="order-list"></div><div class="panel detail-box" id="order-detail"><div class="empty">Выберите заказ, чтобы посмотреть детали и изменить статус</div></div></div>
     </section>
 
     <section id="page-schedule" class="section">
       <div class="grid two">
-        <div class="panel"><div class="panel-head"><div><h2>��䨪 ࠡ���</h2><p>����� ��⮬���᪨ ������� �� �⮬� �ᯨᠭ��</p></div></div><div id="hours-editor" class="hours"></div><div class="form-grid mt-16"><label>����� ᫮�, �����<input id="cfg-slot" type="number" min="15" max="240" step="15"></label><label>�� ᪮�쪮 ����� ����뢠�� ������<input id="cfg-lead" type="number" min="0" max="1440" step="15"></label><label>�� ᪮�쪮 ���� �����<input id="cfg-days" type="number" min="1" max="30"></label><label>������� �� ᫮�<input id="cfg-capacity" type="number" min="1" max="100"></label></div><button class="btn primary mt-16" id="save-hours">���࠭��� �ᯨᠭ��</button></div>
-        <div class="panel"><div class="panel-head"><div><h2>�᪫�祭�� � ��室��</h2><p>������� ���� ��� �⤥��� ���ࢠ�</p></div></div><form id="block-form" class="grid"><label>���<input id="block-date" type="date" required></label><div class="form-grid"><label>�<input id="block-start" type="time" value="00:00" required></label><label>��<input id="block-end" type="time" value="23:59" required></label></div><label>�����<select id="block-method"><option value="all">���� �������</option><option value="metro">����</option><option value="pickup">�����뢮�</option><option value="delivery">���⠢�� �� ���</option></select></label><label>��稭�<input id="block-reason" placeholder="��室���, ������ਧ���:"></label><button class="btn primary" type="submit">�������� ��࠭�祭��</button></form><div id="blocks-list" class="mt-16"></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>График работы</h2><p>Слоты автоматически строятся по этому расписанию</p></div></div><div id="hours-editor" class="hours"></div><div class="form-grid mt-16"><label>Длина слота, минут<input id="cfg-slot" type="number" min="15" max="240" step="15"></label><label>За сколько минут закрывать запись<input id="cfg-lead" type="number" min="0" max="1440" step="15"></label><label>На сколько дней вперёд<input id="cfg-days" type="number" min="1" max="30"></label><label>Заказов на слот<input id="cfg-capacity" type="number" min="1" max="100"></label></div><button class="btn primary mt-16" id="save-hours">Сохранить расписание</button></div>
+        <div class="panel"><div class="panel-head"><div><h2>Исключения и выходные</h2><p>Закрыть день или отдельный интервал</p></div></div><form id="block-form" class="grid"><label>Дата<input id="block-date" type="date" required></label><div class="form-grid"><label>С<input id="block-start" type="time" value="00:00" required></label><label>До<input id="block-end" type="time" value="23:59" required></label></div><label>Канал<select id="block-method"><option value="all">Весь магазин</option><option value="metro">Метро</option><option value="pickup">Самовывоз</option><option value="delivery">Доставка на дом</option></select></label><label>Причина<input id="block-reason" placeholder="Выходной, инвентаризация…"></label><button class="btn primary" type="submit">Добавить ограничение</button></form><div id="blocks-list" class="mt-16"></div></div>
       </div>
     </section>
 
     <section id="page-team" class="section">
       <div class="grid two">
-        <div class="panel"><div class="panel-head"><div><h2>������� ��������</h2><p>��������� � ������ � �⤥��묨 �ࠢ���</p></div><button class="btn" id="team-reload">��������</button></div><div id="team-list"></div></div>
-        <div class="panel"><div class="panel-head"><div><h2>�ਣ����� ���㤭���</h2><p>����ࠧ��� ��� ������� 48 �ᮢ</p></div></div><form id="invite-form" class="grid"><label>��� ���㤭���<input id="invite-name" required placeholder="���ਬ��, ����ᥩ"></label><label>����<select id="invite-role"><option value="courier">�����</option><option value="manager">��������</option></select></label><label>Telegram ID (����易⥫쭮)<input id="invite-telegram" inputmode="numeric" placeholder="��� 㢥��������"></label>
+        <div class="panel"><div class="panel-head"><div><h2>Команда магазина</h2><p>Менеджеры и курьеры с отдельными правами</p></div><button class="btn" id="team-reload">Обновить</button></div><div id="team-list"></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Пригласить сотрудника</h2><p>Одноразовый код действует 48 часов</p></div></div><form id="invite-form" class="grid"><label>Имя сотрудника<input id="invite-name" required placeholder="Например, Алексей"></label><label>Роль<select id="invite-role"><option value="courier">Курьер</option><option value="manager">Менеджер</option></select></label><label>Telegram ID (необязательно)<input id="invite-telegram" inputmode="numeric" placeholder="Для уведомлений"></label>
           <fieldset id="invite-permissions" class="permission-panel" hidden>
-            <legend>������ ��������</legend>
+            <legend>Доступы менеджера</legend>
             <div class="permission-grid">
               <label><input type="checkbox" data-invite-permission="overview" checked>�����</label>
               <label><input type="checkbox" data-invite-permission="orders" checked>��ᬮ�� �������</label>
@@ -281,50 +281,50 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
             </div>
             <p class="small muted">�ࠢ� ����� �������� �����. ������ ����㯭� ⮫쪮 �����祭�� ���⠢��.</p>
           </fieldset>
-          <button class="btn primary" type="submit">������� �ਣ��襭��</button></form><div id="invite-result"></div></div>
+          <button class="btn primary" type="submit">Создать приглашение</button></form><div id="invite-result"></div></div>
       </div>
     </section>
 
     <section id="page-catalog" class="section">
       <div class="grid two">
-        <div class="panel"><div class="panel-head"><div><h2>����஭����� ��⠫���</h2><p>���筨� ������ - Google Sheets, ���� Catalog</p></div><span class="pill" id="sync-state">�� �஢�७�</span></div><div id="catalog-stats" class="grid metrics catalog-stats-grid"></div><button class="btn primary" id="sync-now">? ����஭���஢��� ᥩ��</button><div class="small muted mt-8">����஭����� �� ������� ��室��� ⠡����. ���ਭ� �⠥� ����� � ��ଠ����� ��ਠ��� � ⮢��� �������.</div></div>
-        <div class="panel"><div class="panel-head"><div><h2>������ ��⠫���</h2><p>��� ⮢��� ��ꥤ������� � ����窨</p></div></div><div class="config-note">����窠 = ��⥣��� + �ந�����⥫� + �������� ������� + ⨯ ���������. �����, �९����, 梥� � ᮯ�⨢����� �⠭������ ��ਠ�⠬�. SKU � ����७��� ���� ����㯭� ���������, �� ����� �� ���㯠⥫�.</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Синхронизация каталога</h2><p>Источник данных — Google Sheets, лист Catalog</p></div><span class="pill" id="sync-state">Не проверено</span></div><div id="catalog-stats" class="grid metrics catalog-stats-grid"></div><button class="btn primary" id="sync-now">↻ Синхронизировать сейчас</button><div class="small muted mt-8">Синхронизация не изменяет исходную таблицу. Витрина читает данные и нормализует варианты в товарные линейки.</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
       </div>
-      <div class="panel panel-spaced"><div class="panel-head"><div><h2>���筨� ��⠫���</h2><p>��⠢�� ��뫪� �� �㦭� ���� Google Sheets</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">��뫪� �� Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/:/edit#gid=:" autocomplete="off" required></label><input id="sync-sheet-id" type="hidden"><input id="sync-gid" type="hidden"><input id="sync-cache" type="hidden" value="90"><div class="full"><button class="btn primary" type="submit">���࠭��� ��뫪�</button> <button class="btn" id="preview-sheet" type="button">�஢����</button></div></form></div>
-      <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>������ � ᮯ��⠢����� �⮫�殢</h2><p>����� �ਪ९��� CSV-蠡��� ��� �஢���� ��������� �������񭭮� ⠡����. ����� ���筨�� �� ����������.</p></div></div><div class="form-grid"><label class="full">�ਪ९��� 蠡��� CSV<input id="catalog-template-file" type="file" accept=".csv,text/csv"></label><div class="full actions"><button class="btn" id="attach-template" type="button">���࠭��� 蠡���</button><button class="btn" id="download-template" type="button">������ ���⮩ 蠡���</button><button class="btn" id="download-attached-template" type="button">������ �ਪ९���</button><span id="template-info" class="muted small"></span></div><div id="column-mapping" class="full form-grid"></div><div class="full"><button class="btn" id="save-template" type="button">���࠭��� ᮯ��⠢����� �⮫�殢</button></div></div></div>
-      <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>����� ᨭ�஭���樨</h2><p>��᫥���� ����᪨ � १�����</p></div></div><div id="sync-history"></div></div>
+      <div class="panel panel-spaced"><div class="panel-head"><div><h2>Источник каталога</h2><p>Вставьте ссылку на нужный лист Google Sheets</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Ссылка на Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=…" autocomplete="off" required></label><input id="sync-sheet-id" type="hidden"><input id="sync-gid" type="hidden"><input id="sync-cache" type="hidden" value="90"><div class="full"><button class="btn primary" type="submit">Сохранить ссылку</button> <button class="btn" id="preview-sheet" type="button">Проверить</button></div></form></div>
+      <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>Шаблон и сопоставление столбцов</h2><p>Можно прикрепить CSV-шаблон или проверить заголовки подключённой таблицы. Данные источника не изменяются.</p></div></div><div class="form-grid"><label class="full">Прикрепить шаблон CSV<input id="catalog-template-file" type="file" accept=".csv,text/csv"></label><div class="full actions"><button class="btn" id="attach-template" type="button">Сохранить шаблон</button><button class="btn" id="download-template" type="button">Скачать пустой шаблон</button><button class="btn" id="download-attached-template" type="button">Скачать прикреплённый</button><span id="template-info" class="muted small"></span></div><div id="column-mapping" class="full form-grid"></div><div class="full"><button class="btn" id="save-template" type="button">Сохранить сопоставление столбцов</button></div></div></div>
+      <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
     </section>
 
     <section id="page-categories" class="section">
-      <div class="panel"><div class="panel-head"><div><h2>��⥣�ਨ ���ਭ�</h2><p>����᪨��� ����窨 ��� �ᯮ��� ��५��, �⮡� ������ ���冷�. ����, �������� � ��������� ����ࠨ������ ����� ��.</p><div id="categories-sort-help" class="muted small">���冷� ᢥ��� ���� ᮮ⢥����� ���浪� ��⥣�਩ � ���㯠⥫��. ������ ��⥣�ਨ ������� � ᯨ᪥.</div></div><button class="btn" id="categories-reload">�������� �� ⠡����</button></div><div id="categories-list" class="grid"></div><div class="actions"><button class="btn primary" id="save-categories">���࠭��� ��⥣�ਨ</button></div></div>
+      <div class="panel"><div class="panel-head"><div><h2>Категории витрины</h2><p>Перетаскивай карточки или используй стрелки, чтобы менять порядок. Цвет, название и видимость настраиваются здесь же.</p><div id="categories-sort-help" class="muted small">Порядок сверху вниз соответствует порядку категорий у покупателей. Скрытые категории остаются в списке.</div></div><button class="btn" id="categories-reload">Обновить из таблицы</button></div><div id="categories-list" class="grid"></div><div class="actions"><button class="btn primary" id="save-categories">Сохранить категории</button></div></div>
     </section>
 
     <section id="page-analytics" class="section">
-      <div class="toolbar"><select id="analytics-days"><option value="7">7 ����</option><option value="30" selected>30 ����</option><option value="90">90 ����</option></select><button class="btn" id="analytics-reload">�������� �����⨪�</button></div>
+      <div class="toolbar"><select id="analytics-days"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select><button class="btn" id="analytics-reload">Обновить аналитику</button></div>
       <div class="grid metrics" id="analytics-metrics"></div>
-      <div class="grid two"><div class="panel"><div class="panel-head"><div><h2>������� ⮢���</h2><p>��ᬮ���, ���������� � ��ଫ���� ������</p></div></div><div id="analytics-products"></div></div><div class="panel"><div class="panel-head"><div><h2>���᪮�� ������</h2><p>�� ���㯠⥫� ������� ����</p></div></div><div id="analytics-searches"></div></div></div>
+      <div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Популярные товары</h2><p>Просмотры, добавления и оформленные заказы</p></div></div><div id="analytics-products"></div></div><div class="panel"><div class="panel-head"><div><h2>Поисковые запросы</h2><p>Что покупатели пытаются найти</p></div></div><div id="analytics-searches"></div></div></div>
       <div class="panel panel-spaced"><div class="panel-head"><div><h2>�������� �� ���</h2><p>��ᬮ��� ����祪, ��২�� � ������</p></div></div><div id="analytics-daily"></div></div>
     </section>
 
     <section id="page-logs" class="section">
-      <div class="toolbar"><select id="log-filter"><option value="">�� �஢��</option><option value="error">�訡��</option><option value="warning">�।�०�����</option><option value="info">���ଠ��</option></select><button class="btn" id="logs-reload">�������� ����</button></div>
-      <div class="panel"><div class="panel-head"><div><h2>���⥬�� ᮡ���</h2><p>������, ��⠫��, ���ਧ���, �ᯨᠭ�� � API</p></div></div><div id="logs-list" class="log-list"></div></div>
+      <div class="toolbar"><select id="log-filter"><option value="">Все уровни</option><option value="error">Ошибки</option><option value="warning">Предупреждения</option><option value="info">Информация</option></select><button class="btn" id="logs-reload">Обновить логи</button></div>
+      <div class="panel"><div class="panel-head"><div><h2>Системные события</h2><p>Заказы, каталог, авторизация, расписание и API</p></div></div><div id="logs-list" class="log-list"></div></div>
     </section>
 
     <section id="page-settings" class="section">
-      <div class="panel"><div class="panel-head"><div><h2>����ன�� ��������</h2><p>���⠪⭠� ���ଠ��, ᯮᮡ� ����祭�� � �ࠢ��� ��ଫ����</p></div></div><form id="settings-form" class="form-grid">
-        <label class="full">�������� ��������<input id="cfg-name"></label><input id="cfg-phone" type="hidden">
-        <label class="full">���� ᠬ��뢮��<input id="cfg-address"></label>
-        <label class="full">���� ����� � ����<input id="cfg-metro-hint" maxlength="250" placeholder="�⠭��, ��室 ��� �ਥ���"></label>
-        <label>�������쭠� �㬬�, BYN<input id="cfg-min" type="number" min="0" step="0.01"></label><label>�⮨����� ���⠢��, BYN<input id="cfg-fee" type="number" min="0" step="0.01"></label>
-        <label>���ᨬ� ��� �� ��ਠ��<input id="cfg-item-limit" type="number" min="1" max="100" step="1" required></label>
-        <label class="field-row"><input id="cfg-metro" type="checkbox"> ����祭�� � ���� ����祭�</label><label class="field-row"><input id="cfg-pickup" type="checkbox"> �����뢮� ������</label><label class="field-row"><input id="cfg-delivery" type="checkbox"> ���⠢�� �� ��� ����祭�</label>
+      <div class="panel"><div class="panel-head"><div><h2>Настройки магазина</h2><p>Контактная информация, способы получения и правила оформления</p></div></div><form id="settings-form" class="form-grid">
+        <label class="full">Название магазина<input id="cfg-name"></label><input id="cfg-phone" type="hidden">
+        <label class="full">Адрес самовывоза<input id="cfg-address"></label>
+        <label class="full">Место встречи у метро<input id="cfg-metro-hint" maxlength="250" placeholder="Станция, выход или ориентир"></label>
+        <label>Минимальная сумма, BYN<input id="cfg-min" type="number" min="0" step="0.01"></label><label>Стоимость доставки, BYN<input id="cfg-fee" type="number" min="0" step="0.01"></label>
+        <label>Максимум штук на вариант<input id="cfg-item-limit" type="number" min="1" max="100" step="1" required></label>
+        <label class="field-row"><input id="cfg-metro" type="checkbox"> Получение у метро включено</label><label class="field-row"><input id="cfg-pickup" type="checkbox"> Самовывоз включён</label><label class="field-row"><input id="cfg-delivery" type="checkbox"> Доставка на дом включена</label>
         <h3 class="full">�����</h3>
         <label hidden class="field-row"><input id="cfg-cash-payment" type="checkbox"> �����묨 �� ����祭��</label>
         <label hidden class="field-row"><input id="cfg-transfer-payment" type="checkbox"> ��ॢ�� �� ४����⠬</label>
-        <label hidden class="full">��������� � �������� ��� ���㯠⥫�<textarea id="cfg-transfer-details" rows="4" maxlength="1500" placeholder="�����⥫�, ����, ����� ���� � �����祭�� ���⥦�"></textarea><small class="muted">���㯠⥫� 㢨��� ४������ � ������ ��᫥ ��� ���⢥ত����.</small></label>
+        <label hidden class="full">Реквизиты и инструкция для покупателя<textarea id="cfg-transfer-details" rows="4" maxlength="1500" placeholder="Получатель, банк, номер счёта и назначение платежа"></textarea><small class="muted">Покупатель увидит реквизиты в заказе после его подтверждения.</small></label>
         <label hidden class="full field-row"><input id="cfg-age-gate" type="checkbox"> �����뢠�� ���⢥ত���� 18+ �� �室� �� ���ਭ�</label>
-        <div class="full"><button class="btn primary" type="submit">���࠭��� ����ன��</button></div>
+        <div class="full"><button class="btn primary" type="submit">Сохранить настройки</button></div>
       </form></div>
     </section>
 
@@ -333,7 +333,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
         <div class="panel-head promo-editor-head"><div><h2>��⮬���᪨� ��樨</h2><p>���⥬� ��⠥� ���室�騥 ����樨 � ��২�� � �ਬ���� ���� ���� � ᠬ� ��᮪�� �믮������ ��ண��.</p></div><button type="button" class="btn" id="add-promotion">�������� ����</button></div><div class="promo-logic-note muted small">���冷� �ਬ������: ������� ��㪨 �� ��࠭��� ��㯯 (�������, �ᯠ�⥫�, ����ਤ��); �롨ࠥ��� ���� �ࠢ��� � �������訬 �믮������ ��ண��; ����ப ��砩�� �롨ࠥ��� �� ����㯭�� ������⥩ � ����⪮� Salt/<�������> ���� �९����� �� 20 �� � ���室�騬 �७���; � ����� �� �������� �⤥�쭮� ��ப�� �� 業� 0 BYN. �᫨ ���室�饣� ����ઠ ��� � ����稨, ���� �� �ਬ������. � ����� ������ ������� ⮫쪮 ���� ����. � ⠡��� ��� �⤥�쭮�� ���� ⨯� ����⨭�, ���⮬� �९���� �� 20 �� �ᯮ������ ��� �ࠪ��᪨� ���਩ Salt.</div>
         <form id="promotions-form" class="promo-editor">
           <div id="promotion-rules" class="promo-editor"></div>
-          <div><button type="submit" class="btn primary" id="promotion-save">���࠭��� ��樨</button></div>
+          <div><button type="submit" class="btn primary" id="promotion-save">Сохранить акции</button></div>
         </form>
       </div>
     </section>
@@ -347,31 +347,31 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
           <button type="button" data-appearance-pane="panel" aria-controls="appearance-panel" aria-pressed="false">�������</button>
           <button type="button" data-appearance-pane="transfer" aria-controls="appearance-transfer" aria-pressed="false">������ � ��ᯮ��</button>
         </div>
-        <a class="btn ghost preview-link" href="/" target="_blank" rel="noopener">������ ������� ?</a>
+        <a class="btn ghost preview-link" href="/" target="_blank" rel="noopener">Открыть магазин ↗</a>
       </div>
       <div id="appearance-storefront" class="appearance-grid">
         <form id="branding-form" class="editor-fields">
           <section class="panel">
             <div class="panel-head"><div><h2>������� ��࠭��</h2><p>����⨯ � ⥪�� ��� ��⠫����.</p></div></div>
             <div class="form-grid">
-              <label class="full">URL ����⨯�<input id="brand-logo" type="url" maxlength="500" placeholder="https://:"></label>
-              <label class="field-row full"><input id="storefront-show-hero" type="checkbox" checked> �����뢠�� �ਢ���⢥��� ����</label>
+              <label class="full">URL логотипа<input id="brand-logo" type="url" maxlength="500" placeholder="https://…"></label>
+              <label class="field-row full"><input id="storefront-show-hero" type="checkbox" checked> Показывать приветственный блок</label>
               <label>������<input id="brand-tagline" maxlength="120"></label>
               <label>���������<input id="brand-hero-title" maxlength="80"></label>
-              <label class="full">����� ��� ����������<input id="brand-hero-subtitle" maxlength="180"></label>
+              <label class="full">Текст под заголовком<input id="brand-hero-subtitle" maxlength="180"></label>
             </div>
           </section>
           <section class="panel">
             <div class="panel-head"><div><h2>��⪠ ��⠫���</h2><p>������⢮ ����祪 � ����� ���.</p></div></div>
             <div class="form-grid">
-              <label>�� ⥫�䮭�<select id="storefront-mobile-columns"><option value="1">1 ����窠</option><option value="2" selected>2 ����窨</option></select></label>
-              <label>�� ��������<select id="storefront-desktop-columns"><option value="2">2 ����窨</option><option value="3" selected>3 ����窨</option><option value="4">4 ����窨</option></select></label>
-              <label class="full">����஢�� �� 㬮�砭��<select id="brand-default-sort"><option value="featured">��������������</option><option value="analytics">������� �� �����⨪�</option><option value="price-asc">���砫� ��襢��</option><option value="price-desc">���砫� ��஦�</option><option value="name">�� ��������</option><option value="brand">�� �७��</option></select></label>
+              <label>На телефоне<select id="storefront-mobile-columns"><option value="1">1 карточка</option><option value="2" selected>2 карточки</option></select></label>
+              <label>На компьютере<select id="storefront-desktop-columns"><option value="2">2 карточки</option><option value="3" selected>3 карточки</option><option value="4">4 карточки</option></select></label>
+              <label class="full">Сортировка по умолчанию<select id="brand-default-sort"><option value="featured">Рекомендованные</option><option value="analytics">Популярные по аналитике</option><option value="price-asc">Сначала дешевле</option><option value="price-desc">Сначала дороже</option><option value="name">По названию</option><option value="brand">По бренду</option></select></label>
               <label class="field-row full"><input id="brand-analytics" type="checkbox"> ������� ������祭��� �����⨪� ���ਭ�</label>
             </div>
           </section>
           <section class="panel">
-            <div class="panel-head"><div><h2>���� � �����</h2></div><button class="btn" type="button" id="ui-theme-reset">������ 梥� � �����</button></div>
+            <div class="panel-head"><div><h2>Цвета и шрифты</h2></div><button class="btn" type="button" id="ui-theme-reset">Сбросить цвета и шрифты</button></div>
             <div class="form-grid">
           <label>���� ⥪��<select id="ui-font-family"><option>Inter</option><option>Open Sans</option><option>Manrope</option><option>Montserrat</option></select></label>
           <label>���� ����������<select id="ui-heading-font"><option>Manrope</option><option>Montserrat</option><option>Inter</option><option>Open Sans</option></select></label>
@@ -391,14 +391,14 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
           </div>
         </form>
         <aside class="panel editor-preview">
-          <div class="panel-head"><div><h2>�।��ᬮ��</h2></div></div>
+          <div class="panel-head"><div><h2>Предпросмотр</h2></div></div>
           <div class="section-switch preview-modes" role="group" aria-label="���ன�⢮ � �।��ᬮ��">
             <button type="button" data-preview-mode="mobile" aria-pressed="true">����䮭</button>
             <button type="button" data-preview-mode="desktop" aria-pressed="false">��������</button>
           </div>
           <div id="ui-theme-preview" class="storefront-preview" data-mode="mobile">
             <div class="preview-brand"><img id="preview-logo" alt="" hidden><strong id="preview-store-name">VIOLET SHOP</strong></div>
-            <div class="preview-hero" id="preview-hero"><small id="preview-tagline">������-�������</small><strong id="preview-title">��⠫��</strong><p id="preview-subtitle">�롥�� �, �� ��� �㦭�</p></div>
+            <div class="preview-hero" id="preview-hero"><small id="preview-tagline">Онлайн-магазин</small><strong id="preview-title">Каталог</strong><p id="preview-subtitle">Выберите то, что вам нужно</p></div>
             <div id="preview-products" class="preview-products" aria-hidden="true"></div>
           </div>
         </aside>
@@ -422,19 +422,19 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
           <label>����� ⥪��<input id="admin-muted" type="color"></label>
           <label>�࠭��� � ࠧ����⥫�<input id="admin-line" type="color"></label>
           <label>��業� � ��⨢�� ��������<input id="admin-accent" type="color"></label>
-          <label>���㣫����<select id="admin-radius"><option value="10">10 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="18">18 px</option><option value="22">22 px</option></select></label>
-          <label>���⭮��� ����䥩�<select id="admin-density"><option value="comfortable">���筠�</option><option value="compact">������⭠�</option></select></label>
-          <label>��ਭ� ������� ������<select id="admin-sidebar-width"><option value="200">�����</option><option value="230">�⠭���⭠�</option><option value="260">��ப��</option></select></label>
-          <label>����⠡ ⥪��<select id="admin-font-scale"><option value="90">90%</option><option value="100">100%</option><option value="110">110%</option><option value="120">120%</option></select></label>
+          <label>Скругления<select id="admin-radius"><option value="10">10 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="18">18 px</option><option value="22">22 px</option></select></label>
+          <label>Плотность интерфейса<select id="admin-density"><option value="comfortable">Обычная</option><option value="compact">Компактная</option></select></label>
+          <label>Ширина боковой панели<select id="admin-sidebar-width"><option value="200">Узкая</option><option value="230">Стандартная</option><option value="260">Широкая</option></select></label>
+          <label>Масштаб текста<select id="admin-font-scale"><option value="90">90%</option><option value="100">100%</option><option value="110">110%</option><option value="120">120%</option></select></label>
           <div class="full">
             <div id="admin-appearance-preview" class="admin-appearance-preview">
-              <div><strong>�।��ᬮ�� ������</strong><p>��� ���� �룫拉�� ⥪�� � ������.</p></div>
-              <span>���࠭���</span>
+              <div><strong>Предпросмотр панели</strong><p>Так будут выглядеть текст и кнопки.</p></div>
+              <span>Сохранить</span>
             </div>
           </div>
           <div class="full actions">
             <button type="submit" class="btn primary">���࠭��� ����䥩�</button>
-            <button type="button" class="btn" id="admin-appearance-reset">������ ��࠭񭭮�</button>
+            <button type="button" class="btn" id="admin-appearance-reset">Вернуть сохранённое</button>
           </div>
         </form>
       </div>
@@ -442,7 +442,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
       <div id="appearance-transfer" hidden>
         <div class="panel">
           <div class="panel-head"><div><h2>������ � ��ᯮ��</h2><p>��७�� ��ଫ����, ��⥣�਩ � ᮯ��⠢����� �⮫�殢.</p></div></div>
-          <div class="actions"><button class="btn primary" id="export-config">������ ����ன��</button><label class="btn" for="import-config-file" id="import-config-label">����㧨�� ����ன��</label><input id="import-config-file" type="file" accept=".json,application/json" hidden></div>
+          <div class="actions"><button class="btn primary" id="export-config">Скачать настройки</button><label class="btn" for="import-config-file" id="import-config-label">Загрузить настройки</label><input id="import-config-file" type="file" accept=".json,application/json" hidden></div>
         </div>
       </div>
     </section>
@@ -450,11 +450,11 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
     <section id="page-telegram" class="section">
       <div class="grid two">
         <div class="panel"><div class="panel-head"><div><h2>Telegram Bot API</h2><p>����������� � ������ ����⢨� �� �������</p></div><span class="pill" id="bot-state">�� ��������</span></div><label>Telegram ID �� �������஢<input id="manager-chat" placeholder="-100:"></label><button class="btn primary mt-12" id="save-telegram">���࠭��� ��</button><button class="btn mt-8" id="setup-webhook">����ந�� webhook</button><div class="config-note mt-12">����� ��� �� �࠭���� � ����䥩� � �� �������� � ���� �������. ������� <b>BOT_TOKEN</b> � Cloudflare  Worker  Settings  Variables and Secrets ��� Secret. ��᫥ �⮣� ������ <����ந�� webhook>.</div></div>
-        <div class="panel"><div class="panel-head"><div><h2>�� �㤥� ��⮬�⨧�஢���</h2><p>��᫥ ������祭�� ���</p></div></div><div class="items"><div class="item"><span>���� ����� ���������</span><b>?</b></div><div class="item"><span>���⢥ত���� / �⪫������ �� Telegram</span><b>?</b></div><div class="item"><span>�����祭�� ����� � 㢥��������</span><b>?</b></div><div class="item"><span>���������� ����� ���㯠⥫�</span><b>?</b></div></div><p class="muted small">�⮡� ������� ᮮ�饭�� �� ���, ���㯠⥫� ������ ��� �� ���� ࠧ ������ �� � ��⮬. ��� 㢥�������� ����� 㪠��� ��� Telegram ID �� ᮧ����� �ਣ��襭��.</p></div>
+        <div class="panel"><div class="panel-head"><div><h2>Что будет автоматизировано</h2><p>После подключения бота</p></div></div><div class="items"><div class="item"><span>Новый заказ менеджеру</span><b>✓</b></div><div class="item"><span>Подтверждение / отклонение из Telegram</span><b>✓</b></div><div class="item"><span>Назначение курьера и уведомление</span><b>✓</b></div><div class="item"><span>Обновление статуса покупателю</span><b>✓</b></div></div><p class="muted small">Чтобы получать сообщения от бота, покупатель должен хотя бы один раз открыть чат с ботом. Для уведомлений курьера укажите его Telegram ID при создании приглашения.</p></div>
       </div>
     </section>
 
-    <section id="page-courier" class="section"><div class="panel"><div class="panel-head"><div><h2>��� ���⠢��</h2><p>�����祭�� ��� ������</p></div><button class="btn" id="courier-refresh">��������</button></div><div id="courier-list"></div></div></section>
+    <section id="page-courier" class="section"><div class="panel"><div class="panel-head"><div><h2>Мои доставки</h2><p>Назначенные вам заказы</p></div><button class="btn" id="courier-refresh">Обновить</button></div><div id="courier-list"></div></div></section>
   </main>
 </div>
 <nav id="mobile-nav" class="mobile-nav hidden"></nav>
@@ -463,14 +463,14 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
 <script>
 const $=id=>document.getElementById(id);
 const state={staff:null,page:"overview",orders:[],selectedOrder:null,config:null,staffList:[],catalogTemplate:{headers:[],columnMapping:{}},categories:[],promotions:[],previousPromotions:[],promocodes:[],adminAppearance:null};
-const titles={overview:"�����",orders:"������",schedule:"����� � ��䨪",team:"�������",catalog:"��⠫�� � ᨭ�஭�����",categories:"��⥣�ਨ ���ਭ�",analytics:"�����⨪�",branding:"����ன�� ���ਭ�",logs:"���� � �訡��",settings:"����ன�� ��������",promotions:"��樨",telegram:"Telegram",courier:"��� ���⠢��"};
-const labels={new:"����",confirmed:"���⢥ত�",preparing:"��⮢����",ready:"��⮢",assigned:"�����祭 �����",picked_up:"���࠭",on_the_way:"� ���",delivered:"���⠢���",completed:"�������",cancelled:"�⬥��",rejected:"�⪫���"};
+const titles={overview:"Обзор",orders:"Заказы",schedule:"Слоты и график",team:"Команда",catalog:"Каталог и синхронизация",categories:"Категории витрины",analytics:"Аналитика",branding:"Настройки витрины",logs:"Логи и ошибки",settings:"Настройки магазина",promotions:"Акции",telegram:"Telegram",courier:"Мои доставки"};
+const labels={new:"Новый",confirmed:"Подтверждён",preparing:"Готовится",ready:"Готов",assigned:"Назначен курьер",picked_up:"Забран",on_the_way:"В пути",delivered:"Доставлен",completed:"Завершён",cancelled:"Отменён",rejected:"Отклонён"};
 const navGroups=[
  [["overview","�����"],["orders","������"],["schedule","�����"]],
  [["catalog","��⠫��"],["categories","��⥣�ਨ"],["promotions","��樨"]],
- [["settings","�������"],["team","�������"],["telegram","Telegram"]]
+ [["settings","Магазин"],["team","Команда"],["telegram","Telegram"]]
 ];
-const navGroupLabels=["����樨","�������","��ࠢ�����"];
+const navGroupLabels=["Операции","Магазин","Управление"];
 const pages=navGroups.flat();
 const navPaths={
  overview:"M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z",
@@ -494,7 +494,7 @@ function navIcon(key){
 function navButton([page,label]){
  return '<button type="button" data-page="'+page+'">'+navIcon(page)+'<span>'+label+'</span></button>';
 }
-const PERMISSION_OPTIONS=[{"key":"overview","label":"�����"},{"key":"orders","label":"��ᬮ�� �������"},{"key":"orders.manage","label":"��������� �������"},{"key":"schedule","label":"��ᯨᠭ�� � ᫮��"},{"key":"schedule.manage","label":"��������� �ᯨᠭ��"},{"key":"catalog","label":"��ᬮ�� ��⠫���"},{"key":"catalog.manage","label":"��ࠢ����� ��⠫����"},{"key":"categories","label":"��ᬮ�� ��⥣�਩"},{"key":"categories.manage","label":"��������� ��⥣�਩"},{"key":"analytics","label":"�����⨪�"},{"key":"branding","label":"��ᬮ�� ��ଫ����"},{"key":"branding.manage","label":"��������� ��ଫ����"},{"key":"settings","label":"����ன�� ��������"},{"key":"settings.manage","label":"��������� ����஥� � ��権"},{"key":"logs","label":"���⥬�� ����"},{"key":"telegram","label":"Telegram � 㢥��������"},{"key":"telegram.manage","label":"����ன�� Telegram"}];
+const PERMISSION_OPTIONS=[{"key":"overview","label":"Обзор"},{"key":"orders","label":"Просмотр заказов"},{"key":"orders.manage","label":"Изменение заказов"},{"key":"schedule","label":"Расписание и слоты"},{"key":"schedule.manage","label":"Изменение расписания"},{"key":"catalog","label":"Просмотр каталога"},{"key":"catalog.manage","label":"Управление каталогом"},{"key":"categories","label":"Просмотр категорий"},{"key":"categories.manage","label":"Изменение категорий"},{"key":"analytics","label":"Аналитика"},{"key":"branding","label":"Просмотр оформления"},{"key":"branding.manage","label":"Изменение оформления"},{"key":"settings","label":"Настройки магазина"},{"key":"settings.manage","label":"Изменение настроек и акций"},{"key":"logs","label":"Системные логи"},{"key":"telegram","label":"Telegram и уведомления"},{"key":"telegram.manage","label":"Настройка Telegram"}];
 const PAGE_PERMISSIONS={overview:"overview",orders:"orders",schedule:"schedule",team:"team",catalog:"catalog",categories:"categories",analytics:"analytics",branding:"branding",logs:"logs",settings:"settings",promotions:"settings",telegram:"telegram"};
 function canPermission(permission){return state.staff?.role==="owner"||!!state.staff?.permissions?.includes(permission);}
 function canOpenPage(page){return page==="courier"?state.staff?.role==="courier":!!PAGE_PERMISSIONS[page]&&canPermission(PAGE_PERMISSIONS[page]);}
@@ -505,8 +505,8 @@ let toastTimer;
 function toast(message){$("toast").textContent=message;$("toast").classList.remove("hidden");clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").classList.add("hidden"),3200);}
 async function api(path,options={}){
  const response=await fetch(path,{credentials:"same-origin",...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
- const data=await response.json().catch(()=>({error:"�����४�� �⢥� �ࢥ�"}));
- if(!response.ok)throw new Error(data.error||"�訡�� �����");
+ const data=await response.json().catch(()=>({error:"Некорректный ответ сервера"}));
+ if(!response.ok)throw new Error(data.error||"Ошибка запроса");
  return data;
 }
 function setPage(page){
@@ -519,7 +519,7 @@ function setPage(page){
   if(active)button.setAttribute("aria-current","page");
   else button.removeAttribute("aria-current");
  });
- $("page-title").textContent=titles[page]||"������";
+ $("page-title").textContent=titles[page]||"Панель";
  const more=$("mobile-more-toggle");
  if(more){
   more.setAttribute("aria-expanded","false");
@@ -531,16 +531,16 @@ function setPage(page){
 }
 function navForRole(){
  const courier=state.staff.role==="courier";
- $("side-nav").innerHTML=courier?navButton(["courier","��� ���⠢��"]):navGroups.map((group,index)=>{
+ $("side-nav").innerHTML=courier?navButton(["courier","Мои доставки"]):navGroups.map((group,index)=>{
   const visible=group.filter(([page])=>canOpenPage(page));
   return visible.length?'<div class="nav-group"><div class="side-label">'+navGroupLabels[index]+'</div>'+visible.map(navButton).join("")+'</div>':"";
  }).join("");
- const visible=courier?[["courier","���⠢��"]]:pages.filter(([page])=>canOpenPage(page));
+ const visible=courier?[["courier","Доставки"]]:pages.filter(([page])=>canOpenPage(page));
  const preferred=["overview","orders","catalog","branding"];
  const primary=visible.length>4?preferred.map(key=>visible.find(([page])=>page===key)).filter(Boolean):visible;
  const more=visible.filter(entry=>!primary.includes(entry));
  const nav=$("mobile-nav");
- nav.innerHTML=primary.map(navButton).join("")+'<button type="button" id="mobile-more-toggle" aria-expanded="false" aria-controls="mobile-more-panel">'+navIcon("more")+'<span>���</span></button><div class="mobile-nav-more" id="mobile-more-panel" hidden>'+more.map(navButton).join("")+'<button type="button" id="mobile-logout">���</button></div>';
+ nav.innerHTML=primary.map(navButton).join("")+'<button type="button" id="mobile-more-toggle" aria-expanded="false" aria-controls="mobile-more-panel">'+navIcon("more")+'<span>Ещё</span></button><div class="mobile-nav-more" id="mobile-more-panel" hidden>'+more.map(navButton).join("")+'<button type="button" id="mobile-logout">Выйти</button></div>';
  nav.classList.remove("hidden");
  for(const parent of [$("side-nav"),nav]){
   parent.querySelectorAll("[data-page]").forEach(button=>button.onclick=()=>setPage(button.dataset.page));
@@ -571,8 +571,8 @@ async function boot(){
   const data=await api("/api/staff/session");
   state.staff=data.staff;
   $("login-view").classList.add("hidden");$("app-view").classList.remove("hidden");
-  $("staff-name").textContent=state.staff.name;$("staff-role").textContent=state.staff.role==="owner"?"��������":state.staff.role==="manager"?"��������":"�����";
-  $("role-pill").textContent=state.staff.role==="owner"?"��������":state.staff.role==="manager"?"��������":"�����";
+  $("staff-name").textContent=state.staff.name;$("staff-role").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
+  $("role-pill").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
   navForRole();
   if(state.staff.role!=="courier"){try{await loadAdminAppearance();}catch{}const firstPage=pages.find(([page])=>canOpenPage(page))?.[0]||"overview";setPage(canOpenPage(location.hash.slice(1))?location.hash.slice(1):firstPage);}
  }catch{$("login-view").classList.remove("hidden");$("app-view").classList.add("hidden");$("mobile-nav").classList.add("hidden");}
@@ -611,14 +611,14 @@ async function loadDashboard(){
  const d=await api("/api/admin/dashboard");
  const active=Number(d.counts.new||0)+Number(d.counts.confirmed||0)+Number(d.counts.preparing||0)+Number(d.counts.ready||0)+Number(d.counts.assigned||0)+Number(d.counts.picked_up||0)+Number(d.counts.on_the_way||0);
  $("metrics").innerHTML=[
-  ["����",d.counts.new||0,"�ॡ��� ॠ�樨"],
-  ["� ࠡ��",active,"�� ��⨢�� ������"],
-  ["������ ᥣ����",d.todayOrders,"�� �����"],
-  ["����窠",money(d.revenue),"�������� ������"]
+  ["Новые",d.counts.new||0,"Требуют реакции"],
+  ["В работе",active,"Все активные статусы"],
+  ["Заказы сегодня",d.todayOrders,"По Минску"],
+  ["Выручка",money(d.revenue),"Завершённые заказы"]
  ].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong>'+x[1]+'</strong><div class="sub">'+x[2]+'</div></div>').join("");
- $("latest-orders").innerHTML=d.latest.length?'<table><thead><tr><th>�����</th><th>���㯠⥫�</th><th>�����</th><th>�㬬�</th></tr></thead><tbody>'+d.latest.map(o=>'<tr data-order="'+esc(o.id)+'"><td>#'+esc(o.number)+'</td><td>'+esc(o.customer_name)+'</td><td>'+statusPill(o.status)+'</td><td>'+money(o.total)+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">������� ���� ���</div>';
+ $("latest-orders").innerHTML=d.latest.length?'<table><thead><tr><th>Заказ</th><th>Покупатель</th><th>Статус</th><th>Сумма</th></tr></thead><tbody>'+d.latest.map(o=>'<tr data-order="'+esc(o.id)+'"><td>#'+esc(o.number)+'</td><td>'+esc(o.customer_name)+'</td><td>'+statusPill(o.status)+'</td><td>'+money(o.total)+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">Заказов пока нет</div>';
  $("latest-orders").querySelectorAll("[data-order]").forEach(row=>row.onclick=()=>{setPage("orders");setTimeout(()=>selectOrder(row.dataset.order),150);});
- $("system-health").innerHTML='<div class="items"><div class="item"><span>��⠫��</span><b>'+(d.sync?.status==="success"?"����஭���஢��":"�஢����")+'</b></div><div class="item"><span>��᫥���� ᨭ�஭�����</span><b>'+(d.sync?.finished_at?new Date(d.sync.finished_at).toLocaleString("ru-BY"):"-")+'</b></div><div class="item"><span>�訡�� �� 24 ��</span><b class="'+(d.errors24h?"status-bad":"status-good")+'">'+d.errors24h+'</b></div><div class="item"><span>��⨢�� ������</span><b>'+active+'</b></div></div><button class="btn full-width" data-goto="logs">������ ��ୠ� ᮡ�⨩</button>';
+ $("system-health").innerHTML='<div class="items"><div class="item"><span>Каталог</span><b>'+(d.sync?.status==="success"?"Синхронизирован":"Проверить")+'</b></div><div class="item"><span>Последняя синхронизация</span><b>'+(d.sync?.finished_at?new Date(d.sync.finished_at).toLocaleString("ru-BY"):"—")+'</b></div><div class="item"><span>Ошибки за 24 часа</span><b class="'+(d.errors24h?"status-bad":"status-good")+'">'+d.errors24h+'</b></div><div class="item"><span>Активные заказы</span><b>'+active+'</b></div></div><button class="btn full-width" data-goto="logs">Открыть журнал событий</button>';
  $("system-health").querySelector("[data-goto]").onclick=()=>setPage("logs");
 }
 async function loadOrders(){
@@ -629,38 +629,38 @@ async function loadOrders(){
  const status=$("order-filter").value;
  const data=await api("/api/admin/orders"+(status?"?status="+encodeURIComponent(status):""));
  state.orders=data.orders;
- $("order-list").innerHTML=state.orders.length?state.orders.map(o=>'<div class="order-card '+(state.selectedOrder===o.id?"selected":"")+'" data-id="'+esc(o.id)+'"><div class="order-card-top"><b>����� #'+esc(o.number)+'</b>'+statusPill(o.status)+'</div><p>'+esc(o.customerName)+(o.telegramUsername?' � @'+esc(o.telegramUsername):' � Telegram')+'</p><p>'+({metro:"����",pickup:"�����뢮�",delivery:"���⠢�� �� ���"}[o.deliveryMethod]||"�����뢮�")+' � '+esc(o.slotDate)+' '+esc(o.slotTime)+'</p><p><b>'+money(o.total)+'</b></p></div>').join(""):'<div class="empty">������� � ⠪�� ����ᮬ ���</div>';
+ $("order-list").innerHTML=state.orders.length?state.orders.map(o=>'<div class="order-card '+(state.selectedOrder===o.id?"selected":"")+'" data-id="'+esc(o.id)+'"><div class="order-card-top"><b>Заказ #'+esc(o.number)+'</b>'+statusPill(o.status)+'</div><p>'+esc(o.customerName)+(o.telegramUsername?' · @'+esc(o.telegramUsername):' · Telegram')+'</p><p>'+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[o.deliveryMethod]||"Самовывоз")+' · '+esc(o.slotDate)+' '+esc(o.slotTime)+'</p><p><b>'+money(o.total)+'</b></p></div>').join(""):'<div class="empty">Заказов с таким статусом нет</div>';
  $("order-list").querySelectorAll("[data-id]").forEach(card=>card.onclick=()=>selectOrder(card.dataset.id));
  if(state.selectedOrder&&state.orders.some(o=>o.id===state.selectedOrder))renderOrderDetail(state.orders.find(o=>o.id===state.selectedOrder));
- else $("order-detail").innerHTML='<div class="empty">�롥�� �����, �⮡� ��ᬮ���� ��⠫� � �������� �����</div>';
+ else $("order-detail").innerHTML='<div class="empty">Выберите заказ, чтобы посмотреть детали и изменить статус</div>';
 }
 async function selectOrder(id){state.selectedOrder=id;await loadOrders();}
-const orderPaymentLabels={cash:"�����묨 �� ����祭��",transfer:"��ॢ�� �� ४����⠬",card:"���⮩ �� ����祭��",online:"������",upon_receipt:"�� ����祭��"};
+const orderPaymentLabels={cash:"Наличными при получении",transfer:"Перевод по реквизитам",card:"Картой при получении",online:"Онлайн",upon_receipt:"При получении"};
 function renderOrderDetail(o){
  const items=o.items||[];
  let actions="";
  const buttons={
-  new:[["confirmed","���⢥न��","primary"],["rejected","�⪫�����","danger"]],
-  confirmed:[["preparing","����� ᡮ��","primary"],["cancelled","�⬥����","danger"]],
-  preparing:[["ready","����� ��⮢","primary"],["cancelled","�⬥����","danger"]],
-  ready:o.deliveryMethod==="delivery"?[]:[["completed","�뤠� ���㯠⥫�","primary"]],
-  assigned:[["ready","������ � �������",""],["cancelled","�⬥����","danger"]],
-  delivered:[["completed","�������� �����","primary"]]
+  new:[["confirmed","Подтвердить","primary"],["rejected","Отклонить","danger"]],
+  confirmed:[["preparing","Начать сборку","primary"],["cancelled","Отменить","danger"]],
+  preparing:[["ready","Заказ готов","primary"],["cancelled","Отменить","danger"]],
+  ready:o.deliveryMethod==="delivery"?[]:[["completed","Выдан покупателю","primary"]],
+  assigned:[["ready","Вернуть в магазин",""],["cancelled","Отменить","danger"]],
+  delivered:[["completed","Завершить заказ","primary"]]
  };
  for(const [status,label,style] of(buttons[o.status]||[]))actions+='<button class="btn '+style+'" data-status="'+status+'">'+label+'</button>';
  if((o.status==="ready"||o.status==="assigned")&&o.deliveryMethod==="delivery"){
-  actions+='<select id="assign-courier" class="compact-select"><option value="">����� �����</option>'+state.staffList.filter(s=>s.role==="courier"&&s.active).map(s=>'<option value="'+esc(s.id)+'" '+(s.id===o.courierId?'selected':'')+'>'+esc(s.display_name)+'</option>').join("")+'</select><button class="btn primary" data-status="assigned">'+(o.status==="assigned"?"��७�������":"��������")+'</button>';
+  actions+='<select id="assign-courier" class="compact-select"><option value="">Выбрать курьера</option>'+state.staffList.filter(s=>s.role==="courier"&&s.active).map(s=>'<option value="'+esc(s.id)+'" '+(s.id===o.courierId?'selected':'')+'>'+esc(s.display_name)+'</option>').join("")+'</select><button class="btn primary" data-status="assigned">'+(o.status==="assigned"?"Переназначить":"Назначить")+'</button>';
  }
- $("order-detail").innerHTML='<div class="panel-head"><div><div class="muted small">����� #'+esc(o.number)+'</div><h2 class="order-customer">'+esc(o.customerName)+'</h2></div>'+statusPill(o.status)+'</div><div class="info"><div><small>����䮭</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong></div><div><small>����祭��</small><strong>'+({metro:"����",pickup:"�����뢮�",delivery:"���⠢�� �� ���"}[o.deliveryMethod]||"�����뢮�")+'</strong></div><div><small>��� � �६�</small><strong>'+esc(o.slotDate)+' '+esc(o.slotTime)+'</strong></div><div><small>���⠢��</small><strong>'+money(o.deliveryFee)+'</strong></div><div><small>�㬬�</small><strong>'+money(o.total)+'</strong></div><div class="full"><small>����</small><strong>'+esc(o.address||(o.deliveryMethod==="metro"?"����":"�����뢮�"))+'</strong></div>'+(o.doorbell?'<div><small>����䮭</small><strong>'+esc(o.doorbell)+'</strong></div>':'')+'<div><small>�����</small><strong>'+esc(orderPaymentLabels[o.paymentMethod]||o.paymentMethod)+'</strong></div><div><small>�����</small><strong>'+esc(o.courierName||"�� �����祭")+'</strong></div></div><h3>���⠢ ������</h3><div class="items">'+items.map(item=>'<div class="item"><span><b>'+esc(item.product_name)+'</b><br><span class="muted">'+esc(item.option_label)+' � SKU '+esc(item.sku)+'</span><br><span class="muted">? '+item.quantity+'</span></span><b>'+money(item.line_total)+'</b></div>').join("")+'</div>'+(o.comment?'<p class="muted">�������਩: '+esc(o.comment)+'</p>':'')+'<div class="actions">'+actions+'</div><h3 class="history-heading">�����</h3><div class="items">'+(o.events||[]).map(e=>'<div class="item"><span>'+esc(e.message||labels[e.to_status]||e.event_type)+'</span><small class="muted">'+new Date(e.created_at).toLocaleString("ru-BY")+'</small></div>').join("")+'</div>';
+ $("order-detail").innerHTML='<div class="panel-head"><div><div class="muted small">ЗАКАЗ #'+esc(o.number)+'</div><h2 class="order-customer">'+esc(o.customerName)+'</h2></div>'+statusPill(o.status)+'</div><div class="info"><div><small>Телефон</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong></div><div><small>Получение</small><strong>'+({metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"}[o.deliveryMethod]||"Самовывоз")+'</strong></div><div><small>Дата и время</small><strong>'+esc(o.slotDate)+' '+esc(o.slotTime)+'</strong></div><div><small>Доставка</small><strong>'+money(o.deliveryFee)+'</strong></div><div><small>Сумма</small><strong>'+money(o.total)+'</strong></div><div class="full"><small>Адрес</small><strong>'+esc(o.address||(o.deliveryMethod==="metro"?"Метро":"Самовывоз"))+'</strong></div>'+(o.doorbell?'<div><small>Домофон</small><strong>'+esc(o.doorbell)+'</strong></div>':'')+'<div><small>Оплата</small><strong>'+esc(orderPaymentLabels[o.paymentMethod]||o.paymentMethod)+'</strong></div><div><small>Курьер</small><strong>'+esc(o.courierName||"Не назначен")+'</strong></div></div><h3>Состав заказа</h3><div class="items">'+items.map(item=>'<div class="item"><span><b>'+esc(item.product_name)+'</b><br><span class="muted">'+esc(item.option_label)+' · SKU '+esc(item.sku)+'</span><br><span class="muted">× '+item.quantity+'</span></span><b>'+money(item.line_total)+'</b></div>').join("")+'</div>'+(o.comment?'<p class="muted">Комментарий: '+esc(o.comment)+'</p>':'')+'<div class="actions">'+actions+'</div><h3 class="history-heading">История</h3><div class="items">'+(o.events||[]).map(e=>'<div class="item"><span>'+esc(e.message||labels[e.to_status]||e.event_type)+'</span><small class="muted">'+new Date(e.created_at).toLocaleString("ru-BY")+'</small></div>').join("")+'</div>';
  const contact=$("order-detail").querySelector(".info>div");
  if(contact){
-  contact.innerHTML=o.phone?'<small>����䮭</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong>':
-   '<small>���⠪�</small><strong>'+(o.telegramUsername?'Telegram � @'+esc(o.telegramUsername):o.telegramLinked?'�ਢ易� � Telegram':'�� 㪠���')+'</strong>';
+  contact.innerHTML=o.phone?'<small>Телефон</small><strong><a href="tel:'+esc(o.phone)+'">'+esc(o.phone)+'</a></strong>':
+   '<small>Контакт</small><strong>'+(o.telegramUsername?'Telegram · @'+esc(o.telegramUsername):o.telegramLinked?'Привязан к Telegram':'Не указан')+'</strong>';
  }
  if(!canPermission("orders.manage"))$("order-detail").querySelectorAll("[data-status],#assign-courier").forEach(element=>element.remove());
  $("order-detail").querySelectorAll("[data-status]").forEach(button=>button.onclick=async()=>{
   let courierId=null;if(button.dataset.status==="assigned")courierId=$("assign-courier")?.value;
-  try{await api("/api/admin/orders/"+encodeURIComponent(o.id),{method:"PATCH",body:JSON.stringify({status:button.dataset.status,courierId})});toast("����� ������ �������");await loadOrders();}catch(error){toast(error.message);}
+  try{await api("/api/admin/orders/"+encodeURIComponent(o.id),{method:"PATCH",body:JSON.stringify({status:button.dataset.status,courierId})});toast("Статус заказа обновлён");await loadOrders();}catch(error){toast(error.message);}
  });
 }
 $("order-filter").onchange=()=>{state.selectedOrder=null;loadOrders();};
@@ -668,31 +668,31 @@ $("orders-reload").onclick=()=>loadOrders();
 async function loadSchedule(){
  const [config,blocks]=await Promise.all([api("/api/admin/settings"),api("/api/admin/slot-blocks")]);
  state.config=config;
- const days=[["mon","��"],["tue","��"],["wed","��"],["thu","��"],["fri","��"],["sat","��"],["sun","��"]];
- $("hours-editor").innerHTML=days.map(([key,label])=>{const h=config.weeklyHours[key]||{};return '<div class="hour-row" data-day="'+key+'"><span class="day">'+label+'</span><label class="closed"><input type="checkbox" class="day-closed" '+(h.closed?"checked":"")+'> ��室���</label><input type="time" class="day-open" value="'+esc(h.open||"10:00")+'"><input type="time" class="day-close" value="'+esc(h.close||"21:00")+'"></div>';}).join("");
+ const days=[["mon","Пн"],["tue","Вт"],["wed","Ср"],["thu","Чт"],["fri","Пт"],["sat","Сб"],["sun","Вс"]];
+ $("hours-editor").innerHTML=days.map(([key,label])=>{const h=config.weeklyHours[key]||{};return '<div class="hour-row" data-day="'+key+'"><span class="day">'+label+'</span><label class="closed"><input type="checkbox" class="day-closed" '+(h.closed?"checked":"")+'> Выходной</label><input type="time" class="day-open" value="'+esc(h.open||"10:00")+'"><input type="time" class="day-close" value="'+esc(h.close||"21:00")+'"></div>';}).join("");
  $("cfg-slot").value=config.slotMinutes;$("cfg-lead").value=config.leadMinutes;$("cfg-days").value=config.daysAhead;$("cfg-capacity").value=config.slotCapacity;
- $("blocks-list").innerHTML=blocks.blocks.length?blocks.blocks.map(b=>'<div class="item"><span><b>'+esc(b.slot_date)+'</b> � '+esc(b.start_time)+'-'+esc(b.end_time)+'<br><small class="muted">'+esc(b.reason||"������")+' � '+esc(({all:"���� �������",metro:"����",pickup:"�����뢮�",delivery:"���⠢�� �� ���"})[b.method]||b.method)+'</small></span><button class="btn danger" data-delete-block="'+esc(b.id)+'">�������</button></div>').join(""):'<div class="empty">�᪫�祭�� ���</div>';
- $("blocks-list").querySelectorAll("[data-delete-block]").forEach(button=>button.onclick=async()=>{await api("/api/admin/slot-blocks/"+button.dataset.deleteBlock,{method:"DELETE"});await loadSchedule();toast("��࠭�祭�� 㤠����");});
+ $("blocks-list").innerHTML=blocks.blocks.length?blocks.blocks.map(b=>'<div class="item"><span><b>'+esc(b.slot_date)+'</b> · '+esc(b.start_time)+'–'+esc(b.end_time)+'<br><small class="muted">'+esc(b.reason||"Закрыто")+' · '+esc(({all:"Весь магазин",metro:"Метро",pickup:"Самовывоз",delivery:"Доставка на дом"})[b.method]||b.method)+'</small></span><button class="btn danger" data-delete-block="'+esc(b.id)+'">Удалить</button></div>').join(""):'<div class="empty">Исключений нет</div>';
+ $("blocks-list").querySelectorAll("[data-delete-block]").forEach(button=>button.onclick=async()=>{await api("/api/admin/slot-blocks/"+button.dataset.deleteBlock,{method:"DELETE"});await loadSchedule();toast("Ограничение удалено");});
 }
 $("save-hours").onclick=async()=>{
  const weeklyHours={};
  document.querySelectorAll(".hour-row").forEach(row=>weeklyHours[row.dataset.day]={closed:row.querySelector(".day-closed").checked,open:row.querySelector(".day-open").value,close:row.querySelector(".day-close").value});
- try{await api("/api/admin/settings",{method:"PUT",body:JSON.stringify({weeklyHours,slotMinutes:Number($("cfg-slot").value),leadMinutes:Number($("cfg-lead").value),daysAhead:Number($("cfg-days").value),slotCapacity:Number($("cfg-capacity").value)})});toast("��ᯨᠭ�� ��࠭���");}catch(error){toast(error.message);}
+ try{await api("/api/admin/settings",{method:"PUT",body:JSON.stringify({weeklyHours,slotMinutes:Number($("cfg-slot").value),leadMinutes:Number($("cfg-lead").value),daysAhead:Number($("cfg-days").value),slotCapacity:Number($("cfg-capacity").value)})});toast("Расписание сохранено");}catch(error){toast(error.message);}
 };
-$("block-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/slot-blocks",{method:"POST",body:JSON.stringify({date:$("block-date").value,startTime:$("block-start").value,endTime:$("block-end").value,method:$("block-method").value,reason:$("block-reason").value})});$("block-reason").value="";await loadSchedule();toast("��࠭�祭�� ���������");}catch(error){toast(error.message);}};
+$("block-form").onsubmit=async e=>{e.preventDefault();try{await api("/api/admin/slot-blocks",{method:"POST",body:JSON.stringify({date:$("block-date").value,startTime:$("block-start").value,endTime:$("block-end").value,method:$("block-method").value,reason:$("block-reason").value})});$("block-reason").value="";await loadSchedule();toast("Ограничение добавлено");}catch(error){toast(error.message);}};
 async function loadTeam(){
  const d=await api("/api/admin/staff");state.staffList=d.staff;
  $("team-list").innerHTML=d.staff.length?d.staff.map(s=>{
-  const permissionContent=s.role==="owner"?'<div class="small muted mt-8">����� ����� ��������</div>':s.role==="courier"?'<div class="small muted mt-8">����� ⮫쪮 � �����祭�� ���⠢���</div>':'<details class="permission-editor"><summary>����ந�� ࠧ�襭��</summary><div class="permission-grid">'+permissionChecks(s.permissions||[],"data-staff-permission")+'</div><button class="btn mt-8" type="button" data-save-permissions="'+esc(s.id)+'">���࠭��� �ࠢ�</button></details>';
-  return '<div class="panel team-card" data-staff-card="'+esc(s.id)+'"><div class="row"><span><b>'+esc(s.display_name)+'</b><br><small class="muted">'+esc(s.role==="owner"?"��������":s.role==="manager"?"��������":"�����")+'</small></span>'+(s.active?'<span class="status delivered">��⨢��</span>':'<span class="status cancelled">�⪫���</span>')+'</div>'+permissionContent+'<div class="row mt-8"><input data-staff-telegram="'+esc(s.id)+'" value="'+esc(s.telegram_id||"")+'" placeholder="Telegram ID ��� 㢥��������"><button class="btn" data-save-telegram="'+esc(s.id)+'">���࠭��� ID</button><button class="btn '+(s.active?"danger":"")+'" data-toggle-staff="'+esc(s.id)+'" data-active="'+s.active+'">'+(s.active?"�⪫����":"�������")+'</button></div></div>';
+  const permissionContent=s.role==="owner"?'<div class="small muted mt-8">Полный доступ владельца</div>':s.role==="courier"?'<div class="small muted mt-8">Доступ только к назначенным доставкам</div>':'<details class="permission-editor"><summary>Настроить разрешения</summary><div class="permission-grid">'+permissionChecks(s.permissions||[],"data-staff-permission")+'</div><button class="btn mt-8" type="button" data-save-permissions="'+esc(s.id)+'">Сохранить права</button></details>';
+  return '<div class="panel team-card" data-staff-card="'+esc(s.id)+'"><div class="row"><span><b>'+esc(s.display_name)+'</b><br><small class="muted">'+esc(s.role==="owner"?"Владелец":s.role==="manager"?"Менеджер":"Курьер")+'</small></span>'+(s.active?'<span class="status delivered">Активен</span>':'<span class="status cancelled">Отключён</span>')+'</div>'+permissionContent+'<div class="row mt-8"><input data-staff-telegram="'+esc(s.id)+'" value="'+esc(s.telegram_id||"")+'" placeholder="Telegram ID для уведомлений"><button class="btn" data-save-telegram="'+esc(s.id)+'">Сохранить ID</button><button class="btn '+(s.active?"danger":"")+'" data-toggle-staff="'+esc(s.id)+'" data-active="'+s.active+'">'+(s.active?"Отключить":"Включить")+'</button></div></div>';
  }).join(""):'<div class="empty">������� ���� �� ���������</div>';
  $("team-list").querySelectorAll("[data-toggle-staff]").forEach(button=>button.onclick=async()=>{await api("/api/admin/staff/"+button.dataset.toggleStaff,{method:"PATCH",body:JSON.stringify({active:button.dataset.active!=="1"})});await loadTeam();});
- $("team-list").querySelectorAll("[data-save-telegram]").forEach(button=>button.onclick=async()=>{const input=[...$("team-list").querySelectorAll("[data-staff-telegram]")].find(el=>el.dataset.staffTelegram===button.dataset.saveTelegram);await api("/api/admin/staff/"+button.dataset.saveTelegram,{method:"PATCH",body:JSON.stringify({telegramId:input?.value||""})});toast("Telegram ID ��࠭�");});
+ $("team-list").querySelectorAll("[data-save-telegram]").forEach(button=>button.onclick=async()=>{const input=[...$("team-list").querySelectorAll("[data-staff-telegram]")].find(el=>el.dataset.staffTelegram===button.dataset.saveTelegram);await api("/api/admin/staff/"+button.dataset.saveTelegram,{method:"PATCH",body:JSON.stringify({telegramId:input?.value||""})});toast("Telegram ID сохранён");});
  $("team-list").querySelectorAll("[data-save-permissions]").forEach(button=>button.onclick=async()=>{
   const card=button.closest("[data-staff-card]");
   const permissions=[...card.querySelectorAll("[data-staff-permission]")].filter(input=>input.checked).map(input=>input.dataset.staffPermission);
-  if(!permissions.length){toast("�롥�� ��� �� ���� ࠧ�襭��");return;}
-  try{await api("/api/admin/staff/"+button.dataset.savePermissions,{method:"PATCH",body:JSON.stringify({permissions})});toast("�ࠢ� ���������. ����㤭��� �㦭� ���� ������.");await loadTeam();}catch(error){toast(error.message);}
+  if(!permissions.length){toast("Выберите хотя бы одно разрешение");return;}
+  try{await api("/api/admin/staff/"+button.dataset.savePermissions,{method:"PATCH",body:JSON.stringify({permissions})});toast("Права обновлены. Сотруднику нужно войти заново.");await loadTeam();}catch(error){toast(error.message);}
  });
 }
 $("team-reload").onclick=loadTeam;
@@ -703,35 +703,35 @@ $("invite-form").onsubmit=async e=>{
  try{
   const role=$("invite-role").value;
   const permissions=[...$("invite-permissions").querySelectorAll("[data-invite-permission]")].filter(input=>input.checked).map(input=>input.dataset.invitePermission);
-  if(role==="manager"&&!permissions.length){toast("�롥�� ��� �� ���� ࠧ�襭��");return;}
+  if(role==="manager"&&!permissions.length){toast("Выберите хотя бы одно разрешение");return;}
   const d=await api("/api/admin/invites",{method:"POST",body:JSON.stringify({displayName:$("invite-name").value,role,telegramId:$("invite-telegram").value,permissions})});
-  $("invite-result").innerHTML='<div class="invite-code"><div class="small">����ࠧ��� ��� ��� '+esc(d.invite.displayName)+'</div><code>'+esc(d.invite.code)+'</code><button class="btn mt-8" id="copy-invite">�����஢��� ���</button><div class="small muted mt-8">������� �� '+new Date(d.invite.expiresAt).toLocaleString("ru-BY")+'</div></div>';
-  $("copy-invite").onclick=()=>navigator.clipboard.writeText(d.invite.code).then(()=>toast("��� ᪮��஢��"));
+  $("invite-result").innerHTML='<div class="invite-code"><div class="small">Одноразовый код для '+esc(d.invite.displayName)+'</div><code>'+esc(d.invite.code)+'</code><button class="btn mt-8" id="copy-invite">Скопировать код</button><div class="small muted mt-8">Действует до '+new Date(d.invite.expiresAt).toLocaleString("ru-BY")+'</div></div>';
+  $("copy-invite").onclick=()=>navigator.clipboard.writeText(d.invite.code).then(()=>toast("Код скопирован"));
   $("invite-name").value="";$("invite-telegram").value="";await loadTeam();
  }catch(error){toast(error.message);}
 };
 const catalogFields=[
  {key:"product_key",label:"ID ⮢��",required:true,aliases:["product_key","product id","productid","id","��⨪�"]},
  {key:"name",label:"�������� ⮢��",required:true,aliases:["name","product name","title","��������","⮢��"]},
- {key:"category",label:"��⥣���",required:true,aliases:["category","category name","��⥣���"]},
+ {key:"category",label:"Категория",required:true,aliases:["category","category name","категория"]},
  {key:"category_label",label:"�������� ��⥣�ਨ �� ���ਭ�",aliases:["category_label","category title","category display name","�������� ��⥣�ਨ"]},
  {key:"category_image_url",label:"���⨭�� ��⥣�ਨ",aliases:["category_image_url","category image","category photo","�� ��⥣�ਨ"]},
  {key:"category_icon",label:"������ ��⥣�ਨ",aliases:["category_icon","category icon","������ ��⥣�ਨ"]},
- {key:"price_byn",label:"����",required:true,aliases:["price_byn","price","price by","業�"]},
+ {key:"price_byn",label:"Цена",required:true,aliases:["price_byn","price","price by","цена"]},
  {key:"manufacturer",label:"�७� / �ந�����⥫�",aliases:["manufacturer","brand","vendor","producer","�७�","�ந�����⥫�"]},
  {key:"option_label",label:"��ਠ�� / ����",aliases:["option_label","variant","variant name","flavor","taste","����"]},
  {key:"available",label:"����稥",aliases:["available","in stock","stock","����稥"]},
  {key:"active",label:"��⨢�����",aliases:["active","enabled","is active","��⨢��"]},
- {key:"image_url",label:"��� ⮢��",aliases:["image_url","image","photo","photo url","��"]},
+ {key:"image_url",label:"Фото товара",aliases:["image_url","image","photo","photo url","фото"]},
  {key:"variant_image_url",label:"��� ��ਠ�� / 梥�",aliases:["variant_image_url","option_image_url","color_image_url","�� 梥�"]},
  {key:"sku",label:"SKU / ��⨪� ��ਠ��",aliases:["sku","sku id","variant sku","article"]},
- {key:"description",label:"���ᠭ��",aliases:["description","���ᠭ��"]},
+ {key:"description",label:"Описание",aliases:["description","описание"]},
  {key:"sort_order",label:"��筮� ���冷�",aliases:["sort_order","priority","order"]},
- {key:"popularity",label:"������� �����୮���",aliases:["popularity"]},
+ {key:"popularity",label:"Базовая популярность",aliases:["popularity"]},
  {key:"strength_mg",label:"�९����",aliases:["strength_mg","strength","nicotine strength","�९����"]},
  {key:"resistance_ohm",label:"����⨢�����",aliases:["resistance_ohm","resistance","ohm","ᮯ�⨢�����"]},
  {key:"component_type",label:"��� ���������",aliases:["component_type","component","type","⨯"]},
- {key:"color",label:"����",aliases:["color","colour","梥�"]}
+ {key:"color",label:"Цвет",aliases:["color","colour","цвет"]}
 ];
 function normalizedHeader(value){return String(value||"").trim().toLocaleLowerCase("ru").replace(/[\s\-./]+/g,"_").replace(/[^\p{L}\p{N}_]/gu,"");}
 function guessColumnMapping(headers){
@@ -741,8 +741,8 @@ function guessColumnMapping(headers){
 }
 function renderColumnMapping(headers,mapping={}){
  const container=$("column-mapping");
- if(!headers?.length){container.innerHTML='<div class="config-note full">���� ��� ����������. ������ <�஢���� ⠡����> ��� �ਪ९�� CSV-蠡���.</div>';return;}
- container.innerHTML='<div class="full"><b>�����⠢����� �����</b><p class="muted small">����� - ���� ��������, �ࠢ� - ᮮ⢥�����騩 �⮫��� ��襩 ⠡����. ��易⥫�� ���� �⬥祭� *</p></div>'+catalogFields.map(field=>'<label>'+esc(field.label)+(field.required?' *':'')+'<select data-map-field="'+field.key+'"><option value="">- �� �ᯮ�짮���� -</option>'+headers.map(header=>'<option value="'+esc(header)+'" '+(mapping[field.key]===header?'selected':'')+'>'+esc(header)+'</option>').join("")+'</select></label>').join("");
+ if(!headers?.length){container.innerHTML='<div class="config-note full">Пока нет заголовков. Нажмите «Проверить таблицу» или прикрепите CSV-шаблон.</div>';return;}
+ container.innerHTML='<div class="full"><b>Сопоставление полей</b><p class="muted small">Слева — поле магазина, справа — соответствующий столбец вашей таблицы. Обязательные поля отмечены *</p></div>'+catalogFields.map(field=>'<label>'+esc(field.label)+(field.required?' *':'')+'<select data-map-field="'+field.key+'"><option value="">— Не использовать —</option>'+headers.map(header=>'<option value="'+esc(header)+'" '+(mapping[field.key]===header?'selected':'')+'>'+esc(header)+'</option>').join("")+'</select></label>').join("");
 }
 function readColumnMapping(){const mapping={};$("column-mapping").querySelectorAll("[data-map-field]").forEach(select=>{if(select.value)mapping[select.dataset.mapField]=select.value;});return mapping;}
 function parseCsvHeader(text){
@@ -759,7 +759,7 @@ async function saveCatalogConnection(){
  const parsed=sheetParts($("sync-sheet-url").value);
  const spreadsheetId=parsed.spreadsheetId||$("sync-sheet-id").value.trim();
  const catalogGid=parsed.catalogGid||$("sync-gid").value.trim();
- if(!spreadsheetId||!catalogGid)throw new Error("������ ��뫪� �� Google Sheets � GID ����");
+ if(!spreadsheetId||!catalogGid)throw new Error("Укажите ссылку на Google Sheets и GID листа");
  $("sync-sheet-id").value=spreadsheetId;$("sync-gid").value=catalogGid;
  const mapping=readColumnMapping();
  await api("/api/admin/sync-settings",{method:"PUT",body:JSON.stringify({spreadsheetId,catalogGid,cacheSeconds:Number($("sync-cache").value),columnMapping:mapping})});
@@ -771,22 +771,22 @@ async function loadCatalog(){
  $("page-catalog").querySelectorAll("form").forEach(form=>form.hidden=!canManageCatalog);
  const [runs,settings,template]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template")]);
  const latest=runs.runs[0];state.catalogTemplate=template||{headers:[],columnMapping:{}};
- $("sync-state").textContent=latest?.status==="success"?"����஭���஢��":latest?.status==="error"?"�訡��":"������� �஢�ન";
- $("catalog-stats").innerHTML=[["��ப � ���筨��",latest?.source_rows??"-"],["����祪",latest?.product_families??"-"],["��ਠ�⮢",latest?.variants??"-"],["��᫥���� �����",latest?.finished_at?new Date(latest.finished_at).toLocaleString("ru-BY"):"-"]].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong class="metric-small-value">'+x[1]+'</strong></div>').join("");
+ $("sync-state").textContent=latest?.status==="success"?"Синхронизирован":latest?.status==="error"?"Ошибка":"Ожидает проверки";
+ $("catalog-stats").innerHTML=[["Строк в источнике",latest?.source_rows??"—"],["Карточек",latest?.product_families??"—"],["Вариантов",latest?.variants??"—"],["Последний запуск",latest?.finished_at?new Date(latest.finished_at).toLocaleString("ru-BY"):"—"]].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong class="metric-small-value">'+x[1]+'</strong></div>').join("");
  $("sync-sheet-id").value=settings.spreadsheetId;$("sync-gid").value=settings.catalogGid;$("sync-cache").value=settings.cacheSeconds;
  $("sync-sheet-url").value="https://docs.google.com/spreadsheets/d/"+settings.spreadsheetId+"/edit?gid="+settings.catalogGid;
- $("template-info").textContent=template?.name?template.name+" � "+(template.headers||[]).length+" �⮫�殢"+(template.hasContent?" � 䠩� ��࠭�":""):"������ ��� �� �ਪ९��";
+ $("template-info").textContent=template?.name?template.name+" · "+(template.headers||[]).length+" столбцов"+(template.hasContent?" · файл сохранён":""):"Шаблон ещё не прикреплён";
  renderColumnMapping(template?.headers||[],template?.columnMapping||settings.columnMapping||{});
- $("sync-history").innerHTML=runs.runs.length?'<div class="table-wrap"><table><thead><tr><th>���</th><th>�����</th><th>��ப</th><th>����祪</th><th>��ਠ�⮢</th><th>�訡��</th></tr></thead><tbody>'+runs.runs.map(r=>'<tr><td>'+new Date(r.started_at).toLocaleString("ru-BY")+'</td><td>'+statusPill(r.status==="success"?"completed":r.status==="error"?"rejected":"new")+'</td><td>'+(r.source_rows??"-")+'</td><td>'+(r.product_families??"-")+'</td><td>'+(r.variants??"-")+'</td><td>'+esc(r.error||"-")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">����� ����� ��᫥ ��ࢮ�� ����᪠</div>';
+ $("sync-history").innerHTML=runs.runs.length?'<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Статус</th><th>Строк</th><th>Карточек</th><th>Вариантов</th><th>Ошибка</th></tr></thead><tbody>'+runs.runs.map(r=>'<tr><td>'+new Date(r.started_at).toLocaleString("ru-BY")+'</td><td>'+statusPill(r.status==="success"?"completed":r.status==="error"?"rejected":"new")+'</td><td>'+(r.source_rows??"—")+'</td><td>'+(r.product_families??"—")+'</td><td>'+(r.variants??"—")+'</td><td>'+esc(r.error||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">История появится после первого запуска</div>';
 }
 $("sync-sheet-url").onchange=()=>{const parsed=sheetParts($("sync-sheet-url").value);if(parsed.spreadsheetId)$("sync-sheet-id").value=parsed.spreadsheetId;if(parsed.catalogGid)$("sync-gid").value=parsed.catalogGid;};
-$("sync-settings-form").onsubmit=async e=>{e.preventDefault();try{await saveCatalogConnection();toast("������祭�� ⠡���� ��࠭���");await loadCatalog();}catch(error){toast(error.message);}};
-$("preview-sheet").onclick=async()=>{const button=$("preview-sheet");button.disabled=true;button.textContent="�஢��塞:";try{await saveCatalogConnection();const result=await api("/api/admin/catalog-preview");state.catalogTemplate={...state.catalogTemplate,name:"��������� �������񭭮� ⠡����",headers:result.headers,columnMapping:guessColumnMapping(result.headers)};await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});renderColumnMapping(result.headers,state.catalogTemplate.columnMapping);$("template-info").textContent="������ ����㯭� � "+result.headers.length+" �⮫�殢 � "+result.rowCount+" ��ப ������";toast("������ ������祭�. �஢���� ᮯ��⠢����� �����.");}catch(error){toast(error.message);}finally{button.disabled=false;button.textContent="�஢���� ⠡����";}};
-$("attach-template").onclick=async()=>{const file=$("catalog-template-file").files?.[0];if(!file){toast("���砫� �롥�� CSV-䠩� 蠡����");return;}try{const content=await file.text();const headers=parseCsvHeader(content);if(headers.length<2)throw new Error("� 蠡���� �� 㤠���� ��।����� ���������");state.catalogTemplate={name:file.name,headers,columnMapping:guessColumnMapping(headers),content};renderColumnMapping(headers,state.catalogTemplate.columnMapping);$("template-info").textContent=file.name+" � "+headers.length+" �⮫�殢";await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});toast("CSV-蠡��� �ਪ९�� � ��࠭�");await loadCatalog();}catch(error){toast(error.message);}};
-$("save-template").onclick=async()=>{try{if(!state.catalogTemplate.headers?.length)throw new Error("���砫� �஢���� ⠡���� ��� �ਪ९�� CSV-蠡���");const template={...state.catalogTemplate,columnMapping:readColumnMapping()};await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(template)});await saveCatalogConnection();state.catalogTemplate=template;toast("�����⠢����� ��࠭���");}catch(error){toast(error.message);}};
+$("sync-settings-form").onsubmit=async e=>{e.preventDefault();try{await saveCatalogConnection();toast("Подключение таблицы сохранено");await loadCatalog();}catch(error){toast(error.message);}};
+$("preview-sheet").onclick=async()=>{const button=$("preview-sheet");button.disabled=true;button.textContent="Проверяем…";try{await saveCatalogConnection();const result=await api("/api/admin/catalog-preview");state.catalogTemplate={...state.catalogTemplate,name:"Заголовки подключённой таблицы",headers:result.headers,columnMapping:guessColumnMapping(result.headers)};await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});renderColumnMapping(result.headers,state.catalogTemplate.columnMapping);$("template-info").textContent="Таблица доступна · "+result.headers.length+" столбцов · "+result.rowCount+" строк данных";toast("Таблица подключена. Проверьте сопоставление полей.");}catch(error){toast(error.message);}finally{button.disabled=false;button.textContent="Проверить таблицу";}};
+$("attach-template").onclick=async()=>{const file=$("catalog-template-file").files?.[0];if(!file){toast("Сначала выберите CSV-файл шаблона");return;}try{const content=await file.text();const headers=parseCsvHeader(content);if(headers.length<2)throw new Error("В шаблоне не удалось определить заголовки");state.catalogTemplate={name:file.name,headers,columnMapping:guessColumnMapping(headers),content};renderColumnMapping(headers,state.catalogTemplate.columnMapping);$("template-info").textContent=file.name+" · "+headers.length+" столбцов";await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});toast("CSV-шаблон прикреплён и сохранён");await loadCatalog();}catch(error){toast(error.message);}};
+$("save-template").onclick=async()=>{try{if(!state.catalogTemplate.headers?.length)throw new Error("Сначала проверьте таблицу или прикрепите CSV-шаблон");const template={...state.catalogTemplate,columnMapping:readColumnMapping()};await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(template)});await saveCatalogConnection();state.catalogTemplate=template;toast("Сопоставление сохранено");}catch(error){toast(error.message);}};
 $("download-template").onclick=()=>{const headers=catalogFields.map(field=>field.key);const csv=headers.join(",")+"\r\n";const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="violet-shop-catalog-template.csv";link.click();URL.revokeObjectURL(link.href);};
-$("download-attached-template").onclick=async()=>{try{const response=await fetch("/api/admin/catalog-template/file",{credentials:"same-origin"});if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||"���� 蠡���� �� ������");}const blob=await response.blob();const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=state.catalogTemplate.name||"catalog-template.csv";link.click();URL.revokeObjectURL(link.href);}catch(error){toast(error.message);}};
-$("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="����஭�����:";try{await saveCatalogConnection();const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast("���������: "+d.summary.productFamilies+" ����祪, "+d.summary.variants+" ��ਠ�⮢");await loadCatalog();await loadCategories();}catch(error){toast(error.message);await loadCatalog();}finally{b.disabled=false;b.textContent="? ����஭���஢��� ᥩ��";}};
+$("download-attached-template").onclick=async()=>{try{const response=await fetch("/api/admin/catalog-template/file",{credentials:"same-origin"});if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||"Файл шаблона не найден");}const blob=await response.blob();const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=state.catalogTemplate.name||"catalog-template.csv";link.click();URL.revokeObjectURL(link.href);}catch(error){toast(error.message);}};
+$("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="Синхронизация…";try{await saveCatalogConnection();const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast("Обновлено: "+d.summary.productFamilies+" карточек, "+d.summary.variants+" вариантов");await loadCatalog();await loadCategories();}catch(error){toast(error.message);await loadCatalog();}finally{b.disabled=false;b.textContent="↻ Синхронизировать сейчас";}};
 function captureCategoryDrafts(){
  const cards=[...$("categories-list").querySelectorAll(".category-editor")];
  for(const card of cards){
@@ -798,7 +798,7 @@ function captureCategoryDrafts(){
 function renderCategoryList(){
  const canManage=canPermission("categories.manage"),list=$("categories-list");
  $("categories-reload").hidden=!canManage;$("save-categories").hidden=!canManage;
- list.innerHTML=state.categories.length?state.categories.map((category,index)=>'<div class="panel category-editor" data-category-key="'+esc(category.key)+'" draggable="'+(canManage?'true':'false')+'"><div class="category-order-control"><span class="category-order-number">'+(index+1)+'</span><button type="button" data-move-category="-1" aria-label="��६����� ���" '+(!canManage||index===0?'disabled':'')+'></button><button type="button" data-move-category="1" aria-label="��६����� ����" '+(!canManage||index===state.categories.length-1?'disabled':'')+'></button><span class="muted small">�� '+state.categories.length+'</span></div><div class="category-editor-main"><div class="row"><div><b>'+esc(category.key)+'</b><div class="muted small">���筨�: '+esc(category.sourceLabel||category.key)+'</div></div><label class="field-row"><input type="checkbox" data-category-field="active" '+(category.active?'checked':'')+'> �����뢠��</label></div><div class="form-grid mt-12"><label>�������� �� ���ਭ�<input data-category-field="label" value="'+esc(category.label)+'" maxlength="80"></label><label>������ / ᨬ���<input data-category-field="icon" value="'+esc(category.icon||"")+'" maxlength="8" placeholder="��⮬���᪨"></label><label>���� ��⥣�ਨ<input data-category-field="color" type="color" value="'+esc(category.color||"#D8DDE0")+'"></label><label class="full">����ࠦ���� ��⥣�ਨ (����易⥫쭮)<input data-category-field="image" type="url" value="'+esc(category.image||"")+'" placeholder="https://:"></label></div></div></div>').join(""):'<div class="empty">��⥣�ਨ ������� ��᫥ ��ࢮ� ᨭ�஭���樨 ��⠫���</div>';
+ list.innerHTML=state.categories.length?state.categories.map((category,index)=>'<div class="panel category-editor" data-category-key="'+esc(category.key)+'" draggable="'+(canManage?'true':'false')+'"><div class="category-order-control"><span class="category-order-number">'+(index+1)+'</span><button type="button" data-move-category="-1" aria-label="Переместить выше" '+(!canManage||index===0?'disabled':'')+'>↑</button><button type="button" data-move-category="1" aria-label="Переместить ниже" '+(!canManage||index===state.categories.length-1?'disabled':'')+'>↓</button><span class="muted small">из '+state.categories.length+'</span></div><div class="category-editor-main"><div class="row"><div><b>'+esc(category.key)+'</b><div class="muted small">Источник: '+esc(category.sourceLabel||category.key)+'</div></div><label class="field-row"><input type="checkbox" data-category-field="active" '+(category.active?'checked':'')+'> Показывать</label></div><div class="form-grid mt-12"><label>Название на витрине<input data-category-field="label" value="'+esc(category.label)+'" maxlength="80"></label><label>Иконка / символ<input data-category-field="icon" value="'+esc(category.icon||"")+'" maxlength="8" placeholder="Автоматически"></label><label>Цвет категории<input data-category-field="color" type="color" value="'+esc(category.color||"#D8DDE0")+'"></label><label class="full">Изображение категории (необязательно)<input data-category-field="image" type="url" value="'+esc(category.image||"")+'" placeholder="https://…"></label></div></div></div>').join(""):'<div class="empty">Категории появятся после первой синхронизации каталога</div>';
  if(!canManage)list.querySelectorAll("input,button").forEach(input=>input.disabled=true);
  list.querySelectorAll("[data-move-category]").forEach(button=>button.onclick=()=>{
   captureCategoryDrafts();const card=button.closest(".category-editor"),key=card.dataset.categoryKey;
@@ -820,16 +820,16 @@ async function loadCategories(){
  const data=await api("/api/admin/categories");state.categories=(data.categories||[]).sort((a,b)=>Number(a.sortOrder??999)-Number(b.sortOrder??999));
  renderCategoryList();
 }
-$("categories-reload").onclick=async()=>{try{await api("/api/admin/sync",{method:"POST",body:"{}"});await loadCatalog();await loadCategories();toast("��⥣�ਨ ��������� �� ⠡����");}catch(error){toast(error.message);}};
-$("save-categories").onclick=async()=>{captureCategoryDrafts();const categories=state.categories.map((category,index)=>({...category,sortOrder:index}));try{await api("/api/admin/categories",{method:"PUT",body:JSON.stringify({categories})});await loadCategories();toast("���冷� � ��ଫ���� ��⥣�਩ ��࠭���");}catch(error){toast(error.message);}};
+$("categories-reload").onclick=async()=>{try{await api("/api/admin/sync",{method:"POST",body:"{}"});await loadCatalog();await loadCategories();toast("Категории обновлены из таблицы");}catch(error){toast(error.message);}};
+$("save-categories").onclick=async()=>{captureCategoryDrafts();const categories=state.categories.map((category,index)=>({...category,sortOrder:index}));try{await api("/api/admin/categories",{method:"PUT",body:JSON.stringify({categories})});await loadCategories();toast("Порядок и оформление категорий сохранены");}catch(error){toast(error.message);}};
 async function loadAnalytics(){
  const days=Number($("analytics-days").value)||30;const data=await api("/api/admin/analytics?days="+days);
- const metrics=[["�������� ����⥫�",data.totals.uniqueVisitors],["��ᬮ��� ����祪",data.totals.views],["���������� � ��২��",data.totals.cartAdds],["��ଫ���� ����樨",data.totals.orders],["���᪨",data.totals.searches],["����� ��ଫ����",data.totals.checkouts]];
+ const metrics=[["Уникальные посетители",data.totals.uniqueVisitors],["Просмотры карточек",data.totals.views],["Добавления в корзину",data.totals.cartAdds],["Оформленные позиции",data.totals.orders],["Поиски",data.totals.searches],["Начатые оформления",data.totals.checkouts]];
  $("analytics-metrics").innerHTML=metrics.map(([label,value])=>'<div class="metric"><small>'+label+'</small><strong>'+Number(value||0).toLocaleString("ru-RU")+'</strong></div>').join("");
- $("analytics-products").innerHTML=data.topProducts.length?'<div class="table-wrap"><table><thead><tr><th>�����</th><th>��ᬮ���</th><th>��২��</th><th>������</th></tr></thead><tbody>'+data.topProducts.map(item=>'<tr><td><b>'+esc(item.name||item.product_id)+'</b><br><small class="muted">'+esc(item.brand||item.category||"")+'</small></td><td>'+item.views+'</td><td>'+item.cart_adds+'</td><td>'+item.orders+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">���� �������筮 ������. ������ ������� ��᫥ ���饭�� ���ਭ�.</div>';
- $("analytics-searches").innerHTML=data.searches.length?data.searches.map(item=>'<div class="item"><span>'+esc(item.query_text)+'</span><b>'+item.count+'</b></div>').join(""):'<div class="empty">���᪮��� ����ᮢ ���� ���</div>';
+ $("analytics-products").innerHTML=data.topProducts.length?'<div class="table-wrap"><table><thead><tr><th>Товар</th><th>Просмотры</th><th>Корзина</th><th>Заказы</th></tr></thead><tbody>'+data.topProducts.map(item=>'<tr><td><b>'+esc(item.name||item.product_id)+'</b><br><small class="muted">'+esc(item.brand||item.category||"")+'</small></td><td>'+item.views+'</td><td>'+item.cart_adds+'</td><td>'+item.orders+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">Пока недостаточно данных. События появятся после посещений витрины.</div>';
+ $("analytics-searches").innerHTML=data.searches.length?data.searches.map(item=>'<div class="item"><span>'+esc(item.query_text)+'</span><b>'+item.count+'</b></div>').join(""):'<div class="empty">Поисковых запросов пока нет</div>';
  const max=Math.max(1,...data.daily.map(item=>Number(item.views||0)));
- $("analytics-daily").innerHTML=data.daily.length?'<div class="analytics-bars">'+data.daily.map(day=>'<div class="analytics-day"><div class="analytics-stack"><span class="analytics-bar h-'+Math.round(Math.max(2,Math.min(100,Number(day.views||0)/max*100)))+'"></span></div><b>'+day.views+'</b><small>'+esc(day.day.slice(5))+'</small></div>').join("")+'</div><div class="muted small">���� �⮫�� ��ࠦ��� ��ᬮ��� ����祪. ���������� � ��২��: '+data.totals.cartAdds+' � ������: '+data.totals.orders+'</div>':'<div class="empty">�������� ����� ��᫥ ����� ᮡ�⨩</div>';
+ $("analytics-daily").innerHTML=data.daily.length?'<div class="analytics-bars">'+data.daily.map(day=>'<div class="analytics-day"><div class="analytics-stack"><span class="analytics-bar h-'+Math.round(Math.max(2,Math.min(100,Number(day.views||0)/max*100)))+'"></span></div><b>'+day.views+'</b><small>'+esc(day.day.slice(5))+'</small></div>').join("")+'</div><div class="muted small">Высота столбца отражает просмотры карточек. Добавления в корзину: '+data.totals.cartAdds+' · Заказы: '+data.totals.orders+'</div>':'<div class="empty">Динамика появится после первых событий</div>';
 }
 $("analytics-days").onchange=loadAnalytics;$("analytics-reload").onclick=loadAnalytics;
 const DEFAULT_ADMIN_APPEARANCE={background:"#11151D",sidebar:"#151A24",panel:"#1B2230",panel2:"#222C3C",text:"#F0F3F8",muted:"#AAB6CA",line:"#36445A",accent:"#A8C5FF",fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230,fontScale:100};
@@ -872,7 +872,7 @@ async function loadAdminAppearance(){
  applyAdminAppearance(state.adminAppearance);
  fillAdminAppearance(state.adminAppearance);
 }
-$("admin-appearance-form").onsubmit=async event=>{event.preventDefault();const appearance=adminAppearanceFromForm();try{const data=await api("/api/admin/appearance",{method:"PUT",body:JSON.stringify({appearance})});state.adminAppearance=data.appearance||appearance;applyAdminAppearance(state.adminAppearance);fillAdminAppearance(state.adminAppearance);toast("����䥩� ������ ��࠭�");}catch(error){toast(error.message);}};
+$("admin-appearance-form").onsubmit=async event=>{event.preventDefault();const appearance=adminAppearanceFromForm();try{const data=await api("/api/admin/appearance",{method:"PUT",body:JSON.stringify({appearance})});state.adminAppearance=data.appearance||appearance;applyAdminAppearance(state.adminAppearance);fillAdminAppearance(state.adminAppearance);toast("Интерфейс панели сохранён");}catch(error){toast(error.message);}};
 $("admin-appearance-form").querySelectorAll("input,select").forEach(input=>input.addEventListener("input",updateAdminAppearancePreview));
 document.querySelectorAll("[data-admin-preset]").forEach(button=>button.onclick=()=>fillAdminAppearance(ADMIN_APPEARANCE_PRESETS[button.dataset.adminPreset]||DEFAULT_ADMIN_APPEARANCE));
 $("admin-appearance-reset").onclick=()=>fillAdminAppearance(state.adminAppearance||DEFAULT_ADMIN_APPEARANCE);
@@ -910,7 +910,7 @@ function fillBranding(config){
  const layout={...defaultStorefrontLayout,...config.storefrontLayout};
  $("brand-tagline").value=config.brandTagline||"";
  $("brand-logo").value=config.logoUrl||"";
- $("brand-hero-title").value=config.heroTitle||"��⠫��";
+ $("brand-hero-title").value=config.heroTitle||"Каталог";
  $("brand-hero-subtitle").value=config.heroSubtitle||"";
  $("brand-default-sort").value=config.defaultSort||"featured";
  $("brand-analytics").checked=config.analyticsEnabled!==false;
@@ -933,9 +933,9 @@ function updateThemePreview(){
  if(src&&logo.getAttribute("src")!==src){logo.src=src;logo.hidden=false;}
  if(!src){logo.removeAttribute("src");logo.hidden=true;}
  $("preview-hero").hidden=!layout.showHero;
- $("preview-tagline").textContent=brandTagline||"������-�������";
- $("preview-title").textContent=heroTitle||"��⠫��";
- $("preview-subtitle").textContent=heroSubtitle||"�롥�� �, �� ��� �㦭�";
+ $("preview-tagline").textContent=brandTagline||"Онлайн-магазин";
+ $("preview-title").textContent=heroTitle||"Каталог";
+ $("preview-subtitle").textContent=heroSubtitle||"Выберите то, что вам нужно";
  const columns=preview.dataset.mode==="mobile"?layout.mobileColumns:layout.desktopColumns;
  preview.style.setProperty("--preview-columns",columns);
  $("preview-products").replaceChildren(...Array.from({length:columns},()=>{
@@ -974,7 +974,7 @@ async function loadBranding(){
  try{
   fillBranding(await api("/api/admin/branding"));
   for(const control of brandingForm.elements)control.disabled=!canEdit;
-  brandingStatus.textContent=canEdit?"":"����㯥� ��ᬮ��";
+  brandingStatus.textContent=canEdit?"":"Доступен просмотр";
  }catch(error){
   brandingStatus.textContent=error.message;
   throw error;
@@ -997,16 +997,16 @@ brandingForm.onsubmit=async event=>{
   for(const control of brandingForm.elements)control.disabled=false;
  }
 };
-function storefrontEdited(){updateThemePreview();brandingStatus.textContent="���� ����࠭�� ���������";}
+function storefrontEdited(){updateThemePreview();brandingStatus.textContent="Есть несохранённые изменения";}
 brandingForm.addEventListener("input",storefrontEdited);
 $("ui-theme-reset").onclick=()=>{fillUiTheme(DEFAULT_UI_THEME);storefrontEdited();};
-$("export-config").onclick=async()=>{try{const config=await api("/api/admin/config/export");const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="store-config.json";link.click();URL.revokeObjectURL(link.href);toast("���� ����஥� �����⮢���");}catch(error){toast(error.message);}};
-$("import-config-file").onchange=async()=>{const file=$("import-config-file").files?.[0];if(!file)return;try{const config=JSON.parse(await file.text());if(!confirm("������஢��� ��ଫ����, ��⥣�ਨ � ᮯ��⠢����� ⠡����? ����騥 ����ன�� ��� ࠧ����� ���� ��������."))return;await api("/api/admin/config/import",{method:"POST",body:JSON.stringify(config)});toast("����ன�� ������஢���. ������祭�� � Google Sheets ��࠭��� �⤥�쭮.");await loadBranding();await loadSettings();await loadCategories();await loadCatalog();}catch(error){toast(error.message);}finally{$("import-config-file").value="";}};
+$("export-config").onclick=async()=>{try{const config=await api("/api/admin/config/export");const blob=new Blob([JSON.stringify(config,null,2)],{type:"application/json"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="store-config.json";link.click();URL.revokeObjectURL(link.href);toast("Файл настроек подготовлен");}catch(error){toast(error.message);}};
+$("import-config-file").onchange=async()=>{const file=$("import-config-file").files?.[0];if(!file)return;try{const config=JSON.parse(await file.text());if(!confirm("Импортировать оформление, категории и сопоставление таблицы? Текущие настройки этих разделов будут заменены."))return;await api("/api/admin/config/import",{method:"POST",body:JSON.stringify(config)});toast("Настройки импортированы. Подключение к Google Sheets сохранено отдельно.");await loadBranding();await loadSettings();await loadCategories();await loadCatalog();}catch(error){toast(error.message);}finally{$("import-config-file").value="";}};
 
 async function loadLogs(){
  const level=$("log-filter").value;
  const d=await api("/api/admin/logs"+(level?"?level="+level:""));
- $("logs-list").innerHTML=d.logs.length?d.logs.map(l=>'<div class="log '+esc(l.level)+'"><time>'+new Date(l.created_at).toLocaleString("ru-BY")+'</time><b>'+esc(l.level.toUpperCase())+'</b><div><b>'+esc(l.area)+'</b><br>'+esc(l.message)+(l.details_json&&l.details_json!=="{}"?'<pre class="muted log-details">'+esc(l.details_json)+'</pre>':'')+'</div></div>').join(""):'<div class="empty">����⨩ ���� ���</div>';
+ $("logs-list").innerHTML=d.logs.length?d.logs.map(l=>'<div class="log '+esc(l.level)+'"><time>'+new Date(l.created_at).toLocaleString("ru-BY")+'</time><b>'+esc(l.level.toUpperCase())+'</b><div><b>'+esc(l.area)+'</b><br>'+esc(l.message)+(l.details_json&&l.details_json!=="{}"?'<pre class="muted log-details">'+esc(l.details_json)+'</pre>':'')+'</div></div>').join(""):'<div class="empty">Событий пока нет</div>';
 }
 $("log-filter").onchange=loadLogs;$("logs-reload").onclick=loadLogs;
 async function loadSettings(){
@@ -1036,10 +1036,10 @@ $("settings-form").onsubmit=async event=>{
  };
  try{
   await api("/api/admin/settings",{method:"PUT",body:JSON.stringify(settings)});
-  toast("����ன�� �������� ��࠭���");
+  toast("Настройки магазина сохранены");
  }catch(error){toast(error.message);}
 };
-const promotionGroups=[["liquid","�������"],["coil","�ᯠ�⥫�"],["cartridge","����ਤ��"]];
+const promotionGroups=[["liquid","Жидкости"],["coil","Испарители"],["cartridge","Картриджи"]];
 function readPromotionInputs(){
  return Array.from($("promotion-rules").querySelectorAll("fieldset"),field=>{
   const value=name=>field.querySelector('[name="'+name+'"]')?.value||"";
@@ -1057,8 +1057,8 @@ function renderPromotionEditor(){
   const groups=promotionGroups.map(([value,label])=>'<label class="field-row"><input type="checkbox" name="group" value="'+value+'" '+((rule.groups||[]).includes(value)?"checked":"")+'> '+label+'</label>').join("");
   const fields=type==="discount"
    ?'<label>������, %<input name="discountPercent" type="number" min="1" max="99" required value="'+esc(rule.discountPercent||10)+'"></label><label>�ਬ����� �<select name="scope"><option value="catalog" '+(rule.scope==="catalog"?"selected":"")+'>�ᥬ� ��⠫���</option><option value="category" '+(rule.scope==="category"?"selected":"")+'>��⥣���</option><option value="product" '+(rule.scope==="product"?"selected":"")+'>�⤥��� ⮢�ࠬ</option></select></label><label class="full">��⥣�ਨ ��� ⮢���<input name="targets" value="'+esc((rule.targets||[]).join(", "))+'" placeholder="��� �ᥣ� ��⠫��� ��⠢�� �����"><small class="muted">��१ �������. ��� ⮢�� ����� 㪠���� SKU, ID ��� �筮� ��������.</small></label>'
-   :'<label>�� ᪮�쪨� ���<input name="minimum" type="number" min="1" max="99" required value="'+esc(rule.minimum||2)+'"></label><div class="full"><p>������ � ��樨</p><div class="promo-checks">'+groups+'</div></div><label>�������� ����ઠ<input name="giftLabel" required maxlength="100" value="'+esc(rule.giftLabel||"")+'"></label><label>�७� ����ઠ<input name="giftBrand" maxlength="80" placeholder="�� �७�" value="'+esc(rule.giftBrand||"")+'"></label>';
-  return '<fieldset class="panel form-grid" data-id="'+esc(rule.id)+'" '+(editable?"":"disabled")+'><legend>'+esc(rule.title||"����� ����")+'</legend><label>���<select name="type"><option value="discount" '+(type==="discount"?"selected":"")+'>������</option><option value="gift" '+(type==="gift"?"selected":"")+'>����ப</option></select></label><label>��������<input name="title" required maxlength="80" value="'+esc(rule.title||"")+'"></label><label class="full">����� ��� ���㯠⥫�<textarea name="description" maxlength="300" required>'+esc(rule.description||"")+'</textarea></label>'+fields+'<label class="field-row"><input type="checkbox" name="active" '+(rule.active?"checked":"")+'> ���� ��⨢��</label>'+(editable?'<div><button class="btn" type="button" data-delete-promotion="'+index+'">�������</button></div>':"")+'</fieldset>';
+   :'<label>От скольких штук<input name="minimum" type="number" min="1" max="99" required value="'+esc(rule.minimum||2)+'"></label><div class="full"><p>Товары в акции</p><div class="promo-checks">'+groups+'</div></div><label>Название подарка<input name="giftLabel" required maxlength="100" value="'+esc(rule.giftLabel||"")+'"></label><label>Бренд подарка<input name="giftBrand" maxlength="80" placeholder="Любой бренд" value="'+esc(rule.giftBrand||"")+'"></label>';
+  return '<fieldset class="panel form-grid" data-id="'+esc(rule.id)+'" '+(editable?"":"disabled")+'><legend>'+esc(rule.title||"Новая акция")+'</legend><label>Тип<select name="type"><option value="discount" '+(type==="discount"?"selected":"")+'>Скидка</option><option value="gift" '+(type==="gift"?"selected":"")+'>Подарок</option></select></label><label>Название<input name="title" required maxlength="80" value="'+esc(rule.title||"")+'"></label><label class="full">Текст для покупателя<textarea name="description" maxlength="300" required>'+esc(rule.description||"")+'</textarea></label>'+fields+'<label class="field-row"><input type="checkbox" name="active" '+(rule.active?"checked":"")+'> Акция активна</label>'+(editable?'<div><button class="btn" type="button" data-delete-promotion="'+index+'">Удалить</button></div>':"")+'</fieldset>';
  }).join(""):'<div class="empty">��権 ���� ���</div>';
  $("promotion-rules").querySelectorAll('select[name="type"]').forEach(select=>select.onchange=()=>{state.promotions=readPromotionInputs();const index=[...$("promotion-rules").querySelectorAll("fieldset")].indexOf(select.closest("fieldset"));state.promotions[index]={...state.promotions[index],type:select.value};renderPromotionEditor();});
  $("promotion-rules").querySelectorAll("[data-delete-promotion]").forEach(button=>button.onclick=()=>{state.promotions=readPromotionInputs();state.promotions.splice(Number(button.dataset.deletePromotion),1);renderPromotionEditor();});
@@ -1090,17 +1090,17 @@ $("promotions-form").onsubmit=async e=>{
  try{
   const {promotions}=await api("/api/admin/promotions",{method:"PUT",body:JSON.stringify({previous:state.previousPromotions,promotions:readPromotionInputs()})});
   state.previousPromotions=promotions;state.promotions=promotions;
-  renderPromotionEditor();toast("��樨 ��࠭���");
+  renderPromotionEditor();toast("Акции сохранены");
  }catch(error){toast(error.message);}finally{button.disabled=false;}
 };
 async function loadTelegram(){
  const d=await api("/api/admin/integrations");
- $("bot-state").textContent=d.botConfigured?"BOT_TOKEN ��������":"�㦥� BOT_TOKEN";
+ $("bot-state").textContent=d.botConfigured?"BOT_TOKEN подключён":"Нужен BOT_TOKEN";
  $("manager-chat").value=d.managerChatId||"";
- $("setup-webhook").textContent=d.webhookConfigured?"�������� webhook":"����ந�� webhook";
+ $("setup-webhook").textContent=d.webhookConfigured?"Обновить webhook":"Настроить webhook";
 }
-$("save-telegram").onclick=async()=>{try{await api("/api/admin/integrations",{method:"PUT",body:JSON.stringify({managerChatId:$("manager-chat").value})});toast("ID �� ��࠭�");}catch(error){toast(error.message);}};
-$("setup-webhook").onclick=async()=>{try{await api("/api/admin/integrations/webhook",{method:"POST",body:"{}"});toast("Webhook Telegram ����஥�");await loadTelegram();}catch(error){toast(error.message);}};
+$("save-telegram").onclick=async()=>{try{await api("/api/admin/integrations",{method:"PUT",body:JSON.stringify({managerChatId:$("manager-chat").value})});toast("ID чата сохранён");}catch(error){toast(error.message);}};
+$("setup-webhook").onclick=async()=>{try{await api("/api/admin/integrations/webhook",{method:"POST",body:"{}"});toast("Webhook Telegram настроен");await loadTelegram();}catch(error){toast(error.message);}};
 async function loadCourier(){
  const d=await api("/api/courier/orders");
  $("courier-list").innerHTML=d.orders.length?d.orders.map(o=>{
@@ -1108,9 +1108,9 @@ async function loadCourier(){
   if(o.status==="assigned")buttons='<button class="btn primary" data-courier-status="picked_up">���ࠫ �����</button>';
   if(o.status==="picked_up")buttons='<button class="btn primary" data-courier-status="on_the_way">��堫</button>';
   if(o.status==="on_the_way")buttons='<button class="btn primary" data-courier-status="delivered">���⠢����</button>';
-  return '<div class="courier-card" data-courier-order="'+esc(o.id)+'"><div class="order-card-top"><b>����� #'+esc(o.number)+'</b>'+statusPill(o.status)+'</div><h3>'+esc(o.customerName)+'</h3><p>'+(o.telegramUsername?'Telegram: @'+esc(o.telegramUsername):'���� �१ 㢥�������� Telegram')+'</p><p>'+esc(o.address||"")+'</p><p>'+esc(o.slotDate)+' � '+esc(o.slotTime)+' � '+money(o.total)+'</p>'+buttons+'</div>';
+  return '<div class="courier-card" data-courier-order="'+esc(o.id)+'"><div class="order-card-top"><b>Заказ #'+esc(o.number)+'</b>'+statusPill(o.status)+'</div><h3>'+esc(o.customerName)+'</h3><p>'+(o.telegramUsername?'Telegram: @'+esc(o.telegramUsername):'Связь через уведомления Telegram')+'</p><p>'+esc(o.address||"")+'</p><p>'+esc(o.slotDate)+' · '+esc(o.slotTime)+' · '+money(o.total)+'</p>'+buttons+'</div>';
  }).join(""):'<div class="empty">��⨢��� ���⠢�� ���� ���</div>';
- $("courier-list").querySelectorAll("[data-courier-status]").forEach(button=>button.onclick=async()=>{const id=button.closest("[data-courier-order]").dataset.courierOrder;try{await api("/api/courier/orders/"+id,{method:"PATCH",body:JSON.stringify({status:button.dataset.courierStatus})});toast("����� ���⠢�� �������");await loadCourier();}catch(error){toast(error.message);}});
+ $("courier-list").querySelectorAll("[data-courier-status]").forEach(button=>button.onclick=async()=>{const id=button.closest("[data-courier-order]").dataset.courierOrder;try{await api("/api/courier/orders/"+id,{method:"PATCH",body:JSON.stringify({status:button.dataset.courierStatus})});toast("Статус доставки обновлён");await loadCourier();}catch(error){toast(error.message);}});
 }
 $("courier-refresh").onclick=loadCourier;
 loadLoginOptions();
