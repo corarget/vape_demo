@@ -1271,7 +1271,7 @@ export default {
         }
         if(path==="/api/admin/settings"&&request.method==="PUT"){
           const body=await bodyJson(request);
-          if(!body||typeof body!=="object")return json({error:"�����४�� ����ன��"},400);
+          if(!body||typeof body!=="object")return json({error:"Некорректные настройки"},400);
           const current=await getConfig(env);
           const next={...current};
           const allowed=["storeName","currency","metroEnabled","pickupEnabled","deliveryEnabled","minOrder","deliveryFee","address","phone"];
