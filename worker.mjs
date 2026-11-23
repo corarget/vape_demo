@@ -1,5 +1,5 @@
 import { loadCatalog, parseCSV } from "./catalog.mjs";
-import { DEMO_PROMOTIONS, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
+import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
@@ -475,7 +475,7 @@ function publicCatalog(payload){
   };
 }
 async function refreshCatalogCache(env,cache,cacheKey){
-  const payload=publicCatalog(await syncCatalog(env));
+  const payload=applyCatalogDiscounts(publicCatalog(await syncCatalog(env)),await getPromotions(env));
   try{
     const since=new Date(Date.now()-30*86400000).toISOString();
     const signals=await all(env,"SELECT product_id,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cartAdds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? GROUP BY product_id",[since]);
@@ -510,7 +510,7 @@ async function catalogResponse(request,env,ctx){
   const config=await getCatalogConfig(env);
   const cacheUrl=new URL("/api/catalog",request.url);
   cacheUrl.searchParams.set("version",VERSION);
-  cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.columnMapping])));
+  cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.columnMapping,await getPromotions(env)])));
   const cacheKey=new Request(cacheUrl,{method:"GET"});
   const cached=await cache.match(cacheKey);
   const force=new URL(request.url).searchParams.has("refresh");
@@ -553,9 +553,8 @@ async function createOrder(request,env){
   const comment=String(body.comment||"").trim().slice(0,500);
   const config=await getConfig(env);
   const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(body.telegramInitData,env.BOT_TOKEN):null;
-  const phone=telegramUser?"":String(body.phone??"").trim().replace(/[\s()-]/g,"");
-  if(!telegramUser&&!submittedName)return json({error:"Укажите имя"},400);
-  if(!telegramUser&&!/^\+375\d{9}$/.test(phone))return json({error:"Укажите белорусский телефон в формате +375 XX XXX XX XX"},400);
+  const phone="";
+  if(!telegramUser)return json({error:"Оформление доступно только внутри Telegram"},401);
   const paymentMethod=body.paymentMethod??"cash";
   if(!["cash","transfer"].includes(paymentMethod))return json({error:"Выберите доступный способ оплаты"},400);
   if((paymentMethod==="cash"&&config.cashPaymentEnabled===false)||
@@ -604,18 +603,27 @@ async function createOrder(request,env){
     const lineTotal=option.price*quantity;
     total+=lineTotal;
     items.push({
-      productId:product.id,productKey:option.productKey,sku:option.sku,
+      productId:product.id,variantId:option.variantId,productKey:option.productKey,sku:option.sku,
       productName:product.name,manufacturer:product.manufacturer,category:product.category,
       optionLabel:option.label,attributes:option.attributes,quantity,promotionGroup:promotionGroup(product,option),
       unitPrice:option.price,lineTotal
     });
   }
   if(unavailableItems.length)return json({error:"Некоторые позиции больше недоступны",unavailableItems},409);
+  const promotions=await getPromotions(env);
+  for(const item of items){
+    const rule=discountForProduct(promotions,{id:item.productId,name:item.productName,category:item.category},{variantId:item.variantId,productKey:item.productKey,sku:item.sku});
+    if(!rule)continue;
+    item.attributes={...item.attributes,discount:{id:rule.id,title:rule.title,percent:rule.discountPercent,originalPrice:item.unitPrice}};
+    item.unitPrice=Math.max(0,Math.round(item.unitPrice*(100-rule.discountPercent)/100));
+    item.lineTotal=item.unitPrice*item.quantity;
+  }
+  total=items.reduce((sum,item)=>sum+item.lineTotal,0);
   const itemSubtotal=total;
   if(itemSubtotal<Math.max(0,Number(config.minOrder)||0))return json({error:"Минимальная сумма заказа — "+(Number(config.minOrder)/100).toFixed(2).replace(".",",")+" BYN"},400);
   const deliveryFee=method==="delivery"?Math.max(0,Number(config.deliveryFee)||0):0;
   total=itemSubtotal+deliveryFee;
-  const rule=highestPromotion(await getPromotions(env),items);
+  const rule=highestPromotion(promotions,items);
   const gifts=rule?promotionGiftOptions(catalog.products,rule):[];
   const gift=gifts.length?gifts[Math.floor(Math.random()*gifts.length)]:null;
   const orderItems=gift?[...items,{
@@ -628,9 +636,9 @@ async function createOrder(request,env){
   const telegramUserId=telegramUser?String(telegramUser.id):null;
   const telegramUsername=String(telegramUser?.username||"").replace(/^@/,"").slice(0,80);
   const verifiedName=[telegramUser?.first_name,telegramUser?.last_name].filter(Boolean).join(" ").trim();
-  const name=(verifiedName||submittedName||"Покупатель Telegram").slice(0,100);
-  const recoveryCode=telegramUser?null:randomToken(12);
-  const recoveryHash=recoveryCode?await sha256(recoveryCode):null;
+  const name=(verifiedName||telegramUsername||"Telegram").slice(0,100);
+  const recoveryCode=null;
+  const recoveryHash=null;
   const orderId=randomId(),createdAt=now();
   const numberResult=await run(env,"INSERT INTO order_numbers(created_at) VALUES(?)",[createdAt]);
   const orderNumber=Number(numberResult.meta?.last_row_id||Date.now());
@@ -1142,16 +1150,6 @@ export default {
             if(result.error)return json({error:result.error},result.status);
             order=result.order;
           }
-          if(body?.paymentStatus!==undefined){
-            const paymentStatus=String(body.paymentStatus);
-            if(!["unpaid","paid","refunded","failed"].includes(paymentStatus))return json({error:"Некорректный статус оплаты"},400);
-            await env.DB.batch([
-              env.DB.prepare("UPDATE orders SET payment_status=?,updated_at=?,version=version+1 WHERE id=?").bind(paymentStatus,now(),adminOrderMatch[1]),
-              env.DB.prepare("INSERT INTO order_events(order_id,actor_id,actor_role,event_type,message,metadata_json,created_at) VALUES(?,?,?,?,?,?,?)").bind(adminOrderMatch[1],staff.id,staff.role,"payment_updated","Статус оплаты изменён",JSON.stringify({paymentStatus}),now())
-            ]);
-            order=await loadOrder(env,adminOrderMatch[1]);
-            await logSystem(env,"info","orders","Обновлён статус оплаты",{orderId:adminOrderMatch[1],paymentStatus,staffId:staff.id});
-          }
           return json({success:true,order:adminOrder(order)});
         }
         if(path==="/api/admin/branding"&&request.method==="GET"){
@@ -1370,3 +1368,4 @@ export default {
     }
   }
 };
+
