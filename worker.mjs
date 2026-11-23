@@ -840,7 +840,7 @@ async function categorySettings(env){
   const result={};
   source.forEach((category,index)=>{
     const override=saved[category.key]||{};
-    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
+    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??\"\",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
   });
   return result;
 }
@@ -1101,6 +1101,8 @@ export default {
             if(label!==source.label)override.label=label;
             if(image!==source.image)override.image=/^https:\/\//i.test(image)?image:"";
             if(icon!==source.icon)override.icon=icon;
+            if(description)override.description=description;
+            if(item.showDescription===true)override.showDescription=true;
             if(/^#[0-9a-f]{6}$/i.test(color)&&color!==source.color)override.color=color;
             if(item.active===false)override.active=false;
             const rawSortOrder=Number(item.sortOrder);const sortOrder=Math.max(0,Math.min(999,Number.isFinite(rawSortOrder)?rawSortOrder:index));
