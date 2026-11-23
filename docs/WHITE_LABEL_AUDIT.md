@@ -10,11 +10,11 @@ Baseline: GitHub main 843a7eb360b8d023c83b679fa56dc9c49fd1d80a, audited 2026-11-
 - Live D1 migration ledger lists 0001–0007; 0008 has not been applied. Live sqlite_master confirms slot_blocks permits all, pickup and delivery, but not metro. DB queries read metadata only.
 - BOT_TOKEN binding exists; that does not verify token validity, webhook registration, messaging or end-to-end behavior. No secret values were read.
 
-## Confirmed migration failure — high priority
+## Migration defect reproduced and corrected in the audit branch
 
-An isolated empty D1 database was created for the audit. Each migration 0001–0007 succeeded when sent through D1 query API. Migration 0008 failed with error 7500: SQL BEGIN TRANSACTION or SAVEPOINT is not supported by the D1 transaction execution environment. The temporary test database was deleted afterward. This test used API calls, not Wrangler's migration runner; reproduce with the actual runner before release. No production migration was run.
+The original 0008 was reproduced as failing with D1 error 7500 because it used explicit BEGIN/COMMIT. The audit branch removes the explicit transaction and relies on D1 migration rollback semantics. A second isolated D1 test applied 0001–0008 and accepted a metro slot block. Both temporary databases were deleted afterward. No production migration was run.
 
-0008's table rebuild also needs upgrade-data, foreign key, index and failure/rollback tests before it can safely be applied to an existing store. Do not edit migrations 0001–0007. Decide how to correct 0008 based on applied migration state across all stores, not solely this demo.
+CI now applies all migrations to an isolated local D1 and verifies the metro constraint. Upgrade-data and rollback behavior still require a dedicated test before production application.
 
 ## Findings in main
 
@@ -61,3 +61,18 @@ P0/P1 are engineering priorities, not claims of proven exploitation.
 - Temporary D1 migration experiment passed 0001–0007 and failed 0008; temporary DB removed.
 - The shell could not resolve github.com, so a normal checkout and npm ci could not be completed in this environment. Files were retrieved through the GitHub connector. No end-to-end browser or Telegram flow, full functional suite, exact deployment-source comparison, upgrade-data migration, staging Worker deployment, or full authorization penetration test was completed.
 - Treat this report as the initial baseline, not evidence that phase 1 acceptance is complete. Finish the missing checks and establish repeatable staging tests before calling the phase complete.
+
+
+## Stage 1 completion record
+
+Completed on 2026-11-23:
+
+- Architecture, requirements and deployment maps are recorded in this report and WHITE_LABEL_ROADMAP.md.
+- Persistent isolated resources were created: Worker `violet-shop-staging` and EU-jurisdiction D1 `violet-shop-staging-db` (25266668-1919-4683-ba5f-ff3109945c2a). They contain no production data and no Telegram bot secret.
+- Staging received migrations 0001–0008. The migration ledger and metro CHECK constraint were verified.
+- Staging health returned version 2.7.0, database=true and staff=0. The storefront rendered its age gate, the admin login rendered, and public settings returned telegramCheckoutEnabled=false as expected without BOT_TOKEN.
+- Staging URL: https://violet-shop-staging.platondran.workers.dev/
+- Repository CI now checks UTF-8, all local D1 migrations, generated HTML modules, Worker syntax and a Wrangler dry-run bundle.
+- Production Worker and production D1 were not changed.
+
+Stage 1 is complete as an architecture/audit and staging-foundation stage. Functional fixes listed above belong to Stage 2 and later. Live Telegram E2E requires a separate staging bot token and is intentionally not claimed here.
