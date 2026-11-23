@@ -206,7 +206,7 @@ function permissionForAdminRoute(path,method){
   if(path==="/api/admin/settings"||path==="/api/admin/promotions")return method==="GET"?"settings":"settings.manage";
   if(path==="/api/admin/config/export")return "settings";
   if(path==="/api/admin/config/import")return "settings.manage";
-  if(["/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs"].includes(path))return method==="GET"?"catalog":"catalog.manage";
+  if(["/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs","/api/admin/catalog/products"].includes(path))return method==="GET"?"catalog":"catalog.manage";
   if(path==="/api/admin/logs")return "logs";
   if(path==="/api/admin/integrations")return method==="GET"?"telegram":"telegram.manage";
   if(path==="/api/admin/integrations/webhook")return "telegram.manage";
@@ -474,8 +474,18 @@ function publicCatalog(payload){
     }))
   };
 }
+async function applyCatalogOverrides(env,payload){
+  const overrides=await getSetting(env,"catalog_overrides",{});
+  for(const product of payload.products||[]){
+    const override=overrides?.[product.id];
+    if(!override)continue;
+    for(const key of ["name","manufacturer","category","image","description"])if(typeof override[key]==="string")product[key]=override[key];
+    if(typeof override.available==="boolean")product.available=override.available;
+  }
+  return payload;
+}
 async function refreshCatalogCache(env,cache,cacheKey){
-  const payload=applyCatalogDiscounts(publicCatalog(await syncCatalog(env)),await getPromotions(env));
+  const payload=applyCatalogDiscounts(await applyCatalogOverrides(env,publicCatalog(await syncCatalog(env))),await getPromotions(env));
   try{
     const since=new Date(Date.now()-30*86400000).toISOString();
     const signals=await all(env,"SELECT product_id,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cartAdds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? GROUP BY product_id",[since]);
@@ -1009,6 +1019,31 @@ export default {
             :await run(env,"INSERT OR IGNORE INTO settings(key,value_json,updated_at,updated_by) VALUES('promotions',?,?,?)",values);
           if(!result.meta?.changes)return json({error:"Список акций изменился. Обновите страницу и повторите."},409);
           return json({promotions});
+        }
+        if(path==="/api/admin/catalog/products"&&request.method==="GET"){
+          const payload=await applyCatalogOverrides(env,publicCatalog(await syncCatalog(env)));
+          return json({products:payload.products});
+        }
+        if(path==="/api/admin/catalog/products"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          const productId=String(body?.productId||"");
+          if(!productId)return json({error:"Выберите товар"},400);
+          const source=await syncCatalog(env);
+          const exists=source.products.some(product=>product.id===productId);
+          if(!exists)return json({error:"Товар не найден в источнике"},404);
+          const current=await getSetting(env,"catalog_overrides",{});
+          const next={...current};
+          const clean={};
+          for(const key of ["name","manufacturer","category","image","description"]){
+            if(body?.[key]===undefined)continue;
+            const limit=key==="description"?600:key==="image"?500:160;
+            clean[key]=String(body[key]||"").trim().slice(0,limit);
+          }
+          if(typeof body?.available==="boolean")clean.available=body.available;
+          next[productId]=clean;
+          await setSetting(env,"catalog_overrides",next,staff.id);
+          await caches.default.delete(new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"}));
+          return json({success:true,override:clean});
         }
         if(path==="/api/admin/analytics"&&request.method==="GET"){
           const days=Math.max(7,Math.min(90,Number(url.searchParams.get("days"))||30));
