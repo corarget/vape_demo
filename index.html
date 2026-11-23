@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#101112">
-  <title>VIOLET SHOP - ��⠫��</title>
+  <title>VIOLET SHOP — каталог</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link id="store-fonts" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
@@ -178,12 +178,12 @@ textarea{resize:vertical}
 <div id="age-gate" class="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title" hidden>
   <div class="age-gate-card">
     <div class="age-gate-brand">VIOLET <span>SHOP</span></div>
-    <div class="eyebrow">���⢥ত���� ������</div>
-    <h1 id="age-gate-title">��� 㦥 �ᯮ������� 18 ���?</h1>
-    <p id="age-gate-copy">������� ᮤ�ন� ⮢��� � ������묨 ��࠭�祭�ﬨ. �த�����, �� ���⢥ত���, �� ���⨣�� 18 ��� � ����� �ࠢ� ��ᬠ�ਢ��� ��� ��⠫��.</p>
+    <div class="eyebrow">Подтверждение возраста</div>
+    <h1 id="age-gate-title">Вам уже исполнилось 18 лет?</h1>
+    <p id="age-gate-copy">Магазин содержит товары с возрастными ограничениями. Продолжая, вы подтверждаете, что достигли 18 лет и имеете право просматривать этот каталог.</p>
     <button type="button" class="primary age-gate-confirm" id="age-confirm">��� ���� 18 ���</button>
     <button type="button" class="age-gate-decline" id="age-decline">��� ��� 18 ���</button>
-    <div class="age-links"><a href="/rules" target="_blank" rel="noopener">�ࠢ��� ��������</a><a href="/privacy" target="_blank" rel="noopener">���䨤��樠�쭮���</a></div>
+    <div class="age-links"><a href="/rules" target="_blank" rel="noopener">Правила магазина</a><a href="/privacy" target="_blank" rel="noopener">Конфиденциальность</a></div>
   </div>
 </div>
 <main class="app" id="store-app" hidden>
@@ -192,39 +192,39 @@ textarea{resize:vertical}
     <label class="global-search" aria-label="Поиск по всему магазину">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
       <input id="query" type="search" placeholder="���� ⮢��, �७� ��� ����" aria-label="���� �� �ᥬ� ��������" autocomplete="off">
-      <button type="button" id="clear-store-search" aria-label="������ ����" hidden>?</button>
+      <button type="button" id="clear-store-search" aria-label="Очистить поиск" hidden>×</button>
     </label>
   </header>
   <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
   <section id="catalog-screen">
-    <div class="hero" id="store-hero"><div><div class="eyebrow" id="store-tagline">������-�������</div><h1 id="store-hero-title">��⠫��</h1><p id="store-hero-subtitle">�롥�� �, �� ��� �㦭�</p></div></div>
-    <div class="section-head"><h2>�������</h2><span>�롥�� �� ����⨯�</span></div>
+    <div class="hero" id="store-hero"><div><div class="eyebrow" id="store-tagline">ОНЛАЙН-МАГАЗИН</div><h1 id="store-hero-title">Каталог</h1><p id="store-hero-subtitle">Выберите то, что вам нужно</p></div></div>
+    <div class="section-head"><h2>Разделы</h2><span>выберите по логотипу</span></div>
     <div class="categories" id="categories"></div>
     <div class="search">
-      <select id="brand-filter" aria-label="������ �� �७��"><option value="all">�� �७��</option></select>
-      <select id="sort" aria-label="����஢��"><option value="featured">��������������</option><option value="analytics">������� � ���㯠⥫��</option><option value="brand">�� �७��</option><option value="price-asc">���砫� ��襢��</option><option value="price-desc">���砫� ��஦�</option><option value="name">�� ��������</option></select>
+      <select id="brand-filter" aria-label="Фильтр по бренду"><option value="all">Все бренды</option></select>
+      <select id="sort" aria-label="Сортировка"><option value="featured">Рекомендованные</option><option value="analytics">Популярные у покупателей</option><option value="brand">По бренду</option><option value="price-asc">Сначала дешевле</option><option value="price-desc">Сначала дороже</option><option value="name">По названию</option></select>
       <button type="button" class="icon-button" id="category-search-toggle" aria-label="Поиск в категории" aria-expanded="false" title="Поиск в категории">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
       </button>
     </div>
     <div id="category-search-panel" class="category-search-panel" hidden>
       <input id="category-query" type="search" placeholder="���� ����� ��࠭��� ��⥣�ਨ" aria-label="���� � ��⥣�ਨ" autocomplete="off">
-      <button type="button" id="clear-category-search" class="text-button">������</button>
+      <button type="button" id="clear-category-search" class="text-button">Очистить</button>
     </div>
-    <div class="section-head"><h2>������</h2><span id="result-count"></span></div>
-    <button type="button" id="promo-filter" class="btn" hidden>������ �� ��樨 ?</button>
+    <div class="section-head"><h2>Товары</h2><span id="result-count"></span></div>
+    <button type="button" id="promo-filter" class="btn" hidden>Товары по акции ×</button>
     <div class="grid" id="products"></div>
     <div id="catalog-more" aria-hidden="true" hidden></div>
   </section>
-  <section id="detail-screen" class="detail" hidden><button class="back" id="back"> ����� � ��⠫��</button><div id="detail"></div></section>
-  <section id="promo-screen" hidden><h1 class="screen-title">��樨</h1><div id="promo-offers" class="promo-offers"></div><div id="promo-products"></div><div id="promo-empty" class="empty"><div class="promo-empty-mark">?</div><strong>��権 ���� ���</strong><p class="muted promo-empty-copy">����� ������� ᯥ樠��� �।������� ��������.</p></div></section>
-  <section id="cart-screen" hidden><h1 class="screen-title">��২��</h1><div id="cart"></div></section>
-  <section id="orders-screen" hidden><h1 class="screen-title">��� ������</h1><div id="order-confirmation" class="panel order-success" hidden></div><div id="orders"></div><details class="panel order-recovery" id="order-recovery" hidden><summary>���� ����� �� ����</summary><form id="order-recovery-form" class="checkout-form"><label>��� �� ���⢥ত���� ������<input name="code" required minlength="24" maxlength="24" pattern="[A-Fa-f0-9]{24}" autocomplete="off" spellcheck="false"></label><button class="btn" type="submit">���� �����</button></form></details></section>
+  <section id="detail-screen" class="detail" hidden><button class="back" id="back">← Назад в каталог</button><div id="detail"></div></section>
+  <section id="promo-screen" hidden><h1 class="screen-title">Акции</h1><div id="promo-offers" class="promo-offers"></div><div id="promo-products"></div><div id="promo-empty" class="empty"><div class="promo-empty-mark">✦</div><strong>Акций пока нет</strong><p class="muted promo-empty-copy">Здесь появятся специальные предложения магазина.</p></div></section>
+  <section id="cart-screen" hidden><h1 class="screen-title">Корзина</h1><div id="cart"></div></section>
+  <section id="orders-screen" hidden><h1 class="screen-title">Мои заказы</h1><div id="order-confirmation" class="panel order-success" hidden></div><div id="orders"></div><details class="panel order-recovery" id="order-recovery" hidden><summary>Найти заказ по коду</summary><form id="order-recovery-form" class="checkout-form"><label>Код из подтверждения заказа<input name="code" required minlength="24" maxlength="24" pattern="[A-Fa-f0-9]{24}" autocomplete="off" spellcheck="false"></label><button class="btn" type="submit">Найти заказ</button></form></details></section>
 </main>
 <nav class="bottom" id="bottom-nav" aria-label="Основная навигация" hidden>
-  <button data-screen="catalog" aria-pressed="true"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l8-6 8 6v10H4zm5 10v-6h6v6"/></svg>��⠫��</button>
+  <button data-screen="catalog" aria-pressed="true"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l8-6 8 6v10H4zm5 10v-6h6v6"/></svg>Каталог</button>
   <button data-screen="promo"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v4H4zm2 4v7h12v-7m-6-4v11m0-11C5 10 7 3 10 5c1 .7 2 5 2 5zm0 0c7 0 5-7 2-5-1 .7-2 5-2 5z"/></svg>��樨</button>
-  <button data-screen="cart"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h3l2 11h10l2-8H7m2 12h.01m8 0h.01"/></svg>��২��<span id="cart-badge" class="badge"></span></button>
+  <button data-screen="cart"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h3l2 11h10l2-8H7m2 12h.01m8 0h.01"/></svg>Корзина<span id="cart-badge" class="badge"></span></button>
   <button data-screen="orders"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17H6zM9 8h6m-6 4h6m-6 4h4"/></svg>������</button>
 </nav>
 <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -269,17 +269,17 @@ function showNotice(text,type="success"){
 }
 function setScreen(screen){if(state.screen==='orders'&&screen!=='orders'){$('order-confirmation').hidden=true;ordersRequest?.abort();}if(state.screen==='catalog')state.scroll=scrollY;state.screen=screen;for(const name of ['catalog','detail','promo','cart','orders'])$(name+'-screen').hidden=name!==screen;document.querySelectorAll('[data-screen]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.screen===screen)));telegram?.BackButton?.[screen==='detail'?'show':'hide']?.();render();scrollTo(0,screen==='catalog'?state.scroll:0);}
 function renderCategories(){const keys=Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999));$('categories').replaceChildren(...keys.map(key=>{const meta=categoryMeta[key];const button=document.createElement('button');button.className='category'+(meta.image?' has-image':'');button.title=meta.label;button.setAttribute('aria-label',meta.label);button.setAttribute('aria-pressed',String(state.category===key));if(meta.color)button.style.setProperty('--category-accent',meta.color);button.innerHTML=(meta.image?'<img class="category-image" src="'+escapeHTML(safeImageURL(meta.image))+'" alt="" loading="lazy">':meta.icon?'<span aria-hidden="true">'+escapeHTML(meta.icon)+'</span>':categoryIcon(key))+'<small>'+escapeHTML(cleanUiText(meta.label))+'</small>';button.onclick=()=>{state.category=state.category===key?'all':key;trackEvent('category_filter',{category:state.category});renderCatalog({reset:true});};return button;}));}
-const normalizeSearch=value=>String(value??"").toLowerCase().replace(/�/g,"�").replace(/[^a-z�-�0-9]+/g," ").trim();
-const LATIN_MAP={�:"a",�:"b",�:"v",�:"g",�:"d",�:"e",�:"zh",�:"z",�:"i",�:"y",�:"k",�:"l",�:"m",�:"n",�:"o",�:"p",�:"r",�:"s",�:"t",�:"u",�:"f",�:"kh",�:"ts",�:"ch",�:"sh",�:"shch",�:"",�:"y",�:"",�:"e",�:"yu",�:"ya"};
+const normalizeSearch=value=>String(value??"").toLowerCase().replace(/ё/g,"е").replace(/[^a-zа-я0-9]+/g," ").trim();
+const LATIN_MAP={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
 const EN_KEYS="qwertyuiop[]asdfghjkl;'zxcvbnm,.";
 const RU_KEYS="йцукенгшщзхъфывапролджэячсмитьбю";
-const latinForm=word=>word.replace(/[�-�]/g,char=>LATIN_MAP[char]??char);
+const latinForm=word=>word.replace(/[а-я]/g,char=>LATIN_MAP[char]??char);
 function swapKeyboard(value,from,to){
  return [...value].map(char=>{const index=from.indexOf(char);return index<0?char:to[index];}).join("");
 }
 function queryForms(word){
- const alternate=/[�-�]/.test(word)?swapKeyboard(word,RU_KEYS,EN_KEYS):swapKeyboard(word,EN_KEYS,RU_KEYS);
- const synonyms={vape:"����",����:"vape",liquid:"��������",��������:"liquid",pod:"���",���:"pod"};
+ const alternate=/[а-я]/.test(word)?swapKeyboard(word,RU_KEYS,EN_KEYS):swapKeyboard(word,EN_KEYS,RU_KEYS);
+ const synonyms={vape:"вейп",вейп:"vape",liquid:"жидкость",жидкость:"liquid",pod:"под",под:"pod"};
  return [...new Set([word,latinForm(word),normalizeSearch(alternate),synonyms[word]].filter(Boolean))];
 }
 const grams=word=>new Set(Array.from({length:Math.max(0,word.length-1)},(_,i)=>word.slice(i,i+2)));
