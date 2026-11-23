@@ -365,7 +365,8 @@ async function verifyTelegramInitData(initData,botToken){
     const params=new URLSearchParams(initData);
     const hash=params.get("hash");
     const authDate=Number(params.get("auth_date")||0);
-    if(!hash||!authDate||Date.now()/1000-authDate>86400)return null;
+    const nowSeconds=Math.floor(Date.now()/1000);
+    if(!hash||!Number.isInteger(authDate)||authDate>nowSeconds+60||nowSeconds-authDate>86400)return null;
     params.delete("hash");
     const checkString=[...params.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,value])=>key+"="+value).join("\n");
     const encoder=new TextEncoder();
@@ -896,15 +897,20 @@ async function telegramWebhook(request,env){
   if(!secret||!safeEqual(request.headers.get("X-Telegram-Bot-Api-Secret-Token")||"",secret))return json({error:"Forbidden"},403);
   const update=await bodyJson(request);
   if(!update)return json({ok:true});
-  if(update.update_id)await run(env,"INSERT OR IGNORE INTO telegram_updates(update_id,received_at,handled) VALUES(?,?,0)",[String(update.update_id),now()]);
+  if(update.update_id){
+    const inserted=await run(env,"INSERT OR IGNORE INTO telegram_updates(update_id,received_at,handled) VALUES(?,?,0)",[String(update.update_id),now()]);
+    if(Number(inserted.meta?.changes||0)===0)return json({ok:true,duplicate:true});
+  }
   const callback=update.callback_query;
   if(callback?.data){
     const [kind,orderId,action]=String(callback.data).split("|");
     const telegramId=String(callback.from?.id||"");
-    const staff=await first(env,"SELECT id,role FROM staff WHERE telegram_id=? AND active=1",[telegramId]);
-    if(kind==="order"&&staff&&["owner","manager"].includes(staff.role)){
+    const staffRow=await first(env,"SELECT id,role,permissions_json FROM staff WHERE telegram_id=? AND active=1",[telegramId]);
+    const staff=staffRow?{...staffRow,permissions:JSON.parse(staffRow.permissions_json||"[]")}:null;
+    if(kind==="order"&&staff&&hasPermission(staff,"orders.manage")){
       const result=await updateOrderStatus(env,orderId,action,{id:staff.id,role:staff.role},"Изменено из Telegram");
-      await telegramCall(env,"answerCallbackQuery",{callback_query_id:callback.id,text:result.error||"Статус обновлён"});
+      try{await telegramCall(env,"answerCallbackQuery",{callback_query_id:callback.id,text:result.error||"Статус обновлён"});}
+      catch(error){await logSystem(env,"warning","telegram","Не удалось подтвердить callback Telegram",{error:String(error)});}
     }else{
       await telegramCall(env,"answerCallbackQuery",{callback_query_id:callback.id,text:"Нет доступа к этому действию",show_alert:true});
     }
