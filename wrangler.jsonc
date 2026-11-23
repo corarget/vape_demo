@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "violet-shop-demo",
+  "name": "violet-shop-staging",
   "main": "worker.mjs",
   "compatibility_date": "2026-11-21",
   "observability": {
@@ -14,8 +14,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "violet-shop-db",
-      "database_id": "a8aaafe7-93ff-43f0-892e-3c22d1d37ad5",
+      "database_name": "violet-shop-staging-db",
+      "database_id": "25266668-1919-4683-ba5f-ff3109945c2a",
       "migrations_dir": "migrations"
     }
   ]
