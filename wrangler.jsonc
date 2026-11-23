@@ -18,5 +18,8 @@
       "database_id": "25266668-1919-4683-ba5f-ff3109945c2a",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "assets": {
+    "directory": "./assets"
+  }
 }

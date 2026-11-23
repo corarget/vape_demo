@@ -3,6 +3,8 @@ import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestProm
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
+const CATEGORY_ICON_BASE="https://cdn.jsdelivr.net/gh/corarget/vape_demo@9aff9b7a6eef57fb4541108defeb226fc2ecfdf1/assets/category-icons/";
+const storefrontHtml=html.replaceAll("/assets/category-icons/liquids.svg",CATEGORY_ICON_BASE+"liquids.png").replaceAll("/assets/category-icons/pods.svg",CATEGORY_ICON_BASE+"pod-systems.png").replaceAll("/assets/category-icons/consumables.svg",CATEGORY_ICON_BASE+"consumables.png").replaceAll("/assets/category-icons/energy.svg",CATEGORY_ICON_BASE+"energy-drinks.png").replaceAll("/assets/category-icons/hookah.svg",CATEGORY_ICON_BASE+"hookahs.png").replaceAll("/assets/category-icons/disposable.svg",CATEGORY_ICON_BASE+"disposable-devices.png");
 const VERSION = "2.7.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
@@ -1446,7 +1448,7 @@ export default {
         }
       }
       if(request.method==="GET"&&["/rules","/privacy"].includes(path))return textResponse(publicInfoPage(path));
-      if(["GET","HEAD"].includes(request.method)&&(path==="/"||path==="/index.html"))return textResponse(request.method==="HEAD"?null:html);
+      if(["GET","HEAD"].includes(request.method)&&(path==="/"||path==="/index.html"))return textResponse(request.method==="HEAD"?null:storefrontHtml);
       if(request.method==="GET"&&(path==="/admin"||path==="/admin/"))return textResponse(adminHtml);
       if(request.method==="GET"&&(path==="/courier"||path==="/courier/"))return textResponse(adminHtml);
       return json({error:"Not found"},404);
