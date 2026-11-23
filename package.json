@@ -7,10 +7,12 @@
     "embed": "node scripts/embed-html.mjs",
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:check": "wrangler deploy --dry-run",
     "db:migrate": "wrangler d1 migrations apply violet-shop-db --remote",
     "create:store": "node scripts/create-store.mjs",
     "check:encoding": "node scripts/check-utf8.mjs",
-    "test": "npm run check:encoding"
+    "test:migrations": "node scripts/test-migrations.mjs",
+    "test": "npm run check:encoding && npm run test:migrations"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
