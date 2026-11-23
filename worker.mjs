@@ -914,7 +914,7 @@ async function telegramWebhook(request,env){
     const command=message.text.trim().split(/\s+/)[0].toLowerCase().replace(/@[^\s]+$/,"");
     if(["/start","/shop","/catalog","/orders","/help"].includes(command)){
       const appUrl=new URL("/",request.url).toString();
-      const copy=command==="/orders"?"��ன� ����?�ਫ������: ����� ���� ࠧ��� <������>.":"��ன� Магазин, �롥�� ⮢��� � ��ନ� ����� ��אַ � Telegram.";
+      const copy=command==="/orders"?"История заказов открывается в приложении.":"Откройте магазин, выберите товары и оформите заказ в Telegram.";
       await sendTelegram(env,message.chat.id,"<b>VIOLET SHOP</b>\n"+copy,{inline_keyboard:[[{text:"Открыть магазин",web_app:{url:appUrl}}]]});
     }
   }
@@ -1418,7 +1418,7 @@ export default {
           const response=await telegramCall(env,"setWebhook",{url:webhookUrl,secret_token:secret,allowed_updates:["message","callback_query"]});
           const appUrl=new URL("/",request.url).toString();
           await Promise.all([
-            telegramCall(env,"setMyCommands",{commands:[{command:"start",description:"Открыть магазин"},{command:"shop",description:"Каталог"},{command:"orders",description:"Мои заказы"},{command:"help",description:"������"}]}),
+            telegramCall(env,"setMyCommands",{commands:[{command:"start",description:"Открыть магазин"},{command:"shop",description:"Каталог"},{command:"orders",description:"Мои заказы"},{command:"help",description:"Помощь"}]}),
             telegramCall(env,"setChatMenuButton",{menu_button:{type:"web_app",text:"Магазин",web_app:{url:appUrl}}})
           ]);
           return json({success:true,webhook:response.result});
