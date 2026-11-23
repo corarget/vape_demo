@@ -840,7 +840,7 @@ async function categorySettings(env){
   const result={};
   source.forEach((category,index)=>{
     const override=saved[category.key]||{};
-    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??\"\",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
+    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??"",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
   });
   return result;
 }
