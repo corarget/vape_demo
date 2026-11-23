@@ -803,7 +803,7 @@ async function demoStaffLogin(request,env){
   if(!safeEqual(username,env.DEMO_ADMIN_USERNAME)||!safeEqual(password,env.DEMO_ADMIN_PASSWORD)){
     const attempts=withinWindow?Number(attempt.attempts||0)+1:1;
     const windowStarted=withinWindow?attempt.window_started_at:now();
-    const lockedUntil=attempts>=5?new Date(timestamp+15*60*1000).toISOString():null;
+    const lockedUntil=attempts>=15?new Date(timestamp+15*60*1000).toISOString():null;
     await run(env,"INSERT INTO demo_login_attempts(ip_hash,attempts,window_started_at,locked_until) VALUES(?,?,?,?) ON CONFLICT(ip_hash) DO UPDATE SET attempts=excluded.attempts,window_started_at=excluded.window_started_at,locked_until=excluded.locked_until",
       [ipHash,attempts,windowStarted,lockedUntil]);
     return json({error:"Неверный логин или пароль"},401);
@@ -840,7 +840,12 @@ async function categorySettings(env){
   const result={};
   source.forEach((category,index)=>{
     const override=saved[category.key]||{};
-    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??"",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image};
+    if(override.deleted===true)return;
+    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??"",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image,custom:false};
+  });
+  Object.entries(saved).forEach(([key,override],index)=>{
+    if(result[key]||override?.deleted===true)return;
+    result[key]={key,label:override.label||key,image:override.image||"",icon:override.icon||"",color:override.color||"#D8DDE0",active:override.active!==false,description:override.description||"",showDescription:override.showDescription===true,sortOrder:Number.isFinite(Number(override.sortOrder))?Number(override.sortOrder):source.length+index,sourceLabel:"Добавлена вручную",sourceImage:"",custom:true};
   });
   return result;
 }
@@ -1087,18 +1092,22 @@ export default {
         if(path==="/api/admin/categories"&&request.method==="PUT"){
           const body=await bodyJson(request);
           if(!Array.isArray(body?.categories)||body.categories.length>200)return json({error:"Некорректный список категорий"},400);
-          const sourceMap=new Map((await sourceCategories(env)).map(category=>[category.key,category]));
+          const sourceRows=await sourceCategories(env);
+          const sourceMap=new Map(sourceRows.map(category=>[category.key,category]));
+          const incomingKeys=new Set(body.categories.map(item=>String(item?.key||"").trim()).filter(Boolean));
           const config={};
+          for(const source of sourceRows)if(!incomingKeys.has(source.key))config[source.key]={deleted:true};
           for(const [index,item] of body.categories.entries()){
             const key=String(item?.key||"").trim().slice(0,100);
             if(!key)continue;
-            const source=sourceMap.get(key)||{label:key,image:"",icon:"",color:"#D8DDE0"};
+            const source=sourceMap.get(key)||{label:key,image:"",icon:"",color:"#D8DDE0",sortOrder:index};
             const label=String(item.label||source.label||key).trim().slice(0,80);
             const image=String(item.image||"").trim().slice(0,500);
-            const icon=String(item.icon||source.icon||"").trim().slice(0,8);
+            const icon=String(item.icon||source.icon||"").trim().slice(0,48);
+            const description=String(item.description||"").trim().slice(0,300);
             const color=String(item.color||source.color||"#D8DDE0");
             const override={};
-            if(label!==source.label)override.label=label;
+            if(!sourceMap.has(key)||label!==source.label)override.label=label;
             if(image!==source.image)override.image=/^https:\/\//i.test(image)?image:"";
             if(icon!==source.icon)override.icon=icon;
             if(description)override.description=description;
@@ -1106,7 +1115,7 @@ export default {
             if(/^#[0-9a-f]{6}$/i.test(color)&&color!==source.color)override.color=color;
             if(item.active===false)override.active=false;
             const rawSortOrder=Number(item.sortOrder);const sortOrder=Math.max(0,Math.min(999,Number.isFinite(rawSortOrder)?rawSortOrder:index));
-            if(sortOrder!==source.sortOrder)override.sortOrder=sortOrder;
+            if(!sourceMap.has(key)||sortOrder!==source.sortOrder)override.sortOrder=sortOrder;
             config[key]=override;
           }
           await setSetting(env,"category_config",config,staff.id);
