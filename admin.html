@@ -87,7 +87,7 @@
   .promo-editor .panel{margin:0}
   .promo-checks{display:flex;flex-wrap:wrap;gap:8px 16px}
   .promo-editor-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.section.active{animation:none}
+  .section.active{animation:none}
   @keyframes admin-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
   @media(max-width:650px){
     .mobile-nav{overflow:visible;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
@@ -195,6 +195,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
   .toast { bottom: calc(82px + var(--safe)); }
 }
 @media (prefers-reduced-motion: reduce) { .storefront-preview { transition: none; } }
+.catalog-browser{display:grid;gap:12px}.catalog-product-results{display:grid;gap:6px;max-height:360px;overflow:auto}.catalog-product-result{display:flex;align-items:center;gap:10px;width:100%;padding:9px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);text-align:left}.catalog-product-result img{width:36px;height:36px;object-fit:contain;border-radius:8px;background:var(--panel)}.catalog-product-result span{display:grid;gap:2px;min-width:0}.catalog-product-result small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.catalog-product-modal{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:20px;background:#07090cb8;backdrop-filter:blur(8px)}.catalog-product-dialog{width:min(680px,100%);max-height:min(760px,calc(100vh - 40px));overflow:auto;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 28px 90px #000b;padding:20px}.catalog-product-dialog .panel-head{margin-bottom:20px}.catalog-product-dialog textarea{min-height:120px}.catalog-product-dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}@media(max-width:650px){.catalog-product-modal{padding:12px;place-items:end center}.catalog-product-dialog{max-height:calc(100vh - 24px);border-radius:18px;padding:16px}.catalog-product-dialog-actions{position:sticky;bottom:-16px;padding:12px 0 0;background:var(--panel)}}.target-picker{position:relative}.target-results{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 4px);max-height:220px;overflow:auto;padding:5px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 16px 32px #0007}.target-result{display:grid;width:100%;padding:8px;border:0;border-radius:8px;background:transparent;text-align:left}.target-result:hover{background:var(--panel2)}
 </style>
 </head>
 <body>
@@ -206,8 +207,8 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
   <div id="demo-login-panel" hidden>
     <form id="demo-login-form" class="grid">
       <label>Логин<input id="demo-username" autocomplete="username" value="admin" required></label>
-      <label>��஫�<input id="demo-password" type="password" autocomplete="current-password" placeholder="admin" required></label>
-      <button class="btn primary" type="submit">����</button>
+      <label>Пароль<input id="demo-password" type="password" autocomplete="current-password" placeholder="admin" required></label>
+      <button class="btn primary" type="submit">Войти</button>
       <button class="btn" type="submit" name="demo-mode" value="courier">Войти демо-курьером</button>
       <div id="demo-login-error" class="small login-error"></div>
     </form>
@@ -217,11 +218,11 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
     <summary>Войти по коду приглашения</summary>
     <form id="login-form">
       <label>Имя для первой настройки<input id="login-name" autocomplete="name" placeholder="Имя владельца"></label>
-      <label>��� ����㯠<input id="login-code" type="password" autocomplete="one-time-code" placeholder="��⠢�� ���" required></label>
-      <button class="btn primary" type="submit">���� �� ����</button>
+      <label>Код доступа<input id="login-code" type="password" autocomplete="one-time-code" placeholder="Вставьте код" required></label>
+      <button class="btn primary" type="submit">Войти по коду</button>
       <div id="login-error" class="small login-error"></div>
     </form>
-    <p class="small login-help">��� ���㤭���� �ᯮ���� ���ᮭ���� ��� �ਣ��襭�� �� �������� ��������.</p>
+    <p class="small login-help">Для сотрудников используйте персональный код приглашения от владельца магазина.</p>
   </details>
 </div>
 
@@ -241,7 +242,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
       <div class="grid metrics" id="metrics"></div>
       <div class="grid two">
         <div class="panel"><div class="panel-head"><div><h2>Последние заказы</h2><p>Живая очередь магазина</p></div><button class="btn" data-goto="orders">Все заказы</button></div><div class="table-wrap" id="latest-orders"></div></div>
-        <div class="panel"><div class="panel-head"><div><h2>����ﭨ� ��⥬�</h2><p>����஭����� � �訡��</p></div></div><div id="system-health"></div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Состояние системы</h2><p>Синхронизация и ошибки</p></div></div><div id="system-health"></div></div>
       </div>
     </section>
 
@@ -264,22 +265,22 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
           <fieldset id="invite-permissions" class="permission-panel" hidden>
             <legend>Доступы менеджера</legend>
             <div class="permission-grid">
-              <label><input type="checkbox" data-invite-permission="overview" checked>�����</label>
-              <label><input type="checkbox" data-invite-permission="orders" checked>��ᬮ�� �������</label>
-              <label><input type="checkbox" data-invite-permission="orders.manage" checked>��������� �������</label>
-              <label><input type="checkbox" data-invite-permission="schedule" checked>��ᯨᠭ�� � ᫮��</label>
-              <label><input type="checkbox" data-invite-permission="catalog" checked>��ᬮ�� ��⠫���</label>
-              <label><input type="checkbox" data-invite-permission="catalog.manage" checked>��ࠢ����� ��⠫����</label>
-              <label><input type="checkbox" data-invite-permission="categories" >��ᬮ�� ��⥣�਩</label>
-              <label><input type="checkbox" data-invite-permission="categories.manage" >��������� ��⥣�਩</label>
-              <label><input type="checkbox" data-invite-permission="analytics" >�����⨪�</label>
-              <label><input type="checkbox" data-invite-permission="branding" >��ᬮ�� ��ଫ����</label>
-              <label><input type="checkbox" data-invite-permission="branding.manage" >��������� ��ଫ����</label>
-              <label><input type="checkbox" data-invite-permission="settings" >����ன�� ��������</label>
-              <label><input type="checkbox" data-invite-permission="logs" >���⥬�� ����</label>
-              <label><input type="checkbox" data-invite-permission="telegram" >Telegram � 㢥��������</label>
+              <label><input type="checkbox" data-invite-permission="overview" checked>Обзор</label>
+              <label><input type="checkbox" data-invite-permission="orders" checked>Просмотр заказов</label>
+              <label><input type="checkbox" data-invite-permission="orders.manage" checked>Изменение заказов</label>
+              <label><input type="checkbox" data-invite-permission="schedule" checked>Расписание и слоты</label>
+              <label><input type="checkbox" data-invite-permission="catalog" checked>Просмотр каталога</label>
+              <label><input type="checkbox" data-invite-permission="catalog.manage" checked>Управление каталогом</label>
+              <label><input type="checkbox" data-invite-permission="categories" >Просмотр категорий</label>
+              <label><input type="checkbox" data-invite-permission="categories.manage" >Изменение категорий</label>
+              <label><input type="checkbox" data-invite-permission="analytics" >Аналитика</label>
+              <label><input type="checkbox" data-invite-permission="branding" >Просмотр оформления</label>
+              <label><input type="checkbox" data-invite-permission="branding.manage" >Изменение оформления</label>
+              <label><input type="checkbox" data-invite-permission="settings" >Настройки магазина</label>
+              <label><input type="checkbox" data-invite-permission="logs" >Системные логи</label>
+              <label><input type="checkbox" data-invite-permission="telegram" >Telegram и уведомления</label>
             </div>
-            <p class="small muted">�ࠢ� ����� �������� �����. ������ ����㯭� ⮫쪮 �����祭�� ���⠢��.</p>
+            <p class="small muted">Права можно изменить позже. Курьеру доступны только назначенные доставки.</p>
           </fieldset>
           <button class="btn primary" type="submit">Создать приглашение</button></form><div id="invite-result"></div></div>
       </div>
@@ -291,6 +292,8 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
         <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
       </div>
       <div class="panel panel-spaced"><div class="panel-head"><div><h2>Источник каталога</h2><p>Вставьте ссылку на нужный лист Google Sheets</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Ссылка на Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=…" autocomplete="off" required></label><input id="sync-sheet-id" type="hidden"><input id="sync-gid" type="hidden"><input id="sync-cache" type="hidden" value="90"><div class="full"><button class="btn primary" type="submit">Сохранить ссылку</button> <button class="btn" id="preview-sheet" type="button">Проверить</button></div></form></div>
+      <div class="panel panel-spaced"><div class="panel-head"><div><h2>Товары</h2><p>Выберите карточку, чтобы открыть её редактирование.</p></div></div><div class="catalog-browser"><input id="catalog-product-search" type="search" placeholder="Найти товар"><div id="catalog-product-results" class="catalog-product-results"></div></div></div>
+      <div id="catalog-product-modal" class="catalog-product-modal" hidden aria-hidden="true"><form id="catalog-product-editor" class="catalog-product-dialog" role="dialog" aria-modal="true" aria-labelledby="catalog-product-dialog-title"><div class="panel-head"><div><h2 id="catalog-product-dialog-title">Редактировать товар</h2><p>Изменения будут записаны в каталог.</p></div><button class="btn ghost" type="button" data-close-catalog-editor aria-label="Закрыть">Закрыть</button></div><input id="catalog-product-id" type="hidden"><div class="form-grid"><label>Название<input id="catalog-product-name" maxlength="160"></label><label>Бренд<input id="catalog-product-manufacturer" maxlength="160"></label><label>Категория<input id="catalog-product-category" maxlength="160"></label><label>Фото URL<input id="catalog-product-image" type="url" maxlength="500"></label><label class="full">Описание<textarea id="catalog-product-description" maxlength="600"></textarea></label><label class="field-row"><input id="catalog-product-available" type="checkbox"> Показывать в магазине</label></div><div class="catalog-product-dialog-actions"><button class="btn" type="button" data-close-catalog-editor>Отмена</button><button class="btn primary" type="submit">Сохранить</button></div></form></div>
       <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>Шаблон и сопоставление столбцов</h2><p>Можно прикрепить CSV-шаблон или проверить заголовки подключённой таблицы. Данные источника не изменяются.</p></div></div><div class="form-grid"><label class="full">Прикрепить шаблон CSV<input id="catalog-template-file" type="file" accept=".csv,text/csv"></label><div class="full actions"><button class="btn" id="attach-template" type="button">Сохранить шаблон</button><button class="btn" id="download-template" type="button">Скачать пустой шаблон</button><button class="btn" id="download-attached-template" type="button">Скачать прикреплённый</button><span id="template-info" class="muted small"></span></div><div id="column-mapping" class="full form-grid"></div><div class="full"><button class="btn" id="save-template" type="button">Сохранить сопоставление столбцов</button></div></div></div>
       <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
     </section>
@@ -303,7 +306,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
       <div class="toolbar"><select id="analytics-days"><option value="7">7 дней</option><option value="30" selected>30 дней</option><option value="90">90 дней</option></select><button class="btn" id="analytics-reload">Обновить аналитику</button></div>
       <div class="grid metrics" id="analytics-metrics"></div>
       <div class="grid two"><div class="panel"><div class="panel-head"><div><h2>Популярные товары</h2><p>Просмотры, добавления и оформленные заказы</p></div></div><div id="analytics-products"></div></div><div class="panel"><div class="panel-head"><div><h2>Поисковые запросы</h2><p>Что покупатели пытаются найти</p></div></div><div id="analytics-searches"></div></div></div>
-      <div class="panel panel-spaced"><div class="panel-head"><div><h2>�������� �� ���</h2><p>��ᬮ��� ����祪, ��২�� � ������</p></div></div><div id="analytics-daily"></div></div>
+      <div class="panel panel-spaced"><div class="panel-head"><div><h2>Динамика по дням</h2><p>Просмотры карточек, корзина и заказы</p></div></div><div id="analytics-daily"></div></div>
     </section>
 
     <section id="page-logs" class="section">
@@ -319,18 +322,18 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
         <label>Минимальная сумма, BYN<input id="cfg-min" type="number" min="0" step="0.01"></label><label>Стоимость доставки, BYN<input id="cfg-fee" type="number" min="0" step="0.01"></label>
         <label>Максимум штук на вариант<input id="cfg-item-limit" type="number" min="1" max="100" step="1" required></label>
         <label class="field-row"><input id="cfg-metro" type="checkbox"> Получение у метро включено</label><label class="field-row"><input id="cfg-pickup" type="checkbox"> Самовывоз включён</label><label class="field-row"><input id="cfg-delivery" type="checkbox"> Доставка на дом включена</label>
-        <h3 class="full">�����</h3>
-        <label hidden class="field-row"><input id="cfg-cash-payment" type="checkbox"> �����묨 �� ����祭��</label>
-        <label hidden class="field-row"><input id="cfg-transfer-payment" type="checkbox"> ��ॢ�� �� ४����⠬</label>
+        <h3 hidden class="full">Оплата</h3>
+        <label hidden class="field-row"><input id="cfg-cash-payment" type="checkbox"> Наличными при получении</label>
+        <label hidden class="field-row"><input id="cfg-transfer-payment" type="checkbox"> Перевод по реквизитам</label>
         <label hidden class="full">Реквизиты и инструкция для покупателя<textarea id="cfg-transfer-details" rows="4" maxlength="1500" placeholder="Получатель, банк, номер счёта и назначение платежа"></textarea><small class="muted">Покупатель увидит реквизиты в заказе после его подтверждения.</small></label>
-        <label hidden class="full field-row"><input id="cfg-age-gate" type="checkbox"> �����뢠�� ���⢥ত���� 18+ �� �室� �� ���ਭ�</label>
+        <label class="full field-row"><input id="cfg-age-gate" type="checkbox"> Показывать подтверждение 18+ при входе на витрину</label>
         <div class="full"><button class="btn primary" type="submit">Сохранить настройки</button></div>
       </form></div>
     </section>
 
     <section id="page-promotions" class="section">
       <div class="panel promo-editor">
-        <div class="panel-head promo-editor-head"><div><h2>��⮬���᪨� ��樨</h2><p>���⥬� ��⠥� ���室�騥 ����樨 � ��২�� � �ਬ���� ���� ���� � ᠬ� ��᮪�� �믮������ ��ண��.</p></div><button type="button" class="btn" id="add-promotion">�������� ����</button></div><div class="promo-logic-note muted small">���冷� �ਬ������: ������� ��㪨 �� ��࠭��� ��㯯 (�������, �ᯠ�⥫�, ����ਤ��); �롨ࠥ��� ���� �ࠢ��� � �������訬 �믮������ ��ண��; ����ப ��砩�� �롨ࠥ��� �� ����㯭�� ������⥩ � ����⪮� Salt/<�������> ���� �९����� �� 20 �� � ���室�騬 �७���; � ����� �� �������� �⤥�쭮� ��ப�� �� 業� 0 BYN. �᫨ ���室�饣� ����ઠ ��� � ����稨, ���� �� �ਬ������. � ����� ������ ������� ⮫쪮 ���� ����. � ⠡��� ��� �⤥�쭮�� ���� ⨯� ����⨭�, ���⮬� �९���� �� 20 �� �ᯮ������ ��� �ࠪ��᪨� ���਩ Salt.</div>
+        <div class="panel-head promo-editor-head"><div><h2>Автоматические акции</h2><p>Система считает подходящие позиции в корзине и применяет одну акцию с самым высоким выполненным порогом.</p></div><button type="button" class="btn" id="add-promotion">Добавить акцию</button></div><div class="promo-logic-note muted small">Порядок применения: считаются штуки из выбранных групп (жидкости, испарители, картриджи); выбирается одно правило с наибольшим выполненным порогом; подарок случайно выбирается из доступных жидкостей с пометкой Salt/«Солевая» либо крепостью от 20 мг и подходящим брендом; в заказ он попадает отдельной строкой по цене 0 BYN. Если подходящего подарка нет в наличии, акция не применяется. В одном заказе действует только одна акция. В таблице нет отдельного поля типа никотина, поэтому крепость от 20 мг используется как практический критерий Salt.</div>
         <form id="promotions-form" class="promo-editor">
           <div id="promotion-rules" class="promo-editor"></div>
           <div><button type="submit" class="btn primary" id="promotion-save">Сохранить акции</button></div>
@@ -338,63 +341,61 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
       </div>
     </section>
 
-      <div class="panel promo-editor panel-spaced"><div class="panel-head promo-editor-head"><div><h2>�஬�����</h2><p>������ �� ��� ��২��. ����� 0 - ��� ��࠭�祭��.</p></div><button type="button" class="btn" id="add-promocode">�������� �஬����</button></div><form id="promocodes-form" class="promo-editor"><div id="promocode-rules" class="promo-editor"></div><div><button type="submit" class="btn primary">���࠭��� �஬�����</button></div></form></div>
-
     <section id="page-branding" class="section">
       <div class="appearance-toolbar">
-        <div class="section-switch" role="group" aria-label="������� ��ଫ����">
-          <button type="button" data-appearance-pane="storefront" aria-controls="appearance-storefront" aria-pressed="true">���ਭ�</button>
-          <button type="button" data-appearance-pane="panel" aria-controls="appearance-panel" aria-pressed="false">�������</button>
-          <button type="button" data-appearance-pane="transfer" aria-controls="appearance-transfer" aria-pressed="false">������ � ��ᯮ��</button>
+        <div class="section-switch" role="group" aria-label="Разделы оформления">
+          <button type="button" data-appearance-pane="storefront" aria-controls="appearance-storefront" aria-pressed="true">Витрина</button>
+          <button type="button" data-appearance-pane="panel" aria-controls="appearance-panel" aria-pressed="false">Админка</button>
+          <button type="button" data-appearance-pane="transfer" aria-controls="appearance-transfer" aria-pressed="false">Импорт и экспорт</button>
         </div>
         <a class="btn ghost preview-link" href="/" target="_blank" rel="noopener">Открыть магазин ↗</a>
       </div>
       <div id="appearance-storefront" class="appearance-grid">
         <form id="branding-form" class="editor-fields">
           <section class="panel">
-            <div class="panel-head"><div><h2>������� ��࠭��</h2><p>����⨯ � ⥪�� ��� ��⠫����.</p></div></div>
+            <div class="panel-head"><div><h2>Главная страница</h2><p>Логотип и текст над каталогом.</p></div></div>
             <div class="form-grid">
               <label class="full">URL логотипа<input id="brand-logo" type="url" maxlength="500" placeholder="https://…"></label>
               <label class="field-row full"><input id="storefront-show-hero" type="checkbox" checked> Показывать приветственный блок</label>
-              <label>������<input id="brand-tagline" maxlength="120"></label>
-              <label>���������<input id="brand-hero-title" maxlength="80"></label>
+              <label>Слоган<input id="brand-tagline" maxlength="120"></label>
+              <label>Заголовок<input id="brand-hero-title" maxlength="80"></label>
               <label class="full">Текст под заголовком<input id="brand-hero-subtitle" maxlength="180"></label>
             </div>
           </section>
           <section class="panel">
-            <div class="panel-head"><div><h2>��⪠ ��⠫���</h2><p>������⢮ ����祪 � ����� ���.</p></div></div>
+            <div class="panel-head"><div><h2>Сетка каталога</h2><p>Количество карточек в одном ряду.</p></div></div>
             <div class="form-grid">
               <label>На телефоне<select id="storefront-mobile-columns"><option value="1">1 карточка</option><option value="2" selected>2 карточки</option></select></label>
               <label>На компьютере<select id="storefront-desktop-columns"><option value="2">2 карточки</option><option value="3" selected>3 карточки</option><option value="4">4 карточки</option></select></label>
               <label class="full">Сортировка по умолчанию<select id="brand-default-sort"><option value="featured">Рекомендованные</option><option value="analytics">Популярные по аналитике</option><option value="price-asc">Сначала дешевле</option><option value="price-desc">Сначала дороже</option><option value="name">По названию</option><option value="brand">По бренду</option></select></label>
-              <label class="field-row full"><input id="brand-analytics" type="checkbox"> ������� ������祭��� �����⨪� ���ਭ�</label>
+              <label class="field-row full"><input id="brand-analytics" type="checkbox"> Собирать обезличенную аналитику витрины</label>
             </div>
           </section>
           <section class="panel">
             <div class="panel-head"><div><h2>Цвета и шрифты</h2></div><button class="btn" type="button" id="ui-theme-reset">Сбросить цвета и шрифты</button></div>
             <div class="form-grid">
-          <label>���� ⥪��<select id="ui-font-family"><option>Inter</option><option>Open Sans</option><option>Manrope</option><option>Montserrat</option></select></label>
-          <label>���� ����������<select id="ui-heading-font"><option>Manrope</option><option>Montserrat</option><option>Inter</option><option>Open Sans</option></select></label>
-          <label>�᭮���� ��業�<input id="ui-accent" type="color"></label>
-          <label>�������⥫�� ��業�<input id="ui-accent2" type="color"></label>
-          <label>��� ��࠭���<input id="ui-background" type="color"></label>
-          <label>�᭮���� �����孮���<input id="ui-panel" type="color"></label>
-          <label>���筠� �����孮���<input id="ui-panel2" type="color"></label>
-          <label>�᭮���� ⥪��<input id="ui-text" type="color"></label>
-          <label>����� ⥪��<input id="ui-muted" type="color"></label>
-          <label>�࠭��� � ࠧ����⥫�<input id="ui-line" type="color"></label>
+          <label>Шрифт текста<select id="ui-font-family"><option>Inter</option><option>Open Sans</option><option>Manrope</option><option>Montserrat</option></select></label>
+          <label>Шрифт заголовков<select id="ui-heading-font"><option>Manrope</option><option>Montserrat</option><option>Inter</option><option>Open Sans</option></select></label>
+          <label>Основной акцент<input id="ui-accent" type="color"></label>
+          <label>Дополнительный акцент<input id="ui-accent2" type="color"></label>
+          <label>Фон страницы<input id="ui-background" type="color"></label>
+          <label>Основная поверхность<input id="ui-panel" type="color"></label>
+          <label>Вторичная поверхность<input id="ui-panel2" type="color"></label>
+          <label>Основной текст<input id="ui-text" type="color"></label>
+          <label>Вторичный текст<input id="ui-muted" type="color"></label>
+          <label>Границы и разделители<input id="ui-line" type="color"></label>
             </div>
           </section>
           <div class="editor-save">
             <span id="storefront-save-status" class="muted small" role="status"></span>
-            <button type="submit" class="btn primary">���࠭��� ���ਭ�</button>
+            <button type="submit" class="btn primary">Сохранить витрину</button>
           </div>
         </form>
         <aside class="panel editor-preview">
           <div class="panel-head"><div><h2>Предпросмотр</h2></div></div>
-          <div class="section-switch preview-modes" role="group" aria-label="���ன�⢮ � �।��ᬮ��">
-            <button type="button" data-preview-mode="mobile" aria-pressed="true">����䮭</button>
-            <button type="button" data-preview-mode="desktop" aria-pressed="false">��������</button>
+          <div class="section-switch preview-modes" role="group" aria-label="Устройство в предпросмотре">
+            <button type="button" data-preview-mode="mobile" aria-pressed="true">Телефон</button>
+            <button type="button" data-preview-mode="desktop" aria-pressed="false">Компьютер</button>
           </div>
           <div id="ui-theme-preview" class="storefront-preview" data-mode="mobile">
             <div class="preview-brand"><img id="preview-logo" alt="" hidden><strong id="preview-store-name">VIOLET SHOP</strong></div>
@@ -405,23 +406,23 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
       </div>
       <div id="appearance-panel" hidden>
       <div class="panel admin-appearance-panel">
-        <div class="panel-head"><div><h2>��ଫ���� �������</h2><p>�롥�� �������, ���⭮��� ����䥩� � ࠧ��� ⥪��.</p></div></div>
+        <div class="panel-head"><div><h2>Оформление админки</h2><p>Выберите палитру, плотность интерфейса и размер текста.</p></div></div>
         <div class="appearance-presets">
-          <button type="button" class="btn" data-admin-preset="blue">�񬭮-ᨭ��</button>
-          <button type="button" class="btn" data-admin-preset="contrast">��᮪�� �������</button>
-          <button type="button" class="btn" data-admin-preset="soft">��� ����</button>
+          <button type="button" class="btn" data-admin-preset="blue">Тёмно-синяя</button>
+          <button type="button" class="btn" data-admin-preset="contrast">Высокий контраст</button>
+          <button type="button" class="btn" data-admin-preset="soft">Мягкий графит</button>
         </div>
         <form id="admin-appearance-form" class="form-grid admin-appearance-form">
-          <label>�᭮���� ����<select id="admin-font-family"><option>Inter</option><option>Open Sans</option></select></label>
-          <label>���� ����������<select id="admin-heading-font"><option>Manrope</option><option>Montserrat</option></select></label>
-          <label>��� ��࠭���<input id="admin-background" type="color"></label>
-          <label>������� ������<input id="admin-sidebar" type="color"></label>
-          <label>����窨 � ����<input id="admin-panel" type="color"></label>
-          <label>���筠� �����孮���<input id="admin-panel2" type="color"></label>
-          <label>�᭮���� ⥪��<input id="admin-text" type="color"></label>
-          <label>����� ⥪��<input id="admin-muted" type="color"></label>
-          <label>�࠭��� � ࠧ����⥫�<input id="admin-line" type="color"></label>
-          <label>��業� � ��⨢�� ��������<input id="admin-accent" type="color"></label>
+          <label>Основной шрифт<select id="admin-font-family"><option>Inter</option><option>Open Sans</option></select></label>
+          <label>Шрифт заголовков<select id="admin-heading-font"><option>Manrope</option><option>Montserrat</option></select></label>
+          <label>Фон страницы<input id="admin-background" type="color"></label>
+          <label>Боковая панель<input id="admin-sidebar" type="color"></label>
+          <label>Карточки и окна<input id="admin-panel" type="color"></label>
+          <label>Вторичная поверхность<input id="admin-panel2" type="color"></label>
+          <label>Основной текст<input id="admin-text" type="color"></label>
+          <label>Вторичный текст<input id="admin-muted" type="color"></label>
+          <label>Границы и разделители<input id="admin-line" type="color"></label>
+          <label>Акцент и активные элементы<input id="admin-accent" type="color"></label>
           <label>Скругления<select id="admin-radius"><option value="10">10 px</option><option value="12">12 px</option><option value="14">14 px</option><option value="18">18 px</option><option value="22">22 px</option></select></label>
           <label>Плотность интерфейса<select id="admin-density"><option value="comfortable">Обычная</option><option value="compact">Компактная</option></select></label>
           <label>Ширина боковой панели<select id="admin-sidebar-width"><option value="200">Узкая</option><option value="230">Стандартная</option><option value="260">Широкая</option></select></label>
@@ -433,7 +434,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
             </div>
           </div>
           <div class="full actions">
-            <button type="submit" class="btn primary">���࠭��� ����䥩�</button>
+            <button type="submit" class="btn primary">Сохранить интерфейс</button>
             <button type="button" class="btn" id="admin-appearance-reset">Вернуть сохранённое</button>
           </div>
         </form>
@@ -441,7 +442,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
       </div>
       <div id="appearance-transfer" hidden>
         <div class="panel">
-          <div class="panel-head"><div><h2>������ � ��ᯮ��</h2><p>��७�� ��ଫ����, ��⥣�਩ � ᮯ��⠢����� �⮫�殢.</p></div></div>
+          <div class="panel-head"><div><h2>Импорт и экспорт</h2><p>Перенос оформления, категорий и сопоставления столбцов.</p></div></div>
           <div class="actions"><button class="btn primary" id="export-config">Скачать настройки</button><label class="btn" for="import-config-file" id="import-config-label">Загрузить настройки</label><input id="import-config-file" type="file" accept=".json,application/json" hidden></div>
         </div>
       </div>
@@ -449,7 +450,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
 
     <section id="page-telegram" class="section">
       <div class="grid two">
-        <div class="panel"><div class="panel-head"><div><h2>Telegram Bot API</h2><p>����������� � ������ ����⢨� �� �������</p></div><span class="pill" id="bot-state">�� ��������</span></div><label>Telegram ID �� �������஢<input id="manager-chat" placeholder="-100:"></label><button class="btn primary mt-12" id="save-telegram">���࠭��� ��</button><button class="btn mt-8" id="setup-webhook">����ந�� webhook</button><div class="config-note mt-12">����� ��� �� �࠭���� � ����䥩� � �� �������� � ���� �������. ������� <b>BOT_TOKEN</b> � Cloudflare  Worker  Settings  Variables and Secrets ��� Secret. ��᫥ �⮣� ������ <����ந�� webhook>.</div></div>
+        <div class="panel"><div class="panel-head"><div><h2>Telegram Bot API</h2><p>Уведомления и быстрые действия по заказам</p></div><span class="pill" id="bot-state">Не подключён</span></div><label>Telegram ID чата менеджеров<input id="manager-chat" placeholder="-100…"></label><button class="btn primary mt-12" id="save-telegram">Сохранить чат</button><button class="btn mt-8" id="setup-webhook">Настроить webhook</button><div class="config-note mt-12">Токен бота не хранится в интерфейсе и не попадает в базу заказов. Добавьте <b>BOT_TOKEN</b> в Cloudflare → Worker → Settings → Variables and Secrets как Secret. После этого нажмите «Настроить webhook».</div></div>
         <div class="panel"><div class="panel-head"><div><h2>Что будет автоматизировано</h2><p>После подключения бота</p></div></div><div class="items"><div class="item"><span>Новый заказ менеджеру</span><b>✓</b></div><div class="item"><span>Подтверждение / отклонение из Telegram</span><b>✓</b></div><div class="item"><span>Назначение курьера и уведомление</span><b>✓</b></div><div class="item"><span>Обновление статуса покупателю</span><b>✓</b></div></div><p class="muted small">Чтобы получать сообщения от бота, покупатель должен хотя бы один раз открыть чат с ботом. Для уведомлений курьера укажите его Telegram ID при создании приглашения.</p></div>
       </div>
     </section>
@@ -462,12 +463,12 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
 
 <script>
 const $=id=>document.getElementById(id);
-const state={staff:null,page:"overview",orders:[],selectedOrder:null,config:null,staffList:[],catalogTemplate:{headers:[],columnMapping:{}},categories:[],promotions:[],previousPromotions:[],promocodes:[],adminAppearance:null};
+const state={staff:null,page:"overview",orders:[],selectedOrder:null,config:null,staffList:[],catalogTemplate:{headers:[],columnMapping:{}},catalogProducts:[],categories:[],promotions:[],previousPromotions:[],adminAppearance:null};
 const titles={overview:"Обзор",orders:"Заказы",schedule:"Слоты и график",team:"Команда",catalog:"Каталог и синхронизация",categories:"Категории витрины",analytics:"Аналитика",branding:"Настройки витрины",logs:"Логи и ошибки",settings:"Настройки магазина",promotions:"Акции",telegram:"Telegram",courier:"Мои доставки"};
 const labels={new:"Новый",confirmed:"Подтверждён",preparing:"Готовится",ready:"Готов",assigned:"Назначен курьер",picked_up:"Забран",on_the_way:"В пути",delivered:"Доставлен",completed:"Завершён",cancelled:"Отменён",rejected:"Отклонён"};
 const navGroups=[
- [["overview","�����"],["orders","������"],["schedule","�����"]],
- [["catalog","��⠫��"],["categories","��⥣�ਨ"],["promotions","��樨"]],
+ [["overview","Обзор"],["orders","Заказы"],["schedule","Слоты"]],
+ [["catalog","Каталог"],["categories","Категории"],["promotions","Акции"]],
  [["settings","Магазин"],["team","Команда"],["telegram","Telegram"]]
 ];
 const navGroupLabels=["Операции","Магазин","Управление"];
@@ -685,7 +686,7 @@ async function loadTeam(){
  $("team-list").innerHTML=d.staff.length?d.staff.map(s=>{
   const permissionContent=s.role==="owner"?'<div class="small muted mt-8">Полный доступ владельца</div>':s.role==="courier"?'<div class="small muted mt-8">Доступ только к назначенным доставкам</div>':'<details class="permission-editor"><summary>Настроить разрешения</summary><div class="permission-grid">'+permissionChecks(s.permissions||[],"data-staff-permission")+'</div><button class="btn mt-8" type="button" data-save-permissions="'+esc(s.id)+'">Сохранить права</button></details>';
   return '<div class="panel team-card" data-staff-card="'+esc(s.id)+'"><div class="row"><span><b>'+esc(s.display_name)+'</b><br><small class="muted">'+esc(s.role==="owner"?"Владелец":s.role==="manager"?"Менеджер":"Курьер")+'</small></span>'+(s.active?'<span class="status delivered">Активен</span>':'<span class="status cancelled">Отключён</span>')+'</div>'+permissionContent+'<div class="row mt-8"><input data-staff-telegram="'+esc(s.id)+'" value="'+esc(s.telegram_id||"")+'" placeholder="Telegram ID для уведомлений"><button class="btn" data-save-telegram="'+esc(s.id)+'">Сохранить ID</button><button class="btn '+(s.active?"danger":"")+'" data-toggle-staff="'+esc(s.id)+'" data-active="'+s.active+'">'+(s.active?"Отключить":"Включить")+'</button></div></div>';
- }).join(""):'<div class="empty">������� ���� �� ���������</div>';
+ }).join(""):'<div class="empty">Команда пока не добавлена</div>';
  $("team-list").querySelectorAll("[data-toggle-staff]").forEach(button=>button.onclick=async()=>{await api("/api/admin/staff/"+button.dataset.toggleStaff,{method:"PATCH",body:JSON.stringify({active:button.dataset.active!=="1"})});await loadTeam();});
  $("team-list").querySelectorAll("[data-save-telegram]").forEach(button=>button.onclick=async()=>{const input=[...$("team-list").querySelectorAll("[data-staff-telegram]")].find(el=>el.dataset.staffTelegram===button.dataset.saveTelegram);await api("/api/admin/staff/"+button.dataset.saveTelegram,{method:"PATCH",body:JSON.stringify({telegramId:input?.value||""})});toast("Telegram ID сохранён");});
  $("team-list").querySelectorAll("[data-save-permissions]").forEach(button=>button.onclick=async()=>{
@@ -711,26 +712,26 @@ $("invite-form").onsubmit=async e=>{
  }catch(error){toast(error.message);}
 };
 const catalogFields=[
- {key:"product_key",label:"ID ⮢��",required:true,aliases:["product_key","product id","productid","id","��⨪�"]},
- {key:"name",label:"�������� ⮢��",required:true,aliases:["name","product name","title","��������","⮢��"]},
+ {key:"product_key",label:"ID товара",required:true,aliases:["product_key","product id","productid","id","артикул"]},
+ {key:"name",label:"Название товара",required:true,aliases:["name","product name","title","название","товар"]},
  {key:"category",label:"Категория",required:true,aliases:["category","category name","категория"]},
- {key:"category_label",label:"�������� ��⥣�ਨ �� ���ਭ�",aliases:["category_label","category title","category display name","�������� ��⥣�ਨ"]},
- {key:"category_image_url",label:"���⨭�� ��⥣�ਨ",aliases:["category_image_url","category image","category photo","�� ��⥣�ਨ"]},
- {key:"category_icon",label:"������ ��⥣�ਨ",aliases:["category_icon","category icon","������ ��⥣�ਨ"]},
+ {key:"category_label",label:"Название категории на витрине",aliases:["category_label","category title","category display name","название категории"]},
+ {key:"category_image_url",label:"Картинка категории",aliases:["category_image_url","category image","category photo","фото категории"]},
+ {key:"category_icon",label:"Иконка категории",aliases:["category_icon","category icon","иконка категории"]},
  {key:"price_byn",label:"Цена",required:true,aliases:["price_byn","price","price by","цена"]},
- {key:"manufacturer",label:"�७� / �ந�����⥫�",aliases:["manufacturer","brand","vendor","producer","�७�","�ந�����⥫�"]},
- {key:"option_label",label:"��ਠ�� / ����",aliases:["option_label","variant","variant name","flavor","taste","����"]},
- {key:"available",label:"����稥",aliases:["available","in stock","stock","����稥"]},
- {key:"active",label:"��⨢�����",aliases:["active","enabled","is active","��⨢��"]},
+ {key:"manufacturer",label:"Бренд / производитель",aliases:["manufacturer","brand","vendor","producer","бренд","производитель"]},
+ {key:"option_label",label:"Вариант / вкус",aliases:["option_label","variant","variant name","flavor","taste","вкус"]},
+ {key:"available",label:"Наличие",aliases:["available","in stock","stock","наличие"]},
+ {key:"active",label:"Активность",aliases:["active","enabled","is active","активен"]},
  {key:"image_url",label:"Фото товара",aliases:["image_url","image","photo","photo url","фото"]},
- {key:"variant_image_url",label:"��� ��ਠ�� / 梥�",aliases:["variant_image_url","option_image_url","color_image_url","�� 梥�"]},
- {key:"sku",label:"SKU / ��⨪� ��ਠ��",aliases:["sku","sku id","variant sku","article"]},
+ {key:"variant_image_url",label:"Фото варианта / цвета",aliases:["variant_image_url","option_image_url","color_image_url","фото цвета"]},
+ {key:"sku",label:"SKU / артикул варианта",aliases:["sku","sku id","variant sku","article"]},
  {key:"description",label:"Описание",aliases:["description","описание"]},
- {key:"sort_order",label:"��筮� ���冷�",aliases:["sort_order","priority","order"]},
+ {key:"sort_order",label:"Ручной порядок",aliases:["sort_order","priority","order"]},
  {key:"popularity",label:"Базовая популярность",aliases:["popularity"]},
- {key:"strength_mg",label:"�९����",aliases:["strength_mg","strength","nicotine strength","�९����"]},
- {key:"resistance_ohm",label:"����⨢�����",aliases:["resistance_ohm","resistance","ohm","ᮯ�⨢�����"]},
- {key:"component_type",label:"��� ���������",aliases:["component_type","component","type","⨯"]},
+ {key:"strength_mg",label:"Крепость",aliases:["strength_mg","strength","nicotine strength","крепость"]},
+ {key:"resistance_ohm",label:"Сопротивление",aliases:["resistance_ohm","resistance","ohm","сопротивление"]},
+ {key:"component_type",label:"Тип компонента",aliases:["component_type","component","type","тип"]},
  {key:"color",label:"Цвет",aliases:["color","colour","цвет"]}
 ];
 function normalizedHeader(value){return String(value||"").trim().toLocaleLowerCase("ru").replace(/[\s\-./]+/g,"_").replace(/[^\p{L}\p{N}_]/gu,"");}
@@ -765,11 +766,22 @@ async function saveCatalogConnection(){
  await api("/api/admin/sync-settings",{method:"PUT",body:JSON.stringify({spreadsheetId,catalogGid,cacheSeconds:Number($("sync-cache").value),columnMapping:mapping})});
  return {spreadsheetId,catalogGid,columnMapping:mapping};
 }
+function renderCatalogProductResults(query=""){
+ const normalized=query.trim().toLowerCase();
+ const products=state.catalogProducts.filter(product=>!normalized||[product.name,product.manufacturer,product.category].join(" ").toLowerCase().includes(normalized)).slice(0,80);
+ $("catalog-product-results").innerHTML=products.length?products.map(product=>'<button type="button" class="catalog-product-result" data-catalog-product="'+esc(product.id)+'"><img src="'+esc(product.image||"")+'" alt=""><span><b>'+esc(product.name)+'</b><small>'+esc(product.category||"")+(product.manufacturer?" · "+esc(product.manufacturer):"")+'</small></span></button>').join(""):'<div class="empty">Ничего не найдено</div>';
+ $("catalog-product-results").querySelectorAll("[data-catalog-product]").forEach(button=>button.onclick=()=>{
+  const product=state.catalogProducts.find(item=>item.id===button.dataset.catalogProduct);if(!product)return;
+  $("catalog-product-id").value=product.id;$("catalog-product-name").value=product.name||"";$("catalog-product-manufacturer").value=product.manufacturer||"";$("catalog-product-category").value=product.category||"";$("catalog-product-image").value=product.image||"";$("catalog-product-description").value=product.description||"";$("catalog-product-available").checked=product.available!==false;
+  $("catalog-product-modal").hidden=false;$("catalog-product-modal").setAttribute("aria-hidden","false");$("catalog-product-name").focus();
+ });
+}
 async function loadCatalog(){
  const canManageCatalog=canPermission("catalog.manage");
  $("page-catalog").querySelectorAll("button,input,select").forEach(element=>{element.disabled=!canManageCatalog;});
  $("page-catalog").querySelectorAll("form").forEach(form=>form.hidden=!canManageCatalog);
- const [runs,settings,template]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template")]);
+ const [runs,settings,template,products]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template"),api("/api/admin/catalog/products")]);
+ state.catalogProducts=products.products||[];renderCatalogProductResults($("catalog-product-search").value);
  const latest=runs.runs[0];state.catalogTemplate=template||{headers:[],columnMapping:{}};
  $("sync-state").textContent=latest?.status==="success"?"Синхронизирован":latest?.status==="error"?"Ошибка":"Ожидает проверки";
  $("catalog-stats").innerHTML=[["Строк в источнике",latest?.source_rows??"—"],["Карточек",latest?.product_families??"—"],["Вариантов",latest?.variants??"—"],["Последний запуск",latest?.finished_at?new Date(latest.finished_at).toLocaleString("ru-BY"):"—"]].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong class="metric-small-value">'+x[1]+'</strong></div>').join("");
@@ -780,6 +792,18 @@ async function loadCatalog(){
  $("sync-history").innerHTML=runs.runs.length?'<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Статус</th><th>Строк</th><th>Карточек</th><th>Вариантов</th><th>Ошибка</th></tr></thead><tbody>'+runs.runs.map(r=>'<tr><td>'+new Date(r.started_at).toLocaleString("ru-BY")+'</td><td>'+statusPill(r.status==="success"?"completed":r.status==="error"?"rejected":"new")+'</td><td>'+(r.source_rows??"—")+'</td><td>'+(r.product_families??"—")+'</td><td>'+(r.variants??"—")+'</td><td>'+esc(r.error||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">История появится после первого запуска</div>';
 }
 $("sync-sheet-url").onchange=()=>{const parsed=sheetParts($("sync-sheet-url").value);if(parsed.spreadsheetId)$("sync-sheet-id").value=parsed.spreadsheetId;if(parsed.catalogGid)$("sync-gid").value=parsed.catalogGid;};
+$("catalog-product-search").oninput=event=>renderCatalogProductResults(event.target.value);
+function closeCatalogEditor(){
+ $("catalog-product-modal").hidden=true;$("catalog-product-modal").setAttribute("aria-hidden","true");
+}
+document.querySelectorAll("[data-close-catalog-editor]").forEach(button=>button.onclick=closeCatalogEditor);
+$("catalog-product-modal").onclick=event=>{if(event.target===$("catalog-product-modal"))closeCatalogEditor();};
+document.addEventListener("keydown",event=>{if(event.key==="Escape"&&!$("catalog-product-modal").hidden)closeCatalogEditor();});
+$("catalog-product-editor").onsubmit=async event=>{
+ event.preventDefault();
+ const body={productId:$("catalog-product-id").value,name:$("catalog-product-name").value,manufacturer:$("catalog-product-manufacturer").value,category:$("catalog-product-category").value,image:$("catalog-product-image").value,description:$("catalog-product-description").value,available:$("catalog-product-available").checked};
+ try{await api("/api/admin/catalog/products",{method:"PUT",body:JSON.stringify(body)});closeCatalogEditor();toast("Товар сохранён");await loadCatalog();}catch(error){toast(error.message);}
+};
 $("sync-settings-form").onsubmit=async e=>{e.preventDefault();try{await saveCatalogConnection();toast("Подключение таблицы сохранено");await loadCatalog();}catch(error){toast(error.message);}};
 $("preview-sheet").onclick=async()=>{const button=$("preview-sheet");button.disabled=true;button.textContent="Проверяем…";try{await saveCatalogConnection();const result=await api("/api/admin/catalog-preview");state.catalogTemplate={...state.catalogTemplate,name:"Заголовки подключённой таблицы",headers:result.headers,columnMapping:guessColumnMapping(result.headers)};await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});renderColumnMapping(result.headers,state.catalogTemplate.columnMapping);$("template-info").textContent="Таблица доступна · "+result.headers.length+" столбцов · "+result.rowCount+" строк данных";toast("Таблица подключена. Проверьте сопоставление полей.");}catch(error){toast(error.message);}finally{button.disabled=false;button.textContent="Проверить таблицу";}};
 $("attach-template").onclick=async()=>{const file=$("catalog-template-file").files?.[0];if(!file){toast("Сначала выберите CSV-файл шаблона");return;}try{const content=await file.text();const headers=parseCsvHeader(content);if(headers.length<2)throw new Error("В шаблоне не удалось определить заголовки");state.catalogTemplate={name:file.name,headers,columnMapping:guessColumnMapping(headers),content};renderColumnMapping(headers,state.catalogTemplate.columnMapping);$("template-info").textContent=file.name+" · "+headers.length+" столбцов";await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});toast("CSV-шаблон прикреплён и сохранён");await loadCatalog();}catch(error){toast(error.message);}};
@@ -970,7 +994,7 @@ async function loadBranding(){
  if(!canExport&&transferTab.getAttribute("aria-pressed")==="true")document.querySelector('[data-appearance-pane="storefront"]').click();
  $("import-config-label").hidden=!canPermission("settings.manage");
  $("import-config-file").disabled=!canPermission("settings.manage");
- brandingStatus.textContent="����㦠�� ����ன��:";
+ brandingStatus.textContent="Загружаем настройки…";
  try{
   fillBranding(await api("/api/admin/branding"));
   for(const control of brandingForm.elements)control.disabled=!canEdit;
@@ -985,11 +1009,11 @@ brandingForm.onsubmit=async event=>{
  if(brandingSave.disabled)return;
  const draft=storefrontFromForm();
  for(const control of brandingForm.elements)control.disabled=true;
- brandingStatus.textContent="���࠭塞:";
+ brandingStatus.textContent="Сохраняем…";
  try{
   const {settings}=await api("/api/admin/branding",{method:"PUT",body:JSON.stringify(draft)});
   fillBranding(settings);
-  brandingStatus.textContent="��������� ��㡫�������";
+  brandingStatus.textContent="Изменения опубликованы";
  }catch(error){
   brandingStatus.textContent=error.message;
   toast(error.message);
@@ -1042,6 +1066,36 @@ $("settings-form").onsubmit=async event=>{
 const promotionGroups=[["liquid","Жидкости"],["coil","Испарители"],["cartridge","Картриджи"]];
 function readPromotionInputs(){
  return Array.from($("promotion-rules").querySelectorAll("fieldset"),field=>{
+  const value=name=>field.querySelector('[name="'+name+'"]').value;
+  return {id:field.dataset.id||"",title:value("title"),description:value("description"),minimum:Number(value("minimum")),giftLabel:value("giftLabel"),giftBrand:value("giftBrand"),
+   groups:[...field.querySelectorAll('input[name="group"]:checked')].map(input=>input.value),active:field.querySelector('[name="active"]').checked};
+ });
+}
+function renderPromotionEditor(){
+ const editable=canPermission("settings.manage");
+ $("add-promotion").hidden=!editable;
+ $("promotion-save").hidden=!editable;
+ $("promotion-rules").innerHTML=state.promotions.length?state.promotions.map((rule,index)=>{
+  const groups=promotionGroups.map(([value,label])=>'<label class="field-row"><input type="checkbox" name="group" value="'+value+'" '+(rule.groups.includes(value)?"checked":"")+'> '+label+'</label>').join("");
+  return '<fieldset class="panel form-grid" data-id="'+esc(rule.id)+'" '+(editable?"":"disabled")+'><legend>'+esc(rule.title||"Новая акция")+'</legend>'+
+   '<label>Название<input name="title" required maxlength="80" value="'+esc(rule.title)+'"></label>'+
+   '<label>От скольких штук<input name="minimum" type="number" min="1" max="99" required value="'+esc(rule.minimum)+'"></label>'+
+   '<label class="full">Описание на витрине<textarea name="description" maxlength="300" required>'+esc(rule.description)+'</textarea></label>'+
+   '<div class="full"><p>Что участвует в акции</p><div class="promo-checks">'+groups+'</div></div>'+
+   '<label>Название подарка<input name="giftLabel" required maxlength="100" value="'+esc(rule.giftLabel)+'"></label>'+
+   '<label>Бренд подарка<input name="giftBrand" maxlength="80" placeholder="Любой бренд" value="'+esc(rule.giftBrand)+'"></label>'+
+   '<label class="field-row"><input type="checkbox" name="active" '+(rule.active?"checked":"")+'> Показывать на витрине</label>'+
+   (editable?'<div><button class="btn" type="button" data-delete-promotion="'+index+'">Убрать акцию</button></div>':"")+'</fieldset>';
+ }).join(""):'<div class="empty">Акций пока нет</div>';
+ $("promotion-rules").querySelectorAll("[data-delete-promotion]").forEach(button=>button.onclick=()=>{
+  state.promotions=readPromotionInputs();
+  state.promotions.splice(Number(button.dataset.deletePromotion),1);
+  renderPromotionEditor();
+ });
+}
+// Discount rules deliberately share the same compact promotion editor as gifts.
+function readPromotionInputs(){
+ return Array.from($("promotion-rules").querySelectorAll("fieldset"),field=>{
   const value=name=>field.querySelector('[name="'+name+'"]')?.value||"";
   const type=value("type")||"gift";
   const common={id:field.dataset.id||"",type,title:value("title"),description:value("description"),active:field.querySelector('[name="active"]').checked};
@@ -1056,27 +1110,31 @@ function renderPromotionEditor(){
   const type=rule.type||"gift";
   const groups=promotionGroups.map(([value,label])=>'<label class="field-row"><input type="checkbox" name="group" value="'+value+'" '+((rule.groups||[]).includes(value)?"checked":"")+'> '+label+'</label>').join("");
   const fields=type==="discount"
-   ?'<label>������, %<input name="discountPercent" type="number" min="1" max="99" required value="'+esc(rule.discountPercent||10)+'"></label><label>�ਬ����� �<select name="scope"><option value="catalog" '+(rule.scope==="catalog"?"selected":"")+'>�ᥬ� ��⠫���</option><option value="category" '+(rule.scope==="category"?"selected":"")+'>��⥣���</option><option value="product" '+(rule.scope==="product"?"selected":"")+'>�⤥��� ⮢�ࠬ</option></select></label><label class="full">��⥣�ਨ ��� ⮢���<input name="targets" value="'+esc((rule.targets||[]).join(", "))+'" placeholder="��� �ᥣ� ��⠫��� ��⠢�� �����"><small class="muted">��१ �������. ��� ⮢�� ����� 㪠���� SKU, ID ��� �筮� ��������.</small></label>'
+   ?'<label>Скидка, %<input name="discountPercent" type="number" min="1" max="99" required value="'+esc(rule.discountPercent||10)+'"></label><label>Применить к<select name="scope"><option value="catalog" '+(rule.scope==="catalog"?"selected":"")+'>Всему каталогу</option><option value="category" '+(rule.scope==="category"?"selected":"")+'>Категориям</option><option value="product" '+(rule.scope==="product"?"selected":"")+'>Отдельным товарам</option></select></label><label class="full target-picker">Категории или товары<input name="target-search" autocomplete="off" placeholder="Начните вводить название"><input name="targets" type="hidden" value="'+esc((rule.targets||[]).join(", "))+'"><div class="target-results" hidden></div><small class="muted">Выберите из списка — товар будет привязан точно.</small></label><div class="full target-chips">'+(rule.targets||[]).map(target=>'<span class="pill">'+esc(target)+'</span>').join("")+'</div>'
    :'<label>От скольких штук<input name="minimum" type="number" min="1" max="99" required value="'+esc(rule.minimum||2)+'"></label><div class="full"><p>Товары в акции</p><div class="promo-checks">'+groups+'</div></div><label>Название подарка<input name="giftLabel" required maxlength="100" value="'+esc(rule.giftLabel||"")+'"></label><label>Бренд подарка<input name="giftBrand" maxlength="80" placeholder="Любой бренд" value="'+esc(rule.giftBrand||"")+'"></label>';
   return '<fieldset class="panel form-grid" data-id="'+esc(rule.id)+'" '+(editable?"":"disabled")+'><legend>'+esc(rule.title||"Новая акция")+'</legend><label>Тип<select name="type"><option value="discount" '+(type==="discount"?"selected":"")+'>Скидка</option><option value="gift" '+(type==="gift"?"selected":"")+'>Подарок</option></select></label><label>Название<input name="title" required maxlength="80" value="'+esc(rule.title||"")+'"></label><label class="full">Текст для покупателя<textarea name="description" maxlength="300" required>'+esc(rule.description||"")+'</textarea></label>'+fields+'<label class="field-row"><input type="checkbox" name="active" '+(rule.active?"checked":"")+'> Акция активна</label>'+(editable?'<div><button class="btn" type="button" data-delete-promotion="'+index+'">Удалить</button></div>':"")+'</fieldset>';
- }).join(""):'<div class="empty">��権 ���� ���</div>';
+ }).join(""):'<div class="empty">Акций пока нет</div>';
  $("promotion-rules").querySelectorAll('select[name="type"]').forEach(select=>select.onchange=()=>{state.promotions=readPromotionInputs();const index=[...$("promotion-rules").querySelectorAll("fieldset")].indexOf(select.closest("fieldset"));state.promotions[index]={...state.promotions[index],type:select.value};renderPromotionEditor();});
+ $("promotion-rules").querySelectorAll(".target-picker").forEach(picker=>{
+  const input=picker.querySelector('[name="target-search"]'),hidden=picker.querySelector('[name="targets"]'),results=picker.querySelector(".target-results");
+  const show=()=>{
+   const query=input.value.trim().toLowerCase(),scope=picker.closest("fieldset").querySelector('[name="scope"]').value;
+   const groups=scope==="category"?[...new Set(state.catalogProducts.map(item=>item.category).filter(Boolean))].map(category=>({category,name:category,id:category})):state.catalogProducts;
+   const matched=groups.filter(item=>!query||[item.name,item.category,item.manufacturer].join(" ").toLowerCase().includes(query)).slice(0,30);
+   results.hidden=!matched.length;results.innerHTML=matched.map(item=>'<button type="button" class="target-result" data-target="'+esc(item.id)+'"><b>'+esc(item.name)+'</b><small>'+esc(item.category||"")+(item.manufacturer?" · "+esc(item.manufacturer):"")+'</small></button>').join("");
+   results.querySelectorAll("[data-target]").forEach(button=>button.onclick=()=>{const values=hidden.value.split(",").map(value=>value.trim()).filter(Boolean);if(!values.includes(button.dataset.target))values.push(button.dataset.target);hidden.value=values.join(", ");input.value="";renderPromotionEditor();});
+  };
+  input.oninput=show;input.onfocus=show;
+ });
  $("promotion-rules").querySelectorAll("[data-delete-promotion]").forEach(button=>button.onclick=()=>{state.promotions=readPromotionInputs();state.promotions.splice(Number(button.dataset.deletePromotion),1);renderPromotionEditor();});
 }
 async function loadPromotions(){
- const [data,codeData]=await Promise.all([api("/api/admin/promotions"),api("/api/admin/promocodes")]);
+ const [data,catalog]=await Promise.all([api("/api/admin/promotions"),state.catalogProducts.length?Promise.resolve({products:state.catalogProducts}):api("/api/admin/catalog/products")]);
+ state.catalogProducts=catalog.products||state.catalogProducts;
  state.previousPromotions=data.promotions;
  state.promotions=data.promotions;
- state.promocodes=codeData.promocodes||[];renderPromotionEditor();renderPromocodes();
+ renderPromotionEditor();
 }
-function renderPromocodes(){
- const editable=canPermission("settings.manage");
- $("promocode-rules").innerHTML=state.promocodes.length?state.promocodes.map((code,index)=>'<fieldset class="panel form-grid" data-promo-index="'+index+'" '+(editable?'':'disabled')+'><label>���<input name="code" required maxlength="30" value="'+esc(code.code||'')+'"></label><label>��������<input name="title" required maxlength="80" value="'+esc(code.title||'')+'"></label><label>���<select name="type"><option value="percent" '+(code.type!=="fixed"?'selected':'')+'>��業�</option><option value="fixed" '+(code.type==="fixed"?'selected':'')+'>BYN</option></select></label><label>������<input name="value" type="number" min="0.01" step="0.01" required value="'+esc(code.type==="fixed"?Number(code.value||0)/100:code.value||0)+'"></label><label>�� �㬬�, BYN<input name="minimumAmount" type="number" min="0" step="0.01" value="'+esc(Number(code.minimumAmount||0)/100)+'"></label><label>����� �ᯮ�짮�����<input name="maxUses" type="number" min="0" step="1" value="'+esc(code.maxUses||0)+'"></label><label class="field-row"><input name="active" type="checkbox" '+(code.active?'checked':'')+'> ��⨢��</label><div><button class="btn" type="button" data-delete-promocode="'+index+'">�������</button></div></fieldset>').join(''):'<div class="empty">�஬������ ���� ���</div>';
- $("promocode-rules").querySelectorAll("[data-delete-promocode]").forEach(button=>button.onclick=()=>{state.promocodes.splice(Number(button.dataset.deletePromocode),1);renderPromocodes();});
-}
-function readPromocodes(){return [...$("promocode-rules").querySelectorAll("fieldset")].map(field=>{const value=name=>field.querySelector('[name="'+name+'"]').value;return {code:value("code"),title:value("title"),type:value("type"),value:Number(value("value")),minimumAmount:Math.round(Number(value("minimumAmount")||0)*100),maxUses:Number(value("maxUses")||0),active:field.querySelector('[name="active"]').checked};});}
-$("add-promocode").onclick=()=>{state.promocodes.push({code:"",title:"",type:"percent",value:10,minimumAmount:0,maxUses:0,active:true});renderPromocodes();$("promocode-rules").querySelector('fieldset:last-child input[name="code"]')?.focus();};
-$("promocodes-form").onsubmit=async event=>{event.preventDefault();try{const data=await api("/api/admin/promocodes",{method:"PUT",body:JSON.stringify({promocodes:readPromocodes()})});state.promocodes=data.promocodes;renderPromocodes();toast("�஬����� ��࠭���");}catch(error){toast(error.message);}};
 $("add-promotion").onclick=()=>{
  state.promotions=[...readPromotionInputs(),{id:"",type:"discount",title:"",description:"",discountPercent:10,scope:"catalog",targets:[],active:true}];
  renderPromotionEditor();
@@ -1105,11 +1163,11 @@ async function loadCourier(){
  const d=await api("/api/courier/orders");
  $("courier-list").innerHTML=d.orders.length?d.orders.map(o=>{
   let buttons="";
-  if(o.status==="assigned")buttons='<button class="btn primary" data-courier-status="picked_up">���ࠫ �����</button>';
-  if(o.status==="picked_up")buttons='<button class="btn primary" data-courier-status="on_the_way">��堫</button>';
-  if(o.status==="on_the_way")buttons='<button class="btn primary" data-courier-status="delivered">���⠢����</button>';
+  if(o.status==="assigned")buttons='<button class="btn primary" data-courier-status="picked_up">Забрал заказ</button>';
+  if(o.status==="picked_up")buttons='<button class="btn primary" data-courier-status="on_the_way">Выехал</button>';
+  if(o.status==="on_the_way")buttons='<button class="btn primary" data-courier-status="delivered">Доставлено</button>';
   return '<div class="courier-card" data-courier-order="'+esc(o.id)+'"><div class="order-card-top"><b>Заказ #'+esc(o.number)+'</b>'+statusPill(o.status)+'</div><h3>'+esc(o.customerName)+'</h3><p>'+(o.telegramUsername?'Telegram: @'+esc(o.telegramUsername):'Связь через уведомления Telegram')+'</p><p>'+esc(o.address||"")+'</p><p>'+esc(o.slotDate)+' · '+esc(o.slotTime)+' · '+money(o.total)+'</p>'+buttons+'</div>';
- }).join(""):'<div class="empty">��⨢��� ���⠢�� ���� ���</div>';
+ }).join(""):'<div class="empty">Активных доставок пока нет</div>';
  $("courier-list").querySelectorAll("[data-courier-status]").forEach(button=>button.onclick=async()=>{const id=button.closest("[data-courier-order]").dataset.courierOrder;try{await api("/api/courier/orders/"+id,{method:"PATCH",body:JSON.stringify({status:button.dataset.courierStatus})});toast("Статус доставки обновлён");await loadCourier();}catch(error){toast(error.message);}});
 }
 $("courier-refresh").onclick=loadCourier;
@@ -1118,5 +1176,4 @@ boot();
 </script>
 </body>
 </html>
-
 
