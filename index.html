@@ -156,6 +156,18 @@ textarea{resize:vertical}
 .age-gate-card h1{margin:7px 0 11px;font-size:clamp(1.5rem,5vw,2rem);letter-spacing:-.04em}
 .age-gate-card p{margin-bottom:16px;color:var(--muted);line-height:1.45}
 .age-gate-decline{width:100%;border:0;border-radius:12px;background:var(--panel2);margin-top:8px;padding:10px}
+.app-splash{position:fixed;inset:0;z-index:100;display:grid;place-items:center;overflow:hidden;background:var(--bg);transition:opacity .42s cubic-bezier(.22,1,.36,1),visibility .42s step-end}
+.app-splash.is-done{opacity:0;visibility:hidden;pointer-events:none}
+.splash-core{position:relative;display:grid;place-items:center;width:156px;height:156px;border-radius:50%;background:radial-gradient(circle,var(--panel2) 0 36%,transparent 37%);isolation:isolate}
+.splash-core:before,.splash-core:after{content:"";position:absolute;border-radius:inherit;border:1px solid color-mix(in srgb,var(--accent) 42%,transparent)}
+.splash-core:before{inset:0;animation:splash-orbit 1.55s cubic-bezier(.45,0,.55,1) infinite}
+.splash-core:after{inset:22px;opacity:.55;animation:splash-orbit 1.55s cubic-bezier(.45,0,.55,1) .18s infinite reverse}
+.splash-word{position:relative;z-index:1;font:800 1rem var(--heading-font-family);letter-spacing:.16em}
+.splash-word b{color:var(--accent)}
+.splash-status{position:absolute;top:calc(50% + 108px);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);animation:splash-breathe 1.25s ease-in-out infinite}
+@keyframes splash-orbit{0%{transform:rotate(0) scale(.9);opacity:.15}50%{opacity:1}100%{transform:rotate(180deg) scale(1.05);opacity:.15}}
+@keyframes splash-breathe{50%{opacity:.4}}
+@media(prefers-reduced-motion:reduce){.app-splash{transition:none}.splash-core:before,.splash-core:after,.splash-status{animation:none}}
 .age-links{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;font-size:.76rem}
 @media(min-width:760px){.grid,#promo-products{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:760px){#products{grid-template-columns:repeat(var(--catalog-columns-desktop,3),minmax(0,1fr))}}
@@ -174,6 +186,10 @@ textarea{resize:vertical}
 </style>
 </head>
 <body>
+<div class="app-splash" id="app-splash" aria-live="polite">
+  <div class="splash-core"><div class="splash-word">VIOLET <b>SHOP</b></div></div>
+  <div class="splash-status" id="splash-status">Собираем витрину</div>
+</div>
 <div id="age-gate" class="age-gate" role="dialog" aria-modal="true" aria-labelledby="age-gate-title" hidden>
   <div class="age-gate-card">
     <div class="age-gate-brand">VIOLET <span>SHOP</span></div>
@@ -1008,11 +1024,20 @@ function initializeTelegram(){
  telegram?.ready();telegram?.expand();
  if(state.screen==="cart")renderCart();
 }
+function preloadCatalogImages(limit=14){
+ const urls=products.flatMap(product=>[product.image,...(product.options||[]).map(option=>option.image)]).filter(Boolean).slice(0,limit);
+ return Promise.all(urls.map(url=>new Promise(resolve=>{const image=new Image();image.onload=image.onerror=resolve;image.src=url;})));
+}
+function finishSplash(){
+ const splash=$("app-splash");if(!splash)return;
+ $("splash-status").textContent="Готово";
+ requestAnimationFrame(()=>splash.classList.add("is-done"));
+}
 if(telegram)initializeTelegram();else document.addEventListener("DOMContentLoaded",initializeTelegram,{once:true});
 for(const key of ["violet-query","violet-category","violet-brand"])localStorage.removeItem(key);
 render();
 const settingsReady=loadStoreSettings().finally(initAgeGate);
-syncCatalog(settingsReady);
+syncCatalog(settingsReady).then(()=>preloadCatalogImages()).catch(()=>{}).finally(finishSplash);
 </script>
 </body>
 </html>
