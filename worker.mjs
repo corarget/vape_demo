@@ -229,7 +229,7 @@ function permissionForAdminRoute(path,method){
   if(path==="/api/admin/settings"||path==="/api/admin/promotions"||path==="/api/admin/promocodes")return method==="GET"?"settings":"settings.manage";
   if(path==="/api/admin/config/export")return "settings";
   if(path==="/api/admin/config/import")return "settings.manage";
-  if(["/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs"].includes(path))return method==="GET"?"catalog":"catalog.manage";
+  if(["/api/admin/catalog-products","/api/admin/catalog/products","/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs"].includes(path))return method==="GET"?"catalog":"catalog.manage";
   if(path==="/api/admin/logs")return "logs";
   if(path==="/api/admin/integrations")return method==="GET"?"telegram":"telegram.manage";
   if(path==="/api/admin/integrations/webhook")return "telegram.manage";
