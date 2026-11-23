@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "violet-shop-staging",
+  "main": "worker.mjs",
+  "compatibility_date": "2026-11-21",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "GOOGLE_SHEET_ID": "",
+    "GOOGLE_CATALOG_GID": ""
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "violet-shop-staging-db",
+      "database_id": "25266668-1919-4683-ba5f-ff3109945c2a",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
