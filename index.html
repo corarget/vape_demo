@@ -544,6 +544,7 @@ function storeContact(){
 }
 function checkoutTelegram(){return !!(telegram?.initData&&state.storeSettings.telegramCheckoutEnabled);}
 function checkoutProblem(entries,subtotal){
+ if(!checkoutTelegram())return "Откройте магазин внутри Telegram, чтобы оформить заказ.";
  if(entries.some(line=>!line.available))return "Удалите недоступные позиции или выберите другие варианты.";
  if(entries.some(line=>!Number.isInteger(line.qty)||line.qty>quantityLimit()))return "Уменьшите количество до "+quantityLimit()+" шт. на вариант.";
  if(subtotal<(state.storeSettings.minOrder||0))return "Минимальная сумма заказа — "+money(state.storeSettings.minOrder);
@@ -588,9 +589,7 @@ function renderCart(){
  $('cart').replaceChildren(...entries.map(cartRow));
  const problem=syncSource!=="google"?"Дождитесь загрузки каталога.":checkoutProblem(entries,subtotal);
  const checkout=document.createElement("div");checkout.className="panel checkout-panel";
- const contactFields=checkoutTelegram()?
-  '<div class="checkout-identity"><strong>'+escapeHTML(telegramCustomerName())+'</strong><span class="muted">Заказ привязан к вашему Telegram.</span></div>':
-  '<label>Имя<input name="customerName" autocomplete="name" required maxlength="100"></label><label>Телефон<input name="phone" type="tel" autocomplete="tel" inputmode="tel" required maxlength="30" placeholder="+375 XX XXX XX XX"></label>';
+ const contactFields='<div class="checkout-identity"><strong>Заказ через Telegram</strong><span class="muted">Контактные данные вводить не нужно.</span></div>';
  const showForm=state.checkoutOpen&&!problem;
  const checkoutForm=showForm?'<form id="checkout-form" class="checkout-form">'+contactFields+
   '<label>Получение<select class="checkout-select" name="deliveryMethod" required>'+methods.map(method=>'<option value="'+method.value+'">'+method.label+'</option>').join("")+'</select></label>'+
@@ -711,12 +710,9 @@ async function submitOrder(event){
  const problem=checkoutProblem(entries,cartSubtotal(entries));
  if(problem){showNotice(problem,"error");return;}
  const linked=checkoutTelegram();
- const phone=linked?"":fields.phone.value.trim().replace(/[\s()-]/g,"");
- if(!linked&&!/^\+375\d{9}$/.test(phone)){
-  showNotice("Укажите белорусский телефон в формате +375 XX XXX XX XX","error");fields.phone.focus();return;
- }
- const payload={customerToken:customerToken(),telegramInitData:linked?telegram.initData:"",
-  customerName:linked?telegramCustomerName():fields.customerName.value.trim(),phone,
+ if(!linked){showNotice("Откройте магазин внутри Telegram, чтобы оформить заказ.","error");return;}
+ const payload={customerToken:customerToken(),telegramInitData:telegram.initData,
+  customerName:"",phone:"",
   deliveryMethod:fields.deliveryMethod.value,address:fields.address.value,doorbell:fields.doorbell.value,
   slotDate:fields.slotDate.value,slotTime:fields.slotTime.value,paymentMethod:fields.paymentMethod.value,comment:fields.comment.value,
   items:entries.map(({item,option,qty})=>({productId:item.id,variantId:option.variantId,quantity:qty}))};
@@ -828,7 +824,8 @@ $('order-recovery-form').onsubmit=async event=>{
 };
 function promoPrices(item){
  const attributes=item.attributes||{};
- const oldPrice=Number(item.oldPrice??item.compareAtPrice??item.originalPrice??attributes.old_price??attributes.compare_at_price??0);
+ const optionOriginals=(item.options||[]).map(option=>Number(option.originalPrice||0)).filter(price=>price>0);
+ const oldPrice=Number(item.oldPrice??item.compareAtPrice??item.originalPrice??attributes.old_price??attributes.compare_at_price??(optionOriginals.length?Math.min(...optionOriginals):0));
  const salePrice=Number(item.salePrice??item.discountPrice??attributes.sale_price??attributes.discount_price??item.priceMin??item.price??0);
  return {oldPrice,salePrice};
 }
@@ -839,7 +836,7 @@ function isDiscounted(item){
 }
 function eligibleCartPromotion(entries){
  const rules=state.storeSettings.promotions||[];
- const best=rules.filter(rule=>entries.reduce((count,line)=>count+(rule.groups.includes(line.option.promotionGroup)&&line.option.available?line.qty:0),0)>=rule.minimum)
+ const best=rules.filter(rule=>rule.type!=="discount"&&Array.isArray(rule.groups)&&entries.reduce((count,line)=>count+(rule.groups.includes(line.option.promotionGroup)&&line.option.available?line.qty:0),0)>=rule.minimum)
   .sort((a,b)=>b.minimum-a.minimum)[0];
  if(!best)return null;
  const brand=best.giftBrand.toLowerCase();
@@ -1019,3 +1016,4 @@ syncCatalog(settingsReady);
 </script>
 </body>
 </html>
+
