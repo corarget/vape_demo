@@ -82,11 +82,11 @@ async function getPromocodes(env){return getSetting(env,"promocodes",[]);}
 async function promocodeDiscount(env,code,subtotal){
   const normalized=normalizePromoCode(code);if(!normalized)return {promo:null,discount:0};
   const promo=(await getPromocodes(env)).find(item=>item.active&&item.code===normalized);
-  if(!promo)return {error:"�஬���� �� ������ ��� ����� �� �������"};
-  if(subtotal<Number(promo.minimumAmount||0))return {error:"��� �⮣� �஬����� �㦭� ��২�� �� "+(Number(promo.minimumAmount||0)/100).toFixed(2).replace(".",",")+" BYN"};
+  if(!promo)return {error:"Промокод не найден или больше не действует"};
+  if(subtotal<Number(promo.minimumAmount||0))return {error:"Для этого промокода нужна сумма от "+(Number(promo.minimumAmount||0)/100).toFixed(2).replace(".",",")+" BYN"};
   if(promo.maxUses>0){
     const used=await first(env,"SELECT COUNT(*) AS count FROM order_events WHERE event_type='promo_code_applied' AND metadata_json LIKE ?",['%"code":"'+promo.code+'"%']);
-    if(Number(used?.count||0)>=promo.maxUses)return {error:"����� �ᯮ�짮����� �஬����� �����稫��"};
+    if(Number(used?.count||0)>=promo.maxUses)return {error:"Лимит использования промокода закончился"};
   }
   const discount=promo.type==="percent"?Math.round(subtotal*promo.value/100):Math.min(subtotal,promo.value);
   return {promo,discount};
@@ -323,7 +323,7 @@ async function sendTelegram(env,chatId,message,replyMarkup=null){
       ...(replyMarkup?{reply_markup:replyMarkup}:{})
     });
   }catch(error){
-    await logSystem(env,"warning","telegram","�� 㤠���� ��ࠢ��� 㢥�������� Telegram",{error:String(error)});
+    await logSystem(env,"warning","telegram","Не удалось отправить уведомление Telegram",{error:String(error)});
   }
 }
 async function notifyOrder(env,order,status="new"){
@@ -562,7 +562,7 @@ async function verifyCustomerToken(request,payload=null){
 }
 async function createOrder(request,env){
   const body=await bodyJson(request);
-  if(!body)return json({error:"�����४�� ����� ������"},400);
+  if(!body)return json({error:"Некорректный статус оплаты"},400);
   const customerKeyHash=await verifyCustomerToken(request,body);
   if(!customerKeyHash)return json({error:"Не удалось подтвердить сессию покупателя"},400);
   const submittedName=String(body.customerName||"").trim().slice(0,100);
@@ -684,8 +684,8 @@ async function createOrder(request,env){
   let result;
   try{result=await env.DB.batch(statements);}
   catch(error){
-    await logSystem(env,"error","orders","�訡�� ����� ������",{error:String(error)});
-    return json({error:"�� 㤠���� ��࠭��� �����. ���஡�� ��� ࠧ"},500);
+    await logSystem(env,"error","orders","Ошибка создания заказа",{error:String(error)});
+    return json({error:"Не удалось сохранить заказ. Попробуйте ещё раз"},500);
   }
   if(!result?.[0]?.meta?.changes)return json({error:"Слот только что заняли. Выберите другое время"},409);
   const order=await loadOrder(env,orderId);
@@ -699,7 +699,7 @@ async function recoverOrder(request,env){
   const code=String(body?.code||"").trim().toLowerCase();
   if(!/^[a-f0-9]{24}$/.test(code))return json({error:"Проверьте код из подтверждения заказа"},400);
   const order=await first(env,"SELECT id,customer_key_hash FROM orders WHERE recovery_hash=?",[await sha256(code)]);
-  if(!order)return json({error:"����� � ⠪�� ����� �� ������"},404);
+  if(!order)return json({error:"Заказ с таким номером не найден"},404);
   if(order.customer_key_hash!==customerHash){
     await run(env,"INSERT OR IGNORE INTO order_recovery_sessions(order_id,customer_key_hash,created_at) VALUES(?,?,?)",[order.id,customerHash,now()]);
   }
@@ -764,7 +764,7 @@ async function staffLogin(request,env){
   const bootstrapHash=storedBootstrapHash||(env.BOOTSTRAP_CODE?await sha256(env.BOOTSTRAP_CODE):"");
   let staffId=randomId(),role="manager",displayName=String(body.displayName||"").trim().slice(0,80),telegramId="",permissions=[];
   if(!bootstrapUsed&&bootstrapHash&&safeEqual(codeHash,bootstrapHash)){
-    if(displayName.length<2)return json({error:"������ ��� ��������"},400);
+    if(displayName.length<2)return json({error:"Укажите имя владельца"},400);
     role="owner";permissions=PERMISSION_KEYS;
     await setSetting(env,"bootstrap_used",true,"bootstrap");
     await setSetting(env,"bootstrap_hash","","bootstrap");
@@ -784,8 +784,8 @@ async function staffLogin(request,env){
     await logSystem(env,"info","auth","Вход сотрудника",{staffId,role,permissions});
     return json({success:true,staff:{id:staffId,name:displayName,role,permissions}},200,{"Set-Cookie":cookieHeader(token)});
   }catch(error){
-    await logSystem(env,"error","auth","�� 㤠���� ᮧ���� ���� ���㤭���",{error:String(error)});
-    return json({error:"�� 㤠���� �믮����� �室"},500);
+    await logSystem(env,"error","auth","Не удалось создать учётную запись сотрудника",{error:String(error)});
+    return json({error:"Не удалось выполнить вход"},500);
   }
 }
 async function demoStaffLogin(request,env){
@@ -814,7 +814,7 @@ async function demoStaffLogin(request,env){
     const staff=await first(env,"SELECT id,display_name FROM staff WHERE id=? AND role='courier' AND active=1",[id]);
     if(!staff)return json({error:"Демо-курьер отключён"},403);
     const token=await createSession(env,staff.id);
-    await logSystem(env,"info","auth","�室 ����-�����",{staffId:staff.id});
+    await logSystem(env,"info","auth","Вход демо-курьера",{staffId:staff.id});
     return json({success:true,staff:{id:staff.id,name:staff.display_name,role:"courier",permissions:[]}},200,{"Set-Cookie":cookieHeader(token)});
   }
   let owner=await first(env,"SELECT id,display_name FROM staff WHERE role='owner' AND active=1 ORDER BY created_at LIMIT 1");
@@ -861,7 +861,7 @@ async function publicSettings(env){
 }
 async function recordAnalyticsEvent(request,env){
   const body=await bodyJson(request);
-  if(!body)return json({error:"�����४⭮� ᮡ�⨥"},400);
+  if(!body)return json({error:"Некорректное событие"},400);
   const allowed=new Set(["product_view","add_to_cart","variant_unavailable_click","search","category_filter","brand_filter","checkout_start","order_created"]);
   const eventType=String(body.eventType||"");
   if(!allowed.has(eventType))return json({error:"Неизвестный тип события"},400);
@@ -914,8 +914,8 @@ async function telegramWebhook(request,env){
     const command=message.text.trim().split(/\s+/)[0].toLowerCase().replace(/@[^\s]+$/,"");
     if(["/start","/shop","/catalog","/orders","/help"].includes(command)){
       const appUrl=new URL("/",request.url).toString();
-      const copy=command==="/orders"?"��ன� ����?�ਫ������: ����� ���� ࠧ��� <������>.":"��ன� �������, �롥�� ⮢��� � ��ନ� ����� ��אַ � Telegram.";
-      await sendTelegram(env,message.chat.id,"<b>VIOLET SHOP</b>\n"+copy,{inline_keyboard:[[{text:"������ �������",web_app:{url:appUrl}}]]});
+      const copy=command==="/orders"?"��ன� ����?�ਫ������: ����� ���� ࠧ��� <������>.":"��ன� Магазин, �롥�� ⮢��� � ��ନ� ����� ��אַ � Telegram.";
+      await sendTelegram(env,message.chat.id,"<b>VIOLET SHOP</b>\n"+copy,{inline_keyboard:[[{text:"Открыть магазин",web_app:{url:appUrl}}]]});
     }
   }
   if(update.update_id)await run(env,"UPDATE telegram_updates SET handled=1 WHERE update_id=?",[String(update.update_id)]);
@@ -980,7 +980,7 @@ export default {
         const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(body?.telegramInitData||request.headers.get("X-Telegram-Init-Data")||"",env.BOT_TOKEN):null;
         if(!hash&&!telegramUser)return json({error:"Сессия покупателя не найдена"},401);
         const order=await loadOrder(env,customerCancelMatch[1]);
-        if(!order)return json({error:"����� �� ������"},404);
+        if(!order)return json({error:"Заказ не найден"},404);
         const sessionMatch=hash&&(order.customer_key_hash===hash||await first(env,"SELECT 1 FROM order_recovery_sessions WHERE order_id=? AND customer_key_hash=?",[order.id,hash]));
         if(!sessionMatch&&!(telegramUser&&order.telegram_user_id===String(telegramUser.id)))return json({error:"Заказ не найден"},404);
         if(order.status!=="new")return json({error:"Отменить можно только новый заказ. Свяжитесь с магазином"},409);
@@ -1069,10 +1069,10 @@ export default {
         }
         if(path==="/api/admin/appearance"&&request.method==="PUT"){
           const body=await bodyJson(request);
-          if(!body||typeof body!=="object")return json({error:"�����४�� ����ன�� ����䥩�"},400);
+          if(!body||typeof body!=="object")return json({error:"Некорректные настройки интерфейса"},400);
           const appearance=sanitizeAdminAppearance(body.appearance||{});
           await setSetting(env,"admin_appearance",appearance,staff.id);
-          await logSystem(env,"info","appearance","��������� ��ଫ���� ������ �ࠢ�����",{staffId:staff.id});
+          await logSystem(env,"info","appearance","Обновлён внешний вид панели управления",{staffId:staff.id});
           return json({success:true,appearance});
         }
         if(path==="/api/admin/categories"&&request.method==="GET"){
@@ -1181,7 +1181,7 @@ export default {
             const catalog=await getCatalogConfig(env);
             await setSetting(env,"catalog_config",{...catalog,columnMapping:mapping},staff.id);
           }
-          await logSystem(env,"info","settings","������஢��� ���䨣���� ��������",{staffId:staff.id});
+          await logSystem(env,"info","settings","Импортирована конфигурация магазина",{staffId:staff.id});
           return json({success:true});
         }
         if(path==="/api/admin/dashboard"&&request.method==="GET")return json(await dashboard(env));
@@ -1197,7 +1197,7 @@ export default {
         if(adminOrderMatch&&request.method==="PATCH"){
           const body=await bodyJson(request);
           let order=await loadOrder(env,adminOrderMatch[1]);
-          if(!order)return json({error:"����� �� ������"},404);
+          if(!order)return json({error:"Заказ не найден"},404);
           if(body?.status){
             const result=await updateOrderStatus(env,adminOrderMatch[1],String(body.status),staff,String(body.message||""),body.courierId||null);
             if(result.error)return json({error:result.error},result.status);
@@ -1205,13 +1205,13 @@ export default {
           }
           if(body?.paymentStatus!==undefined){
             const paymentStatus=String(body.paymentStatus);
-            if(!["unpaid","paid","refunded","failed"].includes(paymentStatus))return json({error:"�����४�� ����� ������"},400);
+            if(!["unpaid","paid","refunded","failed"].includes(paymentStatus))return json({error:"Некорректный статус оплаты"},400);
             await env.DB.batch([
               env.DB.prepare("UPDATE orders SET payment_status=?,updated_at=?,version=version+1 WHERE id=?").bind(paymentStatus,now(),adminOrderMatch[1]),
-              env.DB.prepare("INSERT INTO order_events(order_id,actor_id,actor_role,event_type,message,metadata_json,created_at) VALUES(?,?,?,?,?,?,?)").bind(adminOrderMatch[1],staff.id,staff.role,"payment_updated","����� ������ ������",JSON.stringify({paymentStatus}),now())
+              env.DB.prepare("INSERT INTO order_events(order_id,actor_id,actor_role,event_type,message,metadata_json,created_at) VALUES(?,?,?,?,?,?,?)").bind(adminOrderMatch[1],staff.id,staff.role,"payment_updated","Статус оплаты обновлён",JSON.stringify({paymentStatus}),now())
             ]);
             order=await loadOrder(env,adminOrderMatch[1]);
-            await logSystem(env,"info","orders","������� ����� ������",{orderId:adminOrderMatch[1],paymentStatus,staffId:staff.id});
+            await logSystem(env,"info","orders","Обновлён статус оплаты",{orderId:adminOrderMatch[1],paymentStatus,staffId:staff.id});
           }
           return json({success:true,order:adminOrder(order)});
         }
@@ -1220,7 +1220,7 @@ export default {
         }
         if(path==="/api/admin/branding"&&request.method==="PUT"){
           const body=await bodyJson(request);
-          if(!body||typeof body!=="object")return json({error:"�����४�� ����ன�� ��ଫ����"},400);
+          if(!body||typeof body!=="object")return json({error:"Некорректные настройки оформления"},400);
           const current=await getConfig(env);
           const next={...current};
           for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","defaultSort","analyticsEnabled"])if(body[key]!==undefined)next[key]=body[key];
@@ -1233,7 +1233,7 @@ export default {
           if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
           next.analyticsEnabled=next.analyticsEnabled!==false;
           await setSetting(env,"store_config",next,staff.id);
-          await logSystem(env,"info","branding","������� ����䥩� ���ਭ�",{staffId:staff.id});
+          await logSystem(env,"info","branding","Обновлён интерфейс витрины",{staffId:staff.id});
           return json({success:true,settings:storefrontAppearance(next)});
         }
         if(path==="/api/admin/schedule-settings"&&request.method==="GET"){
@@ -1242,7 +1242,7 @@ export default {
         }
         if(path==="/api/admin/schedule-settings"&&request.method==="PUT"){
           const body=await bodyJson(request);
-          if(!body||typeof body!=="object")return json({error:"�����४�� ����ன�� �ᯨᠭ��"},400);
+          if(!body||typeof body!=="object")return json({error:"Некорректные настройки расписания"},400);
           const current=await getConfig(env),next={...current};
           if(body.weeklyHours&&typeof body.weeklyHours==="object"){
             const days=["mon","tue","wed","thu","fri","sat","sun"],hours={};
@@ -1260,7 +1260,7 @@ export default {
           next.daysAhead=bounded(body.daysAhead,current.daysAhead,1,30);
           next.slotCapacity=bounded(body.slotCapacity,current.slotCapacity,1,100);
           await setSetting(env,"store_config",next,staff.id);
-          await logSystem(env,"info","schedule","��������� �ᯨᠭ�� ��������",{staffId:staff.id});
+          await logSystem(env,"info","schedule","Обновлено расписание магазина",{staffId:staff.id});
           return json({success:true,settings:{weeklyHours:next.weeklyHours,slotMinutes:next.slotMinutes,leadMinutes:next.leadMinutes,daysAhead:next.daysAhead,slotCapacity:next.slotCapacity}});
         }
         if(path==="/api/admin/settings"&&request.method==="GET"){
@@ -1312,7 +1312,7 @@ export default {
           if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
           next.analyticsEnabled=next.analyticsEnabled!==false;
           await setSetting(env,"store_config",next,staff.id);
-          await logSystem(env,"info","settings","����ன�� �������� ���������",{staffId:staff.id});
+          await logSystem(env,"info","settings","Настройки магазина обновлены",{staffId:staff.id});
           return json({success:true,settings:next});
         }
         if(path==="/api/admin/slot-blocks"&&request.method==="GET"){
@@ -1349,7 +1349,7 @@ export default {
           const role=["manager","courier"].includes(body?.role)?body.role:"courier";
           const displayName=String(body?.displayName||"").trim().slice(0,80);
           const telegramId=String(body?.telegramId||"").trim().slice(0,40);
-          if(displayName.length<2)return json({error:"������ ��� ���㤭���"},400);
+          if(displayName.length<2)return json({error:"Укажите имя сотрудника"},400);
           const permissions=normalizePermissions(body?.permissions,role);
           if(role==="manager"&&!permissions.length)return json({error:"Выберите хотя бы одно разрешение менеджеру"},400);
           const code=randomToken(16),id=randomId(),created=now(),expires=new Date(Date.now()+48*3600000).toISOString();
@@ -1418,8 +1418,8 @@ export default {
           const response=await telegramCall(env,"setWebhook",{url:webhookUrl,secret_token:secret,allowed_updates:["message","callback_query"]});
           const appUrl=new URL("/",request.url).toString();
           await Promise.all([
-            telegramCall(env,"setMyCommands",{commands:[{command:"start",description:"������ �������"},{command:"shop",description:"��⠫��"},{command:"orders",description:"��� ������"},{command:"help",description:"������"}]}),
-            telegramCall(env,"setChatMenuButton",{menu_button:{type:"web_app",text:"�������",web_app:{url:appUrl}}})
+            telegramCall(env,"setMyCommands",{commands:[{command:"start",description:"Открыть магазин"},{command:"shop",description:"Каталог"},{command:"orders",description:"Мои заказы"},{command:"help",description:"������"}]}),
+            telegramCall(env,"setChatMenuButton",{menu_button:{type:"web_app",text:"Магазин",web_app:{url:appUrl}}})
           ]);
           return json({success:true,webhook:response.result});
         }
@@ -1432,7 +1432,7 @@ export default {
     }catch(error){
       console.error("worker_request_failed",path,String(error));
       await logSystem(env,"error","api","Необработанная ошибка API",{path,error:error instanceof Error?error.message:String(error)});
-      return json({error:"����७��� �訡�� �ࢥ�"},500);
+      return json({error:"Внутренняя ошибка сервера"},500);
     }
   }
 };
