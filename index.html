@@ -181,8 +181,8 @@ textarea{resize:vertical}
     <div class="eyebrow">Подтверждение возраста</div>
     <h1 id="age-gate-title">Вам уже исполнилось 18 лет?</h1>
     <p id="age-gate-copy">Магазин содержит товары с возрастными ограничениями. Продолжая, вы подтверждаете, что достигли 18 лет и имеете право просматривать этот каталог.</p>
-    <button type="button" class="primary age-gate-confirm" id="age-confirm">��� ���� 18 ���</button>
-    <button type="button" class="age-gate-decline" id="age-decline">��� ��� 18 ���</button>
+    <button type="button" class="primary age-gate-confirm" id="age-confirm">Мне есть 18 лет</button>
+    <button type="button" class="age-gate-decline" id="age-decline">Мне нет 18 лет</button>
     <div class="age-links"><a href="/rules" target="_blank" rel="noopener">Правила магазина</a><a href="/privacy" target="_blank" rel="noopener">Конфиденциальность</a></div>
   </div>
 </div>
@@ -191,7 +191,7 @@ textarea{resize:vertical}
     <div class="logo" id="store-logo">VIOLET <b>SHOP</b></div>
     <label class="global-search" aria-label="Поиск по всему магазину">
       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
-      <input id="query" type="search" placeholder="���� ⮢��, �७� ��� ����" aria-label="���� �� �ᥬ� ��������" autocomplete="off">
+      <input id="query" type="search" placeholder="Найти товар, бренд или вкус" aria-label="Поиск по всему магазину" autocomplete="off">
       <button type="button" id="clear-store-search" aria-label="Очистить поиск" hidden>×</button>
     </label>
   </header>
@@ -208,7 +208,7 @@ textarea{resize:vertical}
       </button>
     </div>
     <div id="category-search-panel" class="category-search-panel" hidden>
-      <input id="category-query" type="search" placeholder="���� ����� ��࠭��� ��⥣�ਨ" aria-label="���� � ��⥣�ਨ" autocomplete="off">
+      <input id="category-query" type="search" placeholder="Найти внутри выбранной категории" aria-label="Поиск в категории" autocomplete="off">
       <button type="button" id="clear-category-search" class="text-button">Очистить</button>
     </div>
     <div class="section-head"><h2>Товары</h2><span id="result-count"></span></div>
@@ -223,22 +223,22 @@ textarea{resize:vertical}
 </main>
 <nav class="bottom" id="bottom-nav" aria-label="Основная навигация" hidden>
   <button data-screen="catalog" aria-pressed="true"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l8-6 8 6v10H4zm5 10v-6h6v6"/></svg>Каталог</button>
-  <button data-screen="promo"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v4H4zm2 4v7h12v-7m-6-4v11m0-11C5 10 7 3 10 5c1 .7 2 5 2 5zm0 0c7 0 5-7 2-5-1 .7-2 5-2 5z"/></svg>��樨</button>
+  <button data-screen="promo"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h16v4H4zm2 4v7h12v-7m-6-4v11m0-11C5 10 7 3 10 5c1 .7 2 5 2 5zm0 0c7 0 5-7 2-5-1 .7-2 5-2 5z"/></svg>Акции</button>
   <button data-screen="cart"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h3l2 11h10l2-8H7m2 12h.01m8 0h.01"/></svg>Корзина<span id="cart-badge" class="badge"></span></button>
-  <button data-screen="orders"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17H6zM9 8h6m-6 4h6m-6 4h4"/></svg>������</button>
+  <button data-screen="orders"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v17H6zM9 8h6m-6 4h6m-6 4h4"/></svg>Заказы</button>
 </nav>
 <script defer src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 let products=[];let syncSource='loading';
 const iconPool=['?','?','?','?','?','?','?','?'];
 const categoryPaths={
- '�������':'M10 3h4v4h-4z M10 7v3l-4 4v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5l-4-4V7 M6 16h12',
- 'POD-��⥬�':'M9 6V3h6v3 M8 6h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M11 11h2m-1 4v2',
- '���室����':'M8 3h8l2 4H6l2-4z M7 7v11h10V7 M9 18v3h6v-3 M10 10v5m4-5v5',
- '���ࣥ⨪�':'M8 3h8l2 3v13l-2 2H8l-2-2V6l2-3z M6 7h12 M13 9l-4 5h4l-2 4',
- '����':'M4 9a8 4 0 1 0 16 0 8 4 0 1 0-16 0z M4 9v6a8 4 0 0 0 16 0V9 M10 8h4',
- '������':'M10 3h4m-2 0v9m-3 0h6l2 6a2 2 0 0 1-2 3H9a2 2 0 0 1-2-3l2-6z M15 13c4 0 3-6 6-6 M3 9h7',
- '����筠� �த���':'M6 7l6-4 6 4v13H6z M6 9h12 M9 13h6m-6 3h4',
+  'Жидкости':'M10 3h4v4h-4z M10 7v3l-4 4v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5l-4-4V7 M6 16h12',
+  'POD-системы':'M9 6V3h6v3 M8 6h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M11 11h2m-1 4v2',
+  'Расходники':'M8 3h8l2 4H6l2-4z M7 7v11h10V7 M9 18v3h6v-3 M10 10v5m4-5v5',
+  'Энергетики':'M8 3h8l2 3v13l-2 2H8l-2-2V6l2-3z M6 7h12 M13 9l-4 5h4l-2 4',
+  'Снюс':'M4 9a8 4 0 1 0 16 0 8 4 0 1 0-16 0z M4 9v6a8 4 0 0 0 16 0V9 M10 8h4',
+  'Кальян':'M10 3h4m-2 0v9m-3 0h6l2 6a2 2 0 0 1-2 3H9a2 2 0 0 1-2-3l2-6z M15 13c4 0 3-6 6-6 M3 9h7',
+  'Прочие товары':'M6 7l6-4 6 4v13H6z M6 9h12 M9 13h6m-6 3h4',
  'Одноразовые устройства':'M9 3h6v3H9z M8 6h8v12l-2 3h-4l-2-3z M11 16h2'
 };
 function categoryIcon(key, fallback='?'){
@@ -254,8 +254,8 @@ function initAgeGate(){
  if(!canEnter&&sessionStorage.getItem("violet-age-declined")==="yes")showAgeDeclined();
 }
 function showAgeDeclined(){
- $('age-gate-title').textContent="����� ������";
- $('age-gate-copy').textContent="��ᬮ�� ��⠫��� ����㯥� ⮫쪮 ᮢ��襭����⭨� ���짮��⥫�.";
+  $('age-gate-title').textContent="Возраст подтверждён";
+  $('age-gate-copy').textContent="Просмотр каталога доступен только совершеннолетним пользователям.";
  $('age-confirm').hidden=true;$('age-decline').hidden=true;
 }
 $('age-confirm').onclick=()=>{localStorage.setItem("violet-age-confirmed","yes");initAgeGate();};
@@ -560,8 +560,8 @@ async function applyPromoCode(){
  if(!code){state.appliedPromo=null;renderCart();return;}
  try{
   const response=await fetch('/api/promocodes/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,subtotal:cartSubtotal()})});
-  const data=await response.json();if(!response.ok)throw new Error(data.error||'�஬���� �� ������');
-  state.promoCode=code;state.appliedPromo={...data.promo,discount:data.discount};localStorage.setItem('violet-promo-code',code);renderCart();showNotice('�஬���� �ਬ���');
+   const data=await response.json();if(!response.ok)throw new Error(data.error||'Промокод не найден');
+   state.promoCode=code;state.appliedPromo={...data.promo,discount:data.discount};localStorage.setItem('violet-promo-code',code);renderCart();showNotice('Промокод применён');
  }catch(error){state.appliedPromo=null;showNotice(error.message,'error');renderCart();}
 }
 function cartRow(line){
@@ -605,12 +605,12 @@ function renderCart(){
  const checkoutForm=showForm?'<form id="checkout-form" class="checkout-form">'+contactFields+
   '<label>Получение<select class="checkout-select" name="deliveryMethod" required>'+methods.map(method=>'<option value="'+method.value+'">'+method.label+'</option>').join("")+'</select></label>'+
   '<p id="pickup-info" class="muted"></p><p class="muted">'+storeContact()+'</p>'+
-  '<div id="delivery-fields" class="checkout-delivery-fields" hidden><label>���� ���⠢��<input name="address" maxlength="300" placeholder="����, ���, ������"></label><label>����䮭<input name="doorbell" maxlength="80" placeholder="��� ����䮭�"></label></div>'+
-  '<div class="checkout-slot-row"><label>���<input name="slotDate" type="date" required min="'+minskDate()+'" max="'+minskDate(state.storeSettings.daysAhead??7)+'"></label><label>�६�<select class="checkout-select" name="slotTime" required></select></label></div>'+
+   '<div id="delivery-fields" class="checkout-delivery-fields" hidden><label>Адрес доставки<input name="address" maxlength="300" placeholder="Улица, дом, квартира"></label><label>Домофон<input name="doorbell" maxlength="80" placeholder="Код домофона"></label></div>'+
+   '<div class="checkout-slot-row"><label>Дата<input name="slotDate" type="date" required min="'+minskDate()+'" max="'+minskDate(state.storeSettings.daysAhead??7)+'"></label><label>Время<select class="checkout-select" name="slotTime" required></select></label></div>'+
   '<div id="slot-help" class="muted small" role="status" hidden></div><button id="next-slot-date" type="button" class="btn" hidden></button>'+
   '<label>Оплата<select class="checkout-select" name="paymentMethod" required>'+payments.map(method=>'<option value="'+method.value+'">'+paymentLabels[method.value]+'</option>').join("")+'</select></label>'+
-  '<p id="checkout-transfer-note" class="muted small" hidden>��������� ������� � ࠧ���� <��� ������> ��᫥ ���⢥ত���� ������ ���������.</p>'+
-  '<label>�������਩<textarea name="comment" maxlength="500" placeholder="��������� � ������"></textarea></label>'+
+   '<p id="checkout-transfer-note" class="muted small" hidden>Реквизиты появятся в разделе «Мои заказы» после подтверждения заказа магазином.</p>'+
+   '<label>Комментарий<textarea name="comment" maxlength="500" placeholder="Пожелания к заказу"></textarea></label>'+
   '<button class="primary" type="submit" disabled>Подтвердить заказ</button></form>':
   (problem?'<p class="cart-stock-error checkout-problem">'+escapeHTML(problem)+'</p>':"")+'<button class="primary checkout-open" id="checkout-open" type="button" '+(problem?"disabled":"")+'>Оформить заказ</button>';
  checkout.innerHTML='<div class="row"><div><strong>Итого</strong><p id="checkout-summary" class="muted">Выберите способ и время получения</p></div><strong id="checkout-total">'+money(subtotal)+'</strong></div><p id="delivery-fee-note" class="muted small" hidden></p>'+checkoutForm;
@@ -621,7 +621,7 @@ function renderCart(){
   $('cart').append(banner);
  }
  const promoBox=document.createElement('div');promoBox.className='panel';
- promoBox.innerHTML='<strong>�஬����</strong><div class="promo-code-row"><input id="promo-code-input" maxlength="30" autocomplete="off" placeholder="������ ���" value="'+escapeHTML(state.promoCode)+'"><button class="btn" id="apply-promo-code" type="button">�ਬ�����</button></div>'+(state.appliedPromo?'<div class="promo-code-summary"><span>'+escapeHTML(state.appliedPromo.title)+'</span><b>?'+money(promoDiscount())+'</b><button class="text-button" id="remove-promo-code" type="button">�����</button></div>':'');
+  promoBox.innerHTML='<strong>Промокод</strong><div class="promo-code-row"><input id="promo-code-input" maxlength="30" autocomplete="off" placeholder="Введите код" value="'+escapeHTML(state.promoCode)+'"><button class="btn" id="apply-promo-code" type="button">Применить</button></div>'+(state.appliedPromo?'<div class="promo-code-summary"><span>'+escapeHTML(state.appliedPromo.title)+'</span><b>−'+money(promoDiscount())+'</b><button class="text-button" id="remove-promo-code" type="button">Убрать</button></div>':'');
  $('cart').append(promoBox);
  const promoInput=$('promo-code-input');promoInput.oninput=()=>{state.promoCode=promoInput.value.toUpperCase();state.appliedPromo=null;};promoInput.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();applyPromoCode();}};
  $('apply-promo-code').onclick=applyPromoCode;$('remove-promo-code')?.addEventListener('click',()=>{state.promoCode='';state.appliedPromo=null;localStorage.removeItem('violet-promo-code');renderCart();});
@@ -702,7 +702,7 @@ async function loadCheckoutSlots(form){
  try{
   const query=new URLSearchParams({method:deliveryMethod.value,date:slotDate.value,nearest:"1"});
   const response=await fetch("/api/slots?"+query,{signal:controller.signal});const data=await response.json();
-  if(!response.ok)throw new Error(data.error||"�� 㤠���� ����㧨�� �६�");
+   if(!response.ok)throw new Error(data.error||"Не удалось загрузить время");
   if(controller.signal.aborted||!form.isConnected)return;
   select(data.slots||[]);
   if(!data.slots?.length){
@@ -802,7 +802,7 @@ async function renderOrders(){
   const response=await fetch("/api/orders",{signal:controller.signal,headers:{"X-Customer-Token":token,"X-Telegram-Init-Data":telegramData}});
   const data=await response.json();
   if(controller.signal.aborted)return;
-  if(!response.ok)throw new Error(data.error||"�� 㤠���� ����㧨�� ������");
+   if(!response.ok)throw new Error(data.error||"Не удалось загрузить заказы");
   target.innerHTML=(data.orders?.length?data.orders.map(orderMarkup).join(""):'<div class="empty">Заказов пока нет</div>')+
    (!checkoutTelegram()?'<p class="muted order-help">Для вопросов и отмены заказа через менеджера назовите номер заказа. '+storeContact()+'</p>':"");
   target.querySelectorAll("[data-cancel-order]").forEach(button=>button.onclick=async()=>{
@@ -816,7 +816,7 @@ async function renderOrders(){
     const body=await result.json();
     if(!result.ok)throw new Error(body.error||"Не удалось отменить заказ");
     $('order-confirmation').hidden=true;
-    await renderOrders();showNotice("����� �⬥��");
+     await renderOrders();showNotice("Заказ отменён");
    }catch(error){showNotice(error.message,"error");button.disabled=false;}
   });
  }catch(error){
@@ -834,7 +834,7 @@ $('order-recovery-form').onsubmit=async event=>{
   const result=await response.json();
   if(!response.ok)throw new Error(result.error||"Не удалось найти заказ");
   form.reset();$('order-recovery').open=false;
-  await renderOrders();showNotice("����� ������");
+   await renderOrders();showNotice("Заказ найден");
  }catch(error){showNotice(error.message,"error");}
  finally{button.disabled=false;}
 };
@@ -855,7 +855,7 @@ function eligibleCartPromotion(entries){
   .sort((a,b)=>b.minimum-a.minimum)[0];
  if(!best)return null;
  const brand=best.giftBrand.toLowerCase();
- const available=products.some(item=>item.category==='�������'&&(!brand||item.manufacturer.toLowerCase()===brand)&&!/(?:^|\s)0\s*��(?:\s|$)/iu.test(item.name)&&item.options.some(option=>{const strength=Number(String(option.attributes?.strength_mg??'').replace(',','.'));const saltMarked=/(?:salt|᮫��)/iu.test([item.name,option.label,option.attributes?.nicotine_type,option.attributes?.liquid_type].filter(Boolean).join(' '));return option.available&&option.price>0&&(saltMarked||(Number.isFinite(strength)&&strength>=20));}));
+  const available=products.some(item=>item.category==='Жидкости'&&(!brand||item.manufacturer.toLowerCase()===brand)&&!/(?:^|\s)0\s*мг(?:\s|$)/iu.test(item.name)&&item.options.some(option=>{const strength=Number(String(option.attributes?.strength_mg??'').replace(',','.'));const saltMarked=/(?:salt|соль)/iu.test([item.name,option.label,option.attributes?.nicotine_type,option.attributes?.liquid_type].filter(Boolean).join(' '));return option.available&&option.price>0&&(saltMarked||(Number.isFinite(strength)&&strength>=20));}));
  return available?best:null;
 }
 function renderPromos(){
