@@ -1380,6 +1380,10 @@ export default {
           }
           return json({success:true});
         }
+        if(path==="/api/admin/catalog/products"&&request.method==="GET"){
+          const payload=await syncCatalog(env);
+          return json({products:publicCatalog(payload).products});
+        }
         if(path==="/api/admin/sync-settings"&&request.method==="GET")return json(await getCatalogConfig(env));
         if(path==="/api/admin/sync-settings"&&request.method==="PUT"){
           const body=await bodyJson(request);
