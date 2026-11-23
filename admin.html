@@ -195,6 +195,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
   .toast { bottom: calc(82px + var(--safe)); }
 }
 @media (prefers-reduced-motion: reduce) { .storefront-preview { transition: none; } }
+.catalog-browser{display:grid;gap:12px}.catalog-product-results{display:grid;gap:6px;max-height:360px;overflow:auto}.catalog-product-result{display:flex;align-items:center;gap:10px;width:100%;padding:9px;border:1px solid var(--line);border-radius:12px;background:var(--panel2);text-align:left}.catalog-product-result img{width:36px;height:36px;object-fit:contain;border-radius:8px;background:var(--panel)}.catalog-product-result span{display:grid;gap:2px;min-width:0}.catalog-product-result small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.target-picker{position:relative}.target-results{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 4px);max-height:220px;overflow:auto;padding:5px;border:1px solid var(--line);border-radius:12px;background:var(--panel);box-shadow:0 16px 32px #0007}.target-result{display:grid;width:100%;padding:8px;border:0;border-radius:8px;background:transparent;text-align:left}.target-result:hover{background:var(--panel2)}
 </style>
 </head>
 <body>
@@ -291,6 +292,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
         <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
       </div>
       <div class="panel panel-spaced"><div class="panel-head"><div><h2>Источник каталога</h2><p>Вставьте ссылку на нужный лист Google Sheets</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Ссылка на Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=…" autocomplete="off" required></label><input id="sync-sheet-id" type="hidden"><input id="sync-gid" type="hidden"><input id="sync-cache" type="hidden" value="90"><div class="full"><button class="btn primary" type="submit">Сохранить ссылку</button> <button class="btn" id="preview-sheet" type="button">Проверить</button></div></form></div>
+      <div class="panel panel-spaced"><div class="panel-head"><div><h2>Товары</h2><p>Правки остаются после следующей синхронизации с таблицей.</p></div></div><div class="catalog-browser"><input id="catalog-product-search" type="search" placeholder="Найти товар"><div id="catalog-product-results" class="catalog-product-results"></div><form id="catalog-product-editor" class="form-grid" hidden><input id="catalog-product-id" type="hidden"><label>Название<input id="catalog-product-name" maxlength="160"></label><label>Бренд<input id="catalog-product-manufacturer" maxlength="160"></label><label>Категория<input id="catalog-product-category" maxlength="160"></label><label>Фото URL<input id="catalog-product-image" type="url" maxlength="500"></label><label class="full">Описание<textarea id="catalog-product-description" maxlength="600"></textarea></label><label class="field-row"><input id="catalog-product-available" type="checkbox"> Показывать в магазине</label><div><button class="btn primary" type="submit">Сохранить товар</button></div></form></div></div>
       <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>Шаблон и сопоставление столбцов</h2><p>Можно прикрепить CSV-шаблон или проверить заголовки подключённой таблицы. Данные источника не изменяются.</p></div></div><div class="form-grid"><label class="full">Прикрепить шаблон CSV<input id="catalog-template-file" type="file" accept=".csv,text/csv"></label><div class="full actions"><button class="btn" id="attach-template" type="button">Сохранить шаблон</button><button class="btn" id="download-template" type="button">Скачать пустой шаблон</button><button class="btn" id="download-attached-template" type="button">Скачать прикреплённый</button><span id="template-info" class="muted small"></span></div><div id="column-mapping" class="full form-grid"></div><div class="full"><button class="btn" id="save-template" type="button">Сохранить сопоставление столбцов</button></div></div></div>
       <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
     </section>
@@ -460,7 +462,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
 
 <script>
 const $=id=>document.getElementById(id);
-const state={staff:null,page:"overview",orders:[],selectedOrder:null,config:null,staffList:[],catalogTemplate:{headers:[],columnMapping:{}},categories:[],promotions:[],previousPromotions:[],adminAppearance:null};
+const state={staff:null,page:"overview",orders:[],selectedOrder:null,config:null,staffList:[],catalogTemplate:{headers:[],columnMapping:{}},catalogProducts:[],categories:[],promotions:[],previousPromotions:[],adminAppearance:null};
 const titles={overview:"Обзор",orders:"Заказы",schedule:"Слоты и график",team:"Команда",catalog:"Каталог и синхронизация",categories:"Категории витрины",analytics:"Аналитика",branding:"Настройки витрины",logs:"Логи и ошибки",settings:"Настройки магазина",promotions:"Акции",telegram:"Telegram",courier:"Мои доставки"};
 const labels={new:"Новый",confirmed:"Подтверждён",preparing:"Готовится",ready:"Готов",assigned:"Назначен курьер",picked_up:"Забран",on_the_way:"В пути",delivered:"Доставлен",completed:"Завершён",cancelled:"Отменён",rejected:"Отклонён"};
 const navGroups=[
@@ -763,11 +765,21 @@ async function saveCatalogConnection(){
  await api("/api/admin/sync-settings",{method:"PUT",body:JSON.stringify({spreadsheetId,catalogGid,cacheSeconds:Number($("sync-cache").value),columnMapping:mapping})});
  return {spreadsheetId,catalogGid,columnMapping:mapping};
 }
+function renderCatalogProductResults(query=""){
+ const normalized=query.trim().toLowerCase();
+ const products=state.catalogProducts.filter(product=>!normalized||[product.name,product.manufacturer,product.category].join(" ").toLowerCase().includes(normalized)).slice(0,80);
+ $("catalog-product-results").innerHTML=products.length?products.map(product=>'<button type="button" class="catalog-product-result" data-catalog-product="'+esc(product.id)+'"><img src="'+esc(product.image||"")+'" alt=""><span><b>'+esc(product.name)+'</b><small>'+esc(product.category||"")+(product.manufacturer?" · "+esc(product.manufacturer):"")+'</small></span></button>').join(""):'<div class="empty">Ничего не найдено</div>';
+ $("catalog-product-results").querySelectorAll("[data-catalog-product]").forEach(button=>button.onclick=()=>{
+  const product=state.catalogProducts.find(item=>item.id===button.dataset.catalogProduct);if(!product)return;
+  $("catalog-product-editor").hidden=false;$("catalog-product-id").value=product.id;$("catalog-product-name").value=product.name||"";$("catalog-product-manufacturer").value=product.manufacturer||"";$("catalog-product-category").value=product.category||"";$("catalog-product-image").value=product.image||"";$("catalog-product-description").value=product.description||"";$("catalog-product-available").checked=product.available!==false;
+ });
+}
 async function loadCatalog(){
  const canManageCatalog=canPermission("catalog.manage");
  $("page-catalog").querySelectorAll("button,input,select").forEach(element=>{element.disabled=!canManageCatalog;});
  $("page-catalog").querySelectorAll("form").forEach(form=>form.hidden=!canManageCatalog);
- const [runs,settings,template]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template")]);
+ const [runs,settings,template,products]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template"),api("/api/admin/catalog/products")]);
+ state.catalogProducts=products.products||[];renderCatalogProductResults($("catalog-product-search").value);
  const latest=runs.runs[0];state.catalogTemplate=template||{headers:[],columnMapping:{}};
  $("sync-state").textContent=latest?.status==="success"?"Синхронизирован":latest?.status==="error"?"Ошибка":"Ожидает проверки";
  $("catalog-stats").innerHTML=[["Строк в источнике",latest?.source_rows??"—"],["Карточек",latest?.product_families??"—"],["Вариантов",latest?.variants??"—"],["Последний запуск",latest?.finished_at?new Date(latest.finished_at).toLocaleString("ru-BY"):"—"]].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong class="metric-small-value">'+x[1]+'</strong></div>').join("");
@@ -778,6 +790,12 @@ async function loadCatalog(){
  $("sync-history").innerHTML=runs.runs.length?'<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Статус</th><th>Строк</th><th>Карточек</th><th>Вариантов</th><th>Ошибка</th></tr></thead><tbody>'+runs.runs.map(r=>'<tr><td>'+new Date(r.started_at).toLocaleString("ru-BY")+'</td><td>'+statusPill(r.status==="success"?"completed":r.status==="error"?"rejected":"new")+'</td><td>'+(r.source_rows??"—")+'</td><td>'+(r.product_families??"—")+'</td><td>'+(r.variants??"—")+'</td><td>'+esc(r.error||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">История появится после первого запуска</div>';
 }
 $("sync-sheet-url").onchange=()=>{const parsed=sheetParts($("sync-sheet-url").value);if(parsed.spreadsheetId)$("sync-sheet-id").value=parsed.spreadsheetId;if(parsed.catalogGid)$("sync-gid").value=parsed.catalogGid;};
+$("catalog-product-search").oninput=event=>renderCatalogProductResults(event.target.value);
+$("catalog-product-editor").onsubmit=async event=>{
+ event.preventDefault();
+ const body={productId:$("catalog-product-id").value,name:$("catalog-product-name").value,manufacturer:$("catalog-product-manufacturer").value,category:$("catalog-product-category").value,image:$("catalog-product-image").value,description:$("catalog-product-description").value,available:$("catalog-product-available").checked};
+ try{await api("/api/admin/catalog/products",{method:"PUT",body:JSON.stringify(body)});toast("Товар сохранён");await loadCatalog();}catch(error){toast(error.message);}
+};
 $("sync-settings-form").onsubmit=async e=>{e.preventDefault();try{await saveCatalogConnection();toast("Подключение таблицы сохранено");await loadCatalog();}catch(error){toast(error.message);}};
 $("preview-sheet").onclick=async()=>{const button=$("preview-sheet");button.disabled=true;button.textContent="Проверяем…";try{await saveCatalogConnection();const result=await api("/api/admin/catalog-preview");state.catalogTemplate={...state.catalogTemplate,name:"Заголовки подключённой таблицы",headers:result.headers,columnMapping:guessColumnMapping(result.headers)};await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});renderColumnMapping(result.headers,state.catalogTemplate.columnMapping);$("template-info").textContent="Таблица доступна · "+result.headers.length+" столбцов · "+result.rowCount+" строк данных";toast("Таблица подключена. Проверьте сопоставление полей.");}catch(error){toast(error.message);}finally{button.disabled=false;button.textContent="Проверить таблицу";}};
 $("attach-template").onclick=async()=>{const file=$("catalog-template-file").files?.[0];if(!file){toast("Сначала выберите CSV-файл шаблона");return;}try{const content=await file.text();const headers=parseCsvHeader(content);if(headers.length<2)throw new Error("В шаблоне не удалось определить заголовки");state.catalogTemplate={name:file.name,headers,columnMapping:guessColumnMapping(headers),content};renderColumnMapping(headers,state.catalogTemplate.columnMapping);$("template-info").textContent=file.name+" · "+headers.length+" столбцов";await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(state.catalogTemplate)});toast("CSV-шаблон прикреплён и сохранён");await loadCatalog();}catch(error){toast(error.message);}};
@@ -1084,15 +1102,27 @@ function renderPromotionEditor(){
   const type=rule.type||"gift";
   const groups=promotionGroups.map(([value,label])=>'<label class="field-row"><input type="checkbox" name="group" value="'+value+'" '+((rule.groups||[]).includes(value)?"checked":"")+'> '+label+'</label>').join("");
   const fields=type==="discount"
-   ?'<label>Скидка, %<input name="discountPercent" type="number" min="1" max="99" required value="'+esc(rule.discountPercent||10)+'"></label><label>Применить к<select name="scope"><option value="catalog" '+(rule.scope==="catalog"?"selected":"")+'>Всему каталогу</option><option value="category" '+(rule.scope==="category"?"selected":"")+'>Категориям</option><option value="product" '+(rule.scope==="product"?"selected":"")+'>Отдельным товарам</option></select></label><label class="full">Категории или товары<input name="targets" value="'+esc((rule.targets||[]).join(", "))+'" placeholder="Для всего каталога оставьте пустым"><small class="muted">Через запятую. Для товара можно указать SKU, ID или точное название.</small></label>'
+   ?'<label>Скидка, %<input name="discountPercent" type="number" min="1" max="99" required value="'+esc(rule.discountPercent||10)+'"></label><label>Применить к<select name="scope"><option value="catalog" '+(rule.scope==="catalog"?"selected":"")+'>Всему каталогу</option><option value="category" '+(rule.scope==="category"?"selected":"")+'>Категориям</option><option value="product" '+(rule.scope==="product"?"selected":"")+'>Отдельным товарам</option></select></label><label class="full target-picker">Категории или товары<input name="target-search" autocomplete="off" placeholder="Начните вводить название"><input name="targets" type="hidden" value="'+esc((rule.targets||[]).join(", "))+'"><div class="target-results" hidden></div><small class="muted">Выберите из списка — товар будет привязан точно.</small></label><div class="full target-chips">'+(rule.targets||[]).map(target=>'<span class="pill">'+esc(target)+'</span>').join("")+'</div>'
    :'<label>От скольких штук<input name="minimum" type="number" min="1" max="99" required value="'+esc(rule.minimum||2)+'"></label><div class="full"><p>Товары в акции</p><div class="promo-checks">'+groups+'</div></div><label>Название подарка<input name="giftLabel" required maxlength="100" value="'+esc(rule.giftLabel||"")+'"></label><label>Бренд подарка<input name="giftBrand" maxlength="80" placeholder="Любой бренд" value="'+esc(rule.giftBrand||"")+'"></label>';
   return '<fieldset class="panel form-grid" data-id="'+esc(rule.id)+'" '+(editable?"":"disabled")+'><legend>'+esc(rule.title||"Новая акция")+'</legend><label>Тип<select name="type"><option value="discount" '+(type==="discount"?"selected":"")+'>Скидка</option><option value="gift" '+(type==="gift"?"selected":"")+'>Подарок</option></select></label><label>Название<input name="title" required maxlength="80" value="'+esc(rule.title||"")+'"></label><label class="full">Текст для покупателя<textarea name="description" maxlength="300" required>'+esc(rule.description||"")+'</textarea></label>'+fields+'<label class="field-row"><input type="checkbox" name="active" '+(rule.active?"checked":"")+'> Акция активна</label>'+(editable?'<div><button class="btn" type="button" data-delete-promotion="'+index+'">Удалить</button></div>':"")+'</fieldset>';
  }).join(""):'<div class="empty">Акций пока нет</div>';
  $("promotion-rules").querySelectorAll('select[name="type"]').forEach(select=>select.onchange=()=>{state.promotions=readPromotionInputs();const index=[...$("promotion-rules").querySelectorAll("fieldset")].indexOf(select.closest("fieldset"));state.promotions[index]={...state.promotions[index],type:select.value};renderPromotionEditor();});
+ $("promotion-rules").querySelectorAll(".target-picker").forEach(picker=>{
+  const input=picker.querySelector('[name="target-search"]'),hidden=picker.querySelector('[name="targets"]'),results=picker.querySelector(".target-results");
+  const show=()=>{
+   const query=input.value.trim().toLowerCase(),scope=picker.closest("fieldset").querySelector('[name="scope"]').value;
+   const groups=scope==="category"?[...new Set(state.catalogProducts.map(item=>item.category).filter(Boolean))].map(category=>({category,name:category,id:category})):state.catalogProducts;
+   const matched=groups.filter(item=>!query||[item.name,item.category,item.manufacturer].join(" ").toLowerCase().includes(query)).slice(0,30);
+   results.hidden=!matched.length;results.innerHTML=matched.map(item=>'<button type="button" class="target-result" data-target="'+esc(item.id)+'"><b>'+esc(item.name)+'</b><small>'+esc(item.category||"")+(item.manufacturer?" · "+esc(item.manufacturer):"")+'</small></button>').join("");
+   results.querySelectorAll("[data-target]").forEach(button=>button.onclick=()=>{const values=hidden.value.split(",").map(value=>value.trim()).filter(Boolean);if(!values.includes(button.dataset.target))values.push(button.dataset.target);hidden.value=values.join(", ");input.value="";renderPromotionEditor();});
+  };
+  input.oninput=show;input.onfocus=show;
+ });
  $("promotion-rules").querySelectorAll("[data-delete-promotion]").forEach(button=>button.onclick=()=>{state.promotions=readPromotionInputs();state.promotions.splice(Number(button.dataset.deletePromotion),1);renderPromotionEditor();});
 }
 async function loadPromotions(){
- const data=await api("/api/admin/promotions");
+ const [data,catalog]=await Promise.all([api("/api/admin/promotions"),state.catalogProducts.length?Promise.resolve({products:state.catalogProducts}):api("/api/admin/catalog/products")]);
+ state.catalogProducts=catalog.products||state.catalogProducts;
  state.previousPromotions=data.promotions;
  state.promotions=data.promotions;
  renderPromotionEditor();
