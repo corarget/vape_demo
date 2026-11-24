@@ -5,6 +5,7 @@ import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStoref
 import { PERMISSION_KEYS, normalizePermissions, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
 import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { redeemStaffCredential } from "./lib/staff-redemption.mjs";
+import { reserveLoginAttempt, loginRateLimited } from "./lib/login-limit.mjs";
 import { verifyTelegramInitData, customerOrderScope } from "./lib/telegram-auth.mjs";
 import { BASELINE_KEY, readCSV, buildAuditSnapshot, diffAuditSnapshots, probeAppsScript } from "./lib/sync-audit.mjs";
 import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
@@ -551,6 +552,7 @@ async function dashboard(env){
   return {counts:Object.fromEntries(counts.map(row=>[row.status,Number(row.count)])),revenue:Number(revenue?.total||0),completedOrders:Number(revenue?.count||0),todayOrders:Number(todayOrders?.count||0),latest,sync,errors24h:Number(errors?.count||0)};
 }
 async function staffLogin(request,env){
+  if(!await reserveLoginAttempt(env,request))return loginRateLimited();
   const body=await bodyJson(request);
   if(!body||typeof body.code!=="string")return json({error:"Введите код доступа"},400);
   const code=body.code.trim();
@@ -585,24 +587,12 @@ async function staffLogin(request,env){
 }
 async function demoStaffLogin(request,env){
   if(!env.DEMO_ADMIN_USERNAME||!env.DEMO_ADMIN_PASSWORD)return json({error:"Демо-вход отключён"},404);
+  if(!await reserveLoginAttempt(env,request))return loginRateLimited();
   const body=await bodyJson(request);
-  const username=String(body?.username||"").slice(0,80);
-  const password=String(body?.password||"").slice(0,256);
-  const ip=String(request.headers.get("CF-Connecting-IP")||"unknown");
-  const ipHash=await sha256(ip);
-  const attempt=await first(env,"SELECT attempts,window_started_at,locked_until FROM demo_login_attempts WHERE ip_hash=?",[ipHash]);
-  const timestamp=Date.now();
-  if(attempt?.locked_until&&Date.parse(attempt.locked_until)>timestamp)return json({error:"Слишком много попыток. Попробуйте через 15 минут."},429);
-  const withinWindow=attempt?.window_started_at&&timestamp-Date.parse(attempt.window_started_at)<15*60*1000;
-  if(!safeEqual(username,env.DEMO_ADMIN_USERNAME)||!safeEqual(password,env.DEMO_ADMIN_PASSWORD)){
-    const attempts=withinWindow?Number(attempt.attempts||0)+1:1;
-    const windowStarted=withinWindow?attempt.window_started_at:now();
-    const lockedUntil=attempts>=15?new Date(timestamp+15*60*1000).toISOString():null;
-    await run(env,"INSERT INTO demo_login_attempts(ip_hash,attempts,window_started_at,locked_until) VALUES(?,?,?,?) ON CONFLICT(ip_hash) DO UPDATE SET attempts=excluded.attempts,window_started_at=excluded.window_started_at,locked_until=excluded.locked_until",
-      [ipHash,attempts,windowStarted,lockedUntil]);
+  if(typeof body?.username!=="string"||typeof body?.password!=="string"||
+    body.username.length>80||body.password.length>256)return json({error:"Неверный логин или пароль"},401);
+  if(!safeEqual(body.username,env.DEMO_ADMIN_USERNAME)||!safeEqual(body.password,env.DEMO_ADMIN_PASSWORD))
     return json({error:"Неверный логин или пароль"},401);
-  }
-  await run(env,"DELETE FROM demo_login_attempts WHERE ip_hash=?",[ipHash]);
   if(body?.mode==="courier"){
     const id="demo-courier",name="Демо-курьер";
     await run(env,"INSERT OR IGNORE INTO staff(id,display_name,role,active,created_at) VALUES(?,?,'courier',1,?)",[id,name,now()]);
