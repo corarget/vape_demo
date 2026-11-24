@@ -1,26 +1,25 @@
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 
 const root = new URL("../", import.meta.url);
-const worker = await readFile(new URL("worker.mjs", root), "utf8");
 const expected = [
-  "liquids.png",
-  "pod-systems.png",
+  "beer.png",
   "consumables.png",
+  "disposable-devices.png",
   "energy-drinks.png",
   "hookahs.png",
-  "disposable-devices.png",
+  "liquids.png",
+  "pod-systems.png",
+  "snus.png",
+  "tobacco-products.png",
 ];
 
-if (!worker.includes('const CATEGORY_ICON_BASE="/assets/category-icons/"')) {
-  throw new Error("Category icons must be served from the Worker's bundled assets");
-}
+const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 for (const filename of expected) {
-  if (!worker.includes(`CATEGORY_ICON_BASE+"${filename}"`)) {
-    throw new Error(`Missing category icon mapping for ${filename}`);
+  const bytes = await readFile(new URL(`assets/category-icons/thumbs/${filename}`, root));
+  if (bytes.length < 100 || !bytes.subarray(0, 8).equals(pngSignature)) {
+    throw new Error(`Invalid optimized category PNG: ${filename}`);
   }
-  await access(new URL(`assets/category-icons/${filename}`, root));
 }
 
-console.log(`Category asset validation passed for ${expected.length} mapped icons.`);
-
+console.log(`Category asset validation passed for ${expected.length} optimized PNGs.`);
