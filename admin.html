@@ -978,7 +978,7 @@ async function loadBranding(){
  $("import-config-file").disabled=!canPermission("settings.manage");
  brandingStatus.textContent="Загружаем настройки…";
  try{
-  fillBranding(await api("/api/admin/branding"));
+  const settings=await api("/api/admin/branding");state.config={...(state.config||{}),_revision:settings._revision||""};fillBranding(settings);
   for(const control of brandingForm.elements)control.disabled=!canEdit;
   brandingStatus.textContent=canEdit?"":"Доступен просмотр";
  }catch(error){
@@ -994,7 +994,7 @@ brandingForm.onsubmit=async event=>{
  brandingStatus.textContent="Сохраняем…";
  try{
   const {settings}=await api("/api/admin/branding",{method:"PUT",body:JSON.stringify(draft)});
-  fillBranding(settings);
+  state.config={...(state.config||{}),_revision:settings._revision||""};fillBranding(settings);
   brandingStatus.textContent="Изменения опубликованы";
  }catch(error){
   brandingStatus.textContent=error.message;
@@ -1038,11 +1038,12 @@ $("settings-form").onsubmit=async event=>{
   metroMeetingHint:$("cfg-metro-hint").value,maxItemQuantity:Number($("cfg-item-limit").value),
   metroEnabled:$("cfg-metro").checked,pickupEnabled:$("cfg-pickup").checked,deliveryEnabled:$("cfg-delivery").checked,
   cashPaymentEnabled:$("cfg-cash-payment").checked,transferPaymentEnabled:$("cfg-transfer-payment").checked,
-  transferDetails:$("cfg-transfer-details").value,ageGateEnabled:$("cfg-age-gate").checked
+  transferDetails:$("cfg-transfer-details").value,ageGateEnabled:$("cfg-age-gate").checked,
+  _revision:state.config?._revision||""
  };
  try{
-  await api("/api/admin/settings",{method:"PUT",body:JSON.stringify(settings)});
-  toast("Настройки магазина сохранены");
+  const result=await api("/api/admin/settings",{method:"PUT",body:JSON.stringify(settings)});
+  state.config=result.settings;toast("Настройки магазина сохранены");
  }catch(error){toast(error.message);}
 };
 const promotionGroups=[["liquid","Жидкости"],["coil","Испарители"],["cartridge","Картриджи"]];
