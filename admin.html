@@ -99,6 +99,7 @@
   }
   @media(prefers-reduced-motion:reduce){.section.active{animation:none}}
  
+.category-sheet-row{display:flex;align-items:center;gap:14px;min-width:0;padding:12px!important}.category-sheet-image{width:70px;height:70px;object-fit:contain;border:1px solid var(--admin-line);border-radius:12px;background:var(--admin-panel-2);flex:none}.category-sheet-copy{min-width:0;display:grid;gap:5px}.category-sheet-copy strong{overflow-wrap:anywhere}.category-sheet-copy a{overflow-wrap:anywhere}
 .catalog-tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px}.catalog-tabbar .btn{flex:1;min-width:160px}
 .category-editor{display:grid;grid-template-columns:74px minmax(0,1fr);gap:14px;align-items:start;padding:14px!important}
 .category-editor-main{min-width:0}
@@ -819,34 +820,20 @@ $("save-template").onclick=async()=>{try{if(!state.catalogTemplate.headers?.leng
 $("download-template").onclick=()=>{const headers=catalogFields.map(field=>field.key);const csv=headers.join(",")+"\r\n";const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="violet-shop-catalog-template.csv";link.click();URL.revokeObjectURL(link.href);};
 $("download-attached-template").onclick=async()=>{try{const response=await fetch("/api/admin/catalog-template/file",{credentials:"same-origin"});if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||"Файл шаблона не найден");}const blob=await response.blob();const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=state.catalogTemplate.name||"catalog-template.csv";link.click();URL.revokeObjectURL(link.href);}catch(error){toast(error.message);}};
 $("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="Синхронизация…";try{await saveCatalogConnection();const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast("Обновлено: "+d.summary.productFamilies+" карточек, "+d.summary.variants+" вариантов");await loadCatalog();await loadCategories();}catch(error){toast(error.message);await loadCatalog();}finally{b.disabled=false;b.textContent="↻ Синхронизировать сейчас";}};
-function captureCategoryDrafts(){
- const cards=[...$("categories-list").querySelectorAll(".category-editor")];
- for(const card of cards){
-  const category=state.categories.find(item=>item.key===card.dataset.categoryKey);if(!category)continue;
-  const value=key=>card.querySelector('[data-category-field="'+key+'"]');
-  category.label=value("label").value;category.icon=value("icon").value;category.image=value("image").value;category.color=value("color").value;category.active=value("active").checked;
- }
-}
 function renderCategoryList(){
- const canManage=canPermission("categories.manage"),list=$("categories-list");
- $("categories-reload").hidden=false;$("save-categories").hidden=true;
- list.innerHTML=state.categories.length?state.categories.map((category,index)=>'<div class="panel category-editor" data-category-key="'+esc(category.key)+'" draggable="false"><div class="category-order-control"><span class="category-order-number">'+(index+1)+'</span><button type="button" data-move-category="-1" aria-label="Переместить выше" '+(!canManage||index===0?'disabled':'')+'>↑</button><button type="button" data-move-category="1" aria-label="Переместить ниже" '+(!canManage||index===state.categories.length-1?'disabled':'')+'>↓</button><span class="muted small">из '+state.categories.length+'</span></div><div class="category-editor-main"><div class="row"><div><b>ID: '+esc(category.key)+'</b><div class="muted small">Источник: '+esc(category.sourceLabel||category.key)+'</div></div><label class="field-row"><input type="checkbox" data-category-field="active" '+(category.active?'checked':'')+'> Показывать</label></div><div class="form-grid mt-12"><label>name — название<input data-category-field="label" value="'+esc(category.label)+'" maxlength="80"></label><label>Иконка / символ<input data-category-field="icon" value="'+esc(category.icon||"")+'" maxlength="8" placeholder="Автоматически"></label><label>Цвет категории<input data-category-field="color" type="color" value="'+esc(category.color||"#D8DDE0")+'"></label><label class="full">imageUrl — ссылка на фото<input data-category-field="image" type="url" value="'+esc(category.image||"")+'" placeholder="https://…"></label></div></div></div>').join(""):'<div class="empty">Категории появятся после первой синхронизации каталога</div>';
- list.querySelectorAll("input,button").forEach(input=>input.disabled=true);
- list.querySelectorAll("[data-move-category]").forEach(button=>button.onclick=()=>{
-  captureCategoryDrafts();const card=button.closest(".category-editor"),key=card.dataset.categoryKey;
-  const from=state.categories.findIndex(item=>item.key===key),to=from+Number(button.dataset.moveCategory);
-  if(from<0||to<0||to>=state.categories.length)return;
-  const [moved]=state.categories.splice(from,1);state.categories.splice(to,0,moved);
-  state.categories.forEach((item,index)=>item.sortOrder=index);renderCategoryList();
- });
- let draggedKey="";
- list.querySelectorAll(".category-editor[draggable=true]").forEach(card=>{
-  card.addEventListener("dragstart",event=>{captureCategoryDrafts();draggedKey=card.dataset.categoryKey;card.classList.add("dragging");event.dataTransfer?.setData("text/plain",draggedKey);});
-  card.addEventListener("dragover",event=>{event.preventDefault();card.classList.add("drag-over");});
-  card.addEventListener("dragleave",()=>card.classList.remove("drag-over"));
-  card.addEventListener("drop",event=>{event.preventDefault();card.classList.remove("drag-over");const target=card.dataset.categoryKey;if(!draggedKey||draggedKey===target)return;const from=state.categories.findIndex(item=>item.key===draggedKey),to=state.categories.findIndex(item=>item.key===target);if(from<0||to<0)return;const [moved]=state.categories.splice(from,1);state.categories.splice(to,0,moved);state.categories.forEach((item,index)=>item.sortOrder=index);draggedKey="";renderCategoryList();});
-  card.addEventListener("dragend",()=>{draggedKey="";card.classList.remove("dragging");list.querySelectorAll(".drag-over").forEach(item=>item.classList.remove("drag-over"));});
- });
+ const list=$("categories-list");
+ $("categories-reload").hidden=false;
+ $("save-categories").hidden=true;
+ list.innerHTML=state.categories.length?state.categories.map(category=>{
+   const image=String(category.imageUrl||category.image||"").trim();
+   const safeImage=/^https:\/\//i.test(image)?image:"";
+   return '<article class="panel category-sheet-row">'+
+     (safeImage?'<img class="category-sheet-image" src="'+esc(safeImage)+'" alt="" loading="lazy">':'<span class="category-sheet-image"></span>')+
+     '<div class="category-sheet-copy"><strong>'+esc(category.name||category.label||category.key)+'</strong>'+
+     '<small class="muted">ID: '+esc(category.id||category.key)+'</small>'+
+     (safeImage?'<a class="small" href="'+esc(safeImage)+'" target="_blank" rel="noopener">Открыть изображение</a>':'<small class="muted">URL изображения не задан</small>')+
+     '</div></article>';
+ }).join(""):'<div class="empty">Добавьте категории во вкладку Google Sheets</div>';
 }
 async function loadCategories(){
  const cfg=await api("/api/admin/sync-settings");
@@ -855,7 +842,6 @@ async function loadCategories(){
  renderCategoryList();
 }
 $("categories-reload").onclick=async()=>{try{await loadCategories();toast("Категории обновлены из таблицы");}catch(error){toast(error.message);}};
-$("save-categories").onclick=async()=>{captureCategoryDrafts();const categories=state.categories.map((category,index)=>({...category,id:category.key,name:category.label,imageUrl:category.image,sortOrder:index}));try{await api("/api/admin/categories",{method:"PUT",body:JSON.stringify({categories})});await loadCategories();toast("Порядок и оформление категорий сохранены");}catch(error){toast(error.message);}};
 async function loadAnalytics(){
  const days=Number($("analytics-days").value)||30;const data=await api("/api/admin/analytics?days="+days);
  const metrics=[["Уникальные посетители",data.totals.uniqueVisitors],["Просмотры карточек",data.totals.views],["Добавления в корзину",data.totals.cartAdds],["Оформленные позиции",data.totals.orders],["Поиски",data.totals.searches],["Начатые оформления",data.totals.checkouts]];
