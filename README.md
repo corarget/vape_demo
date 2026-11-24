@@ -20,14 +20,16 @@ White-label движок магазина: Telegram Mini App-витрина, о�
 
 ## Canonical catalog storage (November 2026)
 
-The connected Google Sheets spreadsheet contains exactly two tabs:
+Only the connected Google Sheets spreadsheet owns catalog records. There are two tabs:
 
-- `Товары` (configured with `GOOGLE_CATALOG_GID`): product variants, SKU, category ID, availability, prices, `image_url`, optional `variant_image_url`.
-- `Категории` (configured with `GOOGLE_CATEGORIES_GID`): `id`, `name`, `image_url`, `active`, `sort_order`. The `id` must exactly match the `category` value in `Товары`.
+- `Товары` (`GOOGLE_CATALOG_GID`): SKUs, existing product family IDs, category lookup value, availability, prices, `image_url`, `variant_image_url`.
+- `Категории` (`GOOGLE_CATEGORIES_GID`): `id` (stable slug, distinct from name), `name` (visible label), `image_url` (only image source), `active`, `sort_order`, `product_category` (existing product category key). The last column keeps all historical product IDs and SKU/category relationships intact.
 
-The URL in each image cell is the only source of that image. Blank or invalid image URLs do not fall back to repository assets or code-defined category graphics. Images are hosted externally; the Sheets fields contain direct HTTPS URLs. The Worker may cache catalog API responses for performance, but it does not store independent category or product overrides in D1.
+Example category: `id=liquids`, `name=Жидкости`, `product_category=Жидкости`. Do not change `product_category` without migrating existing product relationships.
 
-The admin offers a catalog browser and direct Google Sheets editing links. Writing edits from the admin directly to Google Sheets requires Google Sheets API write credentials and has **not** been configured. For now edit the two tabs in Google Sheets and use sync/refresh to see changes.
+Images for category cards are hosted as valid PNGs in Cloudflare Workers Static Assets (`assets/category-icons`), with HTTPS image URLs stored in the **Categories** sheet. No JavaScript default image mapping or CDN fallback is used. If a URL is blank or invalid, no photo is displayed. Images in the product catalog also read only `image_url` and `variant_image_url` fields. Cloudflare may cache API responses, but categories/products are not stored as independent D1 overrides.
+
+Use [Google Apps Script](scripts/catalog-sheets.gs) in Extensions → Apps Script of the source spreadsheet to validate category IDs/links, check the image bytes, refresh shop cache and optionally provide a token-protected write API. To make admin edit directly rather than opening Sheets, deploy the script as a web app and configure server-only writer URL/token. Without those secrets the admin opens the canonical Google Sheet for editing.
 
 ## Google Sheets catalog
 
