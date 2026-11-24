@@ -5,7 +5,7 @@ import worker from "../worker.mjs";
 import { json, textResponse, validOrigin, parseCookie, bodyJson, cookieHeader } from "../lib/http.mjs";
 import { sha256, randomToken, safeEqual } from "../lib/crypto.mjs";
 import { first, all, run, getSetting } from "../lib/db.mjs";
-import { normalizePermissions, hasPermission, permissionForAdminRoute } from "../lib/auth.mjs";
+import { normalizePermissions, permissionsFromStorage, hasPermission, permissionForAdminRoute } from "../lib/auth.mjs";
 import { sanitizeTheme, sanitizeAdminAppearance } from "../lib/config.mjs";
 const req = (path, options) => new Request("https://example.test" + path, options);
 test("response headers and origin policy", async () => {
@@ -30,6 +30,8 @@ test("cookies, JSON input and cryptographic helpers", async () => {
   assert.match(randomToken(16), /^[0-9a-f]{32}$/);
   assert.equal(safeEqual("abc","abc"), true);
   assert.equal(safeEqual("abc","abd"), false);
+  assert.equal(safeEqual("король","король"), true);
+  assert.equal(safeEqual("short","longer-secret"), false);
 });
 test("JSON body limits actual bytes, including undeclared length and malformed UTF-8",async()=>{
   const make=body=>new Request("https://example.test",{method:"POST",body});
@@ -54,6 +56,9 @@ test("permission and appearance normalization", () => {
   assert.deepEqual(normalizePermissions(["branding.manage","invalid","branding.manage"]), ["branding.manage","branding"]);
   assert.deepEqual(normalizePermissions(["branding"],"courier"), []);
   assert.equal(hasPermission({role:"manager",permissions:["team"]},"team"),false);
+  assert.deepEqual(permissionsFromStorage("not-json","manager"),[]);
+  assert.deepEqual(permissionsFromStorage('["overview","unknown"]',"manager"),["overview"]);
+  assert.deepEqual(permissionsFromStorage("not-json","owner"),normalizePermissions([],"owner"));
   assert.equal(permissionForAdminRoute("/api/admin/logs","GET"),"logs");
   assert.equal(sanitizeTheme({background:"invalid"}).background,"#101112");
   assert.equal(sanitizeAdminAppearance({radius:999}).radius,14);
@@ -70,7 +75,9 @@ test("worker smoke: pages, health, preflight, rejected cross-origin and protecte
   assert.equal((await fetch("/",{method:"HEAD"})).status,200);
   const health=await (await fetch("/api/health")).json();
   assert.equal(health.ok,true);
-  assert.equal(health.database,true);
+  assert.deepEqual(health,{ok:true,service:"violet-shop",version:"2.7.1"});
+  assert.equal("database" in health,false);
+  assert.equal("staff" in health,false);
   assert.equal((await fetch("/not-a-route")).status,404);
   assert.equal((await fetch("/api/admin/logs")).status,401);
   assert.equal((await fetch("/api/admin/logs",{method:"POST",headers:{Origin:"https://other.test"}})).status,403);
