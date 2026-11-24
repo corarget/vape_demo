@@ -8,6 +8,11 @@
     "head_sampling_rate": 1
   },
   "vars": {
+    "STORE_ID": "violet-shop-staging",
+    "STORE_NAME": "VIOLET SHOP",
+    "STORE_LOCALE": "ru-BY",
+    "STORE_TIMEZONE": "Europe/Minsk",
+    "STORE_CURRENCY": "BYN",
     "GOOGLE_SHEET_ID": "1jNoG5NTnJZbNCx7iAq3S1CcuS0J1EDc8BWeW-nzKNtk",
     "GOOGLE_CATALOG_GID": "782461029",
     "GOOGLE_CATEGORIES_GID": "1963280444"

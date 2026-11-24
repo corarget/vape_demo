@@ -3,155 +3,78 @@ import { spawnSync } from "node:child_process";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
 import { randomBytes } from "node:crypto";
-import { cp, mkdir, writeFile, access } from "node:fs/promises";
+import { cp, mkdir, writeFile, access, readFile } from "node:fs/promises";
 import path from "node:path";
+import { buildWranglerConfig, isValidLocale, isValidTimeZone, normalizeCurrency } from "../lib/white-label.mjs";
 
-const ROOT = process.cwd();
-const SOURCE_FILES = ["worker.mjs", "catalog.mjs", "promotions.mjs", "site.mjs", "admin.mjs"];
-const WRANGLER = process.platform === "win32" ? "npx.cmd" : "npx";
-
-function runWrangler(args, options = {}) {
-  const result = spawnSync(WRANGLER, ["wrangler", ...args], {
-    cwd: options.cwd || ROOT,
-    encoding: "utf8",
-    input: options.input,
-    windowsHide: true,
-    shell: process.platform === "win32"
-  });
-  const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(output || "Команда Wrangler завершилась с ошибкой");
+const ROOT=process.cwd();
+const SOURCE_FILES=["worker.mjs","catalog.mjs","promotions.mjs","site.mjs","admin.mjs","index.html","admin.html","package.json","package-lock.json","wrangler.template.jsonc","README.md"];
+const SOURCE_DIRS=["lib","migrations","assets","scripts","tests","docs"];
+const NPX=process.platform==="win32"?"npx.cmd":"npx";
+const NPM=process.platform==="win32"?"npm.cmd":"npm";
+function run(command,args,options={}){
+  const result=spawnSync(command,args,{cwd:options.cwd||ROOT,encoding:"utf8",input:options.input,windowsHide:true,shell:process.platform==="win32"});
+  const output=[result.stdout,result.stderr].filter(Boolean).join("\n").trim();
+  if(result.error)throw result.error;
+  if(result.status!==0)throw new Error(output||"Команда завершилась с ошибкой");
   return output;
 }
+const wrangler=(args,options={})=>run(NPX,["wrangler",...args],options);
+function databaseIdFrom(output){return (output.match(/database_id\s*=\s*["']?([0-9a-f-]{36})/i)||output.match(/"database_id"\s*:\s*"([0-9a-f-]{36})"/i)||output.match(/"uuid"\s*:\s*"([0-9a-f-]{36})"/i))?.[1]||"";}
+function deployedUrl(output){return output.match(/https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.workers\.dev/i)?.[0]||"";}
+async function exists(target){try{await access(target);return true;}catch{return false;}}
+async function question(rl,label,fallback){const answer=(await rl.question(label+(fallback?" ["+fallback+"]":"")+": ")).trim();return answer||fallback;}
 
-function databaseIdFrom(output) {
-  const direct = output.match(/database_id\s*=\s*["']?([0-9a-f-]{36})/i)
-    || output.match(/"database_id"\s*:\s*"([0-9a-f-]{36})"/i)
-    || output.match(/"uuid"\s*:\s*"([0-9a-f-]{36})"/i);
-  return direct?.[1] || "";
-}
+async function main(){
+  const rl=createInterface({input:stdin,output:stdout});
+  try{
+    const slug=(await question(rl,"Короткий ID магазина","")).toLowerCase();
+    if(!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(slug))throw new Error("ID должен содержать 3–32 символа: латиница, цифры и дефисы.");
+    const storeName=await question(rl,"Название магазина","Магазин");
+    if(storeName.length<2||storeName.length>80)throw new Error("Название должно содержать от 2 до 80 символов.");
+    const locale=await question(rl,"Локаль","ru-BY"); if(!isValidLocale(locale))throw new Error("Некорректная локаль.");
+    const timezone=await question(rl,"Часовой пояс IANA","Europe/Minsk"); if(!isValidTimeZone(timezone))throw new Error("Некорректный часовой пояс.");
+    const currency=normalizeCurrency(await question(rl,"Валюта ISO 4217","BYN"),""); if(!currency)throw new Error("Валюта должна состоять из трёх латинских букв.");
 
-function deployedUrl(output) {
-  return output.match(/https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.workers\.dev/i)?.[0] || "";
-}
+    const deploymentDir=path.join(ROOT,"deployments",slug);
+    if(await exists(deploymentDir))throw new Error("Папка deployments/"+slug+" уже существует.");
+    console.log("\nПроверяю исходный шаблон…");
+    run(NPM,["test"]);
+    wrangler(["whoami"]);
 
-async function exists(target) {
-  try { await access(target); return true; } catch { return false; }
-}
+    const databaseName=slug+"-db";
+    console.log("Создаю отдельную D1: "+databaseName);
+    const createOutput=wrangler(["d1","create",databaseName,"--location","eeur"]);
+    let databaseId=databaseIdFrom(createOutput);
+    if(!databaseId)databaseId=databaseIdFrom(wrangler(["d1","info",databaseName,"--json"]));
+    if(!databaseId)throw new Error("D1 создана, но database_id не прочитан.");
 
-async function main() {
-  const rl = createInterface({ input: stdin, output: stdout });
-  try {
-    const slug = (await rl.question("Короткий ID магазина (латиница, например north-shop): ")).trim().toLowerCase();
-    if (!/^[a-z0-9][a-z0-9-]{1,30}[a-z0-9]$/.test(slug)) {
-      throw new Error("ID должен содержать 3–32 символа: латиница, цифры и дефисы.");
-    }
-    const storeName = (await rl.question("Название магазина: ")).trim();
-    if (storeName.length < 2 || storeName.length > 80) throw new Error("Название должно содержать от 2 до 80 символов.");
+    await mkdir(deploymentDir,{recursive:true});
+    for(const file of SOURCE_FILES)await cp(path.join(ROOT,file),path.join(deploymentDir,file));
+    for(const dir of SOURCE_DIRS)await cp(path.join(ROOT,dir),path.join(deploymentDir,dir),{recursive:true});
+    const config=buildWranglerConfig({slug,storeName,locale,timezone,currency,databaseName,databaseId});
+    const configPath=path.join(deploymentDir,"wrangler.jsonc");
+    await writeFile(configPath,JSON.stringify(config,null,2)+"\n","utf8");
+    const pkgPath=path.join(deploymentDir,"package.json");
+    const pkg=JSON.parse(await readFile(pkgPath,"utf8")); pkg.name=slug;
+    pkg.scripts["db:migrate"]="wrangler d1 migrations apply "+databaseName+" --remote";
+    await writeFile(pkgPath,JSON.stringify(pkg,null,2)+"\n","utf8");
+    await writeFile(path.join(deploymentDir,".gitignore"),"node_modules/\n.wrangler/\n.dev.vars\n","utf8");
 
-    const deploymentDir = path.join(ROOT, "deployments", slug);
-    if (await exists(deploymentDir)) throw new Error("Папка deployments/" + slug + " уже существует. Выберите другой ID.");
-
-    console.log("\nПроверяю авторизацию Cloudflare…");
-    runWrangler(["whoami"]);
-
-    const databaseName = slug + "-db";
-    console.log("Создаю отдельную базу D1: " + databaseName);
-    let createOutput = "";
-    try {
-      createOutput = runWrangler(["d1", "create", databaseName, "--location", "eeur"]);
-    } catch (error) {
-      throw new Error("Не удалось создать D1. Проверьте Cloudflare-доступ.\n" + error.message);
-    }
-    let databaseId = databaseIdFrom(createOutput);
-    if (!databaseId) {
-      const info = runWrangler(["d1", "info", databaseName, "--json"]);
-      databaseId = databaseIdFrom(info);
-    }
-    if (!databaseId) throw new Error("D1 создана, но не удалось прочитать её database_id. Запустите wrangler d1 info " + databaseName + " --json и завершите настройку вручную.");
-
-    await mkdir(deploymentDir, { recursive: true });
-    for (const file of SOURCE_FILES) await cp(path.join(ROOT, file), path.join(deploymentDir, file));
-    await cp(path.join(ROOT, "lib"), path.join(deploymentDir, "lib"), { recursive: true });
-    await cp(path.join(ROOT, "migrations"), path.join(deploymentDir, "migrations"), { recursive: true });
-
-    const config = {
-      "$schema": "node_modules/wrangler/config-schema.json",
-      name: slug,
-      main: "worker.mjs",
-      compatibility_date: "2026-11-21",
-      observability: { enabled: true, head_sampling_rate: 1 },
-      vars: {
-        STORE_NAME: storeName,
-        GOOGLE_SHEET_ID: "",
-        GOOGLE_CATALOG_GID: ""
-      },
-      d1_databases: [{
-        binding: "DB",
-        database_name: databaseName,
-        database_id: databaseId,
-        migrations_dir: "migrations"
-      }]
-    };
-    await writeFile(path.join(deploymentDir, "wrangler.jsonc"), JSON.stringify(config, null, 2) + "\n", "utf8");
-    await writeFile(path.join(deploymentDir, "package.json"), JSON.stringify({
-      name: slug,
-      version: "1.0.0",
-      private: true,
-      type: "module",
-      scripts: {
-        dev: "wrangler dev",
-        deploy: "wrangler deploy",
-        "db:migrate": "wrangler d1 migrations apply " + databaseName + " --remote"
-      },
-      devDependencies: { wrangler: "^4.0.0" }
-    }, null, 2) + "\n", "utf8");
-    await writeFile(path.join(deploymentDir, ".gitignore"), "node_modules/\n.wrangler/\n.dev.vars\n", "utf8");
-
-    console.log("Применяю миграции базы данных…");
-    const configPath = path.relative(ROOT, path.join(deploymentDir, "wrangler.jsonc"));
-    runWrangler(["d1", "migrations", "apply", databaseName, "--remote", "--config", configPath]);
-
+    const relativeConfig=path.relative(ROOT,configPath);
+    console.log("Проверяю воспроизводимую сборку…");
+    wrangler(["deploy","--dry-run","--config",relativeConfig,"--outdir",path.join("deployments",slug,".wrangler","build")]);
+    console.log("Применяю миграции…");
+    wrangler(["d1","migrations","apply",databaseName,"--remote","--config",relativeConfig]);
     console.log("Публикую отдельный Worker…");
-    const deployOutput = runWrangler(["deploy", "--config", configPath]);
-    const url = deployedUrl(deployOutput);
+    const deployOutput=wrangler(["deploy","--config",relativeConfig]);
+    const url=deployedUrl(deployOutput);
+    const bootstrapCode=randomBytes(24).toString("hex");
+    wrangler(["secret","put","BOOTSTRAP_CODE","--config",relativeConfig],{input:bootstrapCode+"\n"});
 
-    const bootstrapCode = randomBytes(24).toString("hex");
-    console.log("Создаю одноразовый код первого владельца…");
-    runWrangler(["secret", "put", "BOOTSTRAP_CODE", "--config", configPath], {
-      input: bootstrapCode + "\n"
-    });
-
-    const handoff = [
-      "# " + storeName,
-      "",
-      "Отдельный Worker и D1 созданы мастером запуска.",
-      url ? "Витрина: " + url : "URL витрины указан в выводе команды Wrangler.",
-      url ? "Админка: " + url + "/admin" : "Админка: откройте путь /admin на URL Worker.",
-      "",
-      "1. Войдите в админку одноразовым кодом первого владельца.",
-      "2. Подключите таблицу заказчика в разделе каталога.",
-      "3. Настройте способы получения и расписание.",
-      "4. Создайте приглашение менеджеру и передайте ему код.",
-      "5. После первого входа владельца удалите BOOTSTRAP_CODE командой: npx wrangler secret delete BOOTSTRAP_CODE --config wrangler.jsonc",
-      "",
-      "Секреты и код первого владельца в этот файл не записываются."
-    ].join("\n");
-    await writeFile(path.join(deploymentDir, "HANDOFF.md"), handoff + "\n", "utf8");
-
-    console.log("\nМАГАЗИН СОЗДАН");
-    if (url) console.log("Витрина: " + url);
-    if (url) console.log("Админка: " + url + "/admin");
-    console.log("Папка проекта: deployments/" + slug);
-    console.log("\nОДНОРАЗОВЫЙ КОД ПЕРВОГО ВЛАДЕЛЬЦА — сохраните его сейчас:");
-    console.log(bootstrapCode);
-    console.log("\nДалее: войдите в /admin, подключите Google Sheets и создайте приглашение менеджеру.");
-  } finally {
-    rl.close();
-  }
+    const handoff=["# "+storeName,"","Изоляция: отдельный Worker "+slug+" и отдельная D1 "+databaseName+".","Локаль: "+locale,"Часовой пояс: "+timezone,"Валюта: "+currency,url?"Витрина: "+url:"URL указан в выводе Wrangler.",url?"Админка: "+url+"/admin":"Админка: /admin","","1. Войдите одноразовым кодом владельца.","2. Подключите Google Sheets заказчика.","3. Настройте расписание и способы получения.","4. Удалите BOOTSTRAP_CODE после первого входа.","","Секреты в этот файл не записываются."].join("\n");
+    await writeFile(path.join(deploymentDir,"HANDOFF.md"),handoff+"\n","utf8");
+    console.log("\nМАГАЗИН СОЗДАН"+(url?"\nВитрина: "+url:"")+"\nПапка: deployments/"+slug+"\n\nОДНОРАЗОВЫЙ КОД ВЛАДЕЛЬЦА:\n"+bootstrapCode);
+  }finally{rl.close();}
 }
-
-main().catch(error => {
-  console.error("\nОшибка мастера: " + (error?.message || String(error)));
-  process.exitCode = 1;
-});
+main().catch(error=>{console.error("\nОшибка мастера: "+(error?.message||String(error)));process.exitCode=1;});

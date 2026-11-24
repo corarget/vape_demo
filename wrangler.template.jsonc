@@ -8,9 +8,14 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "STORE_NAME": "New Store",
+    "STORE_ID": "replace-with-client-slug",
+    "STORE_NAME": "Магазин",
+    "STORE_LOCALE": "ru-BY",
+    "STORE_TIMEZONE": "Europe/Minsk",
+    "STORE_CURRENCY": "BYN",
     "GOOGLE_SHEET_ID": "",
-    "GOOGLE_CATALOG_GID": ""
+    "GOOGLE_CATALOG_GID": "",
+    "GOOGLE_CATEGORIES_GID": ""
   },
   "d1_databases": [
     {
@@ -19,5 +24,8 @@
       "database_id": "REPLACE_WITH_NEW_D1_DATABASE_ID",
       "migrations_dir": "migrations"
     }
-  ]
+  ],
+  "assets": {
+    "directory": "./assets"
+  }
 }
