@@ -1,7 +1,9 @@
 .env
 state.json
 node_modules/
+.xdg/
 work/
 
 # Generated customer deployments
 deployments/
+

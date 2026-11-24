@@ -10,9 +10,11 @@
     "db:migrate": "wrangler d1 migrations apply violet-shop-db --remote",
     "create:store": "node scripts/create-store.mjs",
     "check:encoding": "node scripts/check-utf8.mjs",
-    "test": "npm run check:encoding"
+    "check:category-assets": "node scripts/check-category-assets.mjs",
+    "test": "npm run check:encoding && npm run check:category-assets"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
   }
 }
+
