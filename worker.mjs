@@ -4,12 +4,13 @@ import { first, all, run, logSystem, getSetting, setSetting } from "./lib/db.mjs
 import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStorefrontLayout, storefrontAppearance, sanitizeAdminAppearance, getConfig } from "./lib/config.mjs";
 import { PERMISSION_KEYS, normalizePermissions, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
 import { loadCatalog, parseCSV } from "./catalog.mjs";
+import { BASELINE_KEY, readCSV, buildAuditSnapshot, diffAuditSnapshots, probeAppsScript } from "./lib/sync-audit.mjs";
 import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
 const storefrontHtml=html;
-const VERSION = "2.7.0";
+const VERSION = "2.7.1";
 const STATUS_LABELS = {
   new:"Новый", confirmed:"Подтверждён", preparing:"Готовится", ready:"Готов",
   assigned:"Назначен курьер", picked_up:"Забран курьером", on_the_way:"В пути",
@@ -245,24 +246,38 @@ async function readCatalog(env){
   if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
   return loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
 }
-// Only an explicit administrator action belongs in sync_runs.
+// The baseline and its corresponding successful history row are committed atomically.
+// An optimistic compare-and-swap prevents overlapping requests from losing a baseline.
 async function syncCatalog(env){
   const id=randomId(),started=now();
-  await run(env,"INSERT INTO sync_runs(id,status,started_at) VALUES(?,?,?)",[id,"running",started]);
+  await run(env,"INSERT INTO sync_runs(id,status,started_at,details_json) VALUES(?,?,?,?)",[id,"running",started,JSON.stringify({manual:true})]);
   try{
-    const payload=await readCatalog(env);
-    const details={fields:payload.fields,source:payload.source};
-    await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
-      [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
-    await logSystem(env,"info","catalog","Каталог синхронизирован",{
-      rows:payload.sourceRows,families:payload.productFamilies,variants:payload.variants
-    });
-    return payload;
+    const config=await getCatalogConfig(env);
+    const initial=await first(env,"SELECT value_json,updated_by FROM settings WHERE key=?",[BASELINE_KEY]);
+    const [itemCSV,categoryCSV]=await Promise.all([readCSV(config,config.catalogGid),readCSV(config,config.categoriesGid)]);
+    const {payload,snapshot,warnings}=await buildAuditSnapshot(itemCSV,categoryCSV,config);
+    const integration=await probeAppsScript(env,config);
+    const current=await getCatalogConfig(env);
+    if(JSON.stringify(current)!==JSON.stringify(config))throw Error("Настройки источника изменились во время проверки. Запустите её повторно.");
+    const expected=initial?.value_json??null;
+    const changes=diffAuditSnapshots(expected===null?null:JSON.parse(expected),snapshot);
+    const details={manual:true,source:payload.source,changes,warnings,integration};
+    const finished=now(),next=JSON.stringify(snapshot);
+    if(new TextEncoder().encode(next).byteLength>1800000)throw Error("Снимок превышает допустимый размер. Базовый снимок не изменён.");
+    const baselineStatement=env.DB.prepare("INSERT INTO settings(key,value_json,updated_at,updated_by) VALUES(?,?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at,updated_by=excluded.updated_by WHERE settings.value_json=? AND settings.updated_by=?")
+      .bind(BASELINE_KEY,next,finished,id,expected,initial?.updated_by??null);
+    // Check the generation as well as content: simultaneous no-change runs must not overwrite history.
+    const historyStatement=env.DB.prepare("UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=? AND EXISTS (SELECT 1 FROM settings WHERE key=? AND updated_by=?)")
+      .bind(finished,payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id,BASELINE_KEY,id);
+    const results=await env.DB.batch([baselineStatement,historyStatement]);
+    if(results[0]?.meta?.changes!==1||results[1]?.meta?.changes!==1)throw Error("Параллельная проверка уже обновила снимок. Запустите синхронизацию повторно.");
+    await logSystem(env,"info","catalog","Проверка источника завершена",{rows:payload.sourceRows,changes,integration});
+    return {sourceRows:payload.sourceRows,activeRows:payload.activeRows,productFamilies:payload.productFamilies,variants:payload.variants,updatedAt:payload.updatedAt,changes,warnings,integration};
   }catch(error){
     const message=error instanceof Error?error.message:String(error);
-    await run(env,"UPDATE sync_runs SET status='error',finished_at=?,error=? WHERE id=?",[now(),message,id]);
-    await logSystem(env,"error","catalog","Ошибка синхронизации каталога",{error:message});
-    throw error;
+    await run(env,"UPDATE sync_runs SET status='error',finished_at=?,error=? WHERE id=? AND status='running'",[now(),message.slice(0,500),id]);
+    await logSystem(env,"error","catalog","Ошибка проверки источника",{error:message.slice(0,500)});
+    throw new Error(message);
   }
 }
 function publicCatalog(payload){
@@ -320,6 +335,8 @@ async function catalogResponse(request,env,ctx){
   const config=await getCatalogConfig(env);
   const cacheUrl=new URL("/api/catalog",request.url);
   cacheUrl.searchParams.set("version",VERSION);
+  const generation=await first(env,"SELECT updated_by FROM settings WHERE key=?",[BASELINE_KEY]);
+  cacheUrl.searchParams.set("generation",generation?.updated_by||"initial");
   cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.categoriesGid,config.columnMapping,await getPromotions(env)])));
   const cacheKey=new Request(cacheUrl,{method:"GET"});
   const cached=await cache.match(cacheKey);
@@ -338,7 +355,7 @@ async function catalogResponse(request,env,ctx){
     const response=await refreshCatalogCache(env,cache,cacheKey);
     return catalogClientResponse(request,response,config.cacheSeconds);
   }catch(error){
-    if(cached)return catalogClientResponse(request,cached,config.cacheSeconds);
+    if(cached&&!force)return catalogClientResponse(request,cached,config.cacheSeconds);
     return json({error:"Синхронизация каталога временно недоступна",detail:error instanceof Error?error.message:String(error)},502);
   }
 }
@@ -1180,15 +1197,13 @@ export default {
           const categoriesGid=String(body?.categoriesGid||current.categoriesGid||"");
           if(!/^[A-Za-z0-9_-]{20,}$/.test(spreadsheetId)||!/^\d+$/.test(catalogGid))return json({error:"Проверьте ID таблицы и GID листа"},400);
           await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,categoriesGid,cacheSeconds,columnMapping},staff.id);
-          await caches.default.delete(new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"}));
+          // Source settings are included in the cache key; no unversioned deletion.
           await logSystem(env,"info","catalog","Изменены настройки источника каталога",{spreadsheetId,catalogGid,cacheSeconds});
           return json({success:true,settings:{spreadsheetId,catalogGid,cacheSeconds,columnMapping}});
         }
         if(path==="/api/admin/sync"&&request.method==="POST"){
-          const payload=await syncCatalog(env);
-          const cacheKey=new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"});
-          await caches.default.delete(cacheKey);
-          return json({success:true,summary:{sourceRows:payload.sourceRows,activeRows:payload.activeRows,productFamilies:payload.productFamilies,variants:payload.variants,updatedAt:payload.updatedAt}});
+          try{return json({success:true,summary:await syncCatalog(env)});}
+          catch(error){return json({error:String(error.message||error).slice(0,500)},502);}
         }
         if(path==="/api/admin/sync-runs"&&request.method==="GET"){
           return json({runs:await all(env,"SELECT * FROM sync_runs ORDER BY started_at DESC LIMIT 50")});
