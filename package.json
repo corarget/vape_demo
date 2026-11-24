@@ -6,15 +6,16 @@
   "scripts": {
     "embed": "node scripts/embed-html.mjs",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "db:migrate": "wrangler d1 migrations apply violet-shop-db --remote",
+    "deploy": "npm test && wrangler deploy",
+    "db:migrate": "wrangler d1 migrations apply DB --remote --config wrangler.jsonc",
     "create:store": "node scripts/create-store.mjs",
     "check:encoding": "node scripts/check-utf8.mjs",
     "check:category-assets": "node scripts/check-category-assets.mjs",
-    "test": "npm run check:encoding && npm run check:category-assets"
+    "test": "npm run check:encoding && npm run check:category-assets && npm run check:generated && npm run check:syntax",
+    "check:generated": "node scripts/embed-html.mjs --check",
+    "check:syntax": "node scripts/check-syntax.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
   }
 }
-
