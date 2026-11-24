@@ -231,6 +231,7 @@ textarea{resize:vertical}
 <script>
 let products=[];let syncSource='loading';
 const iconPool=['?','?','?','?','?','?','?','?'];
+const defaultCategoryImages={'Жидкости':'/assets/category-icons/liquids.png','POD-системы':'/assets/category-icons/pod-systems.png','Расходники':'/assets/category-icons/consumables.png','Энергетики':'/assets/category-icons/energy-drinks.png','Снюс':'/assets/category-icons/snus.png','Кальяны':'/assets/category-icons/hookahs.png','Табачная продукция':'/assets/category-icons/tobacco-products.png','Одноразовые устройства':'/assets/category-icons/disposable-devices.png','Пиво':'/assets/category-icons/beer.png'};
 const categoryPaths={
   'Жидкости':'M10 3h4v4h-4z M10 7v3l-4 4v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5l-4-4V7 M6 16h12',
   'POD-системы':'M9 6V3h6v3 M8 6h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M11 11h2m-1 4v2',
@@ -1014,7 +1015,7 @@ async function syncCatalog(settingsReady){
   const categories=[...new Set(products.map(item=>item.category).filter(Boolean))];
   categories.forEach((key,index)=>{
    const custom=overrides[key]||{};
-   categoryMeta[key]={icon:cleanUiText(custom.icon),label:custom.label||key,image:custom.image||"",color:custom.color||"",active:custom.active!==false,sortOrder:custom.sortOrder??index};
+   categoryMeta[key]={icon:cleanUiText(custom.icon),label:custom.label||key,image:defaultCategoryImages[key]||custom.image||"",color:custom.color||"",active:custom.active!==false,sortOrder:custom.sortOrder??index};
   });
   buildSearchIndex();mergeLegacyCartKeys();save();
   syncSource="google";
