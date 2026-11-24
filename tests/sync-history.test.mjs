@@ -31,7 +31,7 @@ test("administrator read does not create a synchronization history entry", async
 });
 
 const itemHeader="product_key,sku,category,name,option_label,price_byn,image_url,available,active,brand,strength_mg,variant_image_url";
-const categoryCSV="id,name,image_url,active,sort_order\nstationery,Stationery,,true,0";
+const categoryCSV="id,name,image_url,active,sort_order\nstationery-group,Stationery,,true,0";
 const item=(id,name,price=10)=>[id,id,"Stationery",name,"",price,"",true,true,"","",""].join(",");
 const csv=(...rows)=>[itemHeader,...rows].join("\n");
 test("explicit checks atomically persist a baseline, report real deltas and preserve the baseline after a failed read", async () => {
@@ -59,7 +59,7 @@ test("explicit checks atomically persist a baseline, report real deltas and pres
   let items=csv(item("one","Notebook"),item("two","Pen")),fail=false;
   try{
     globalThis.fetch=async url=>{const gid=new URL(url).searchParams.get("gid");return gid==="456"?new Response(categoryCSV):fail?new Response("denied",{status:403}):new Response(items);};
-    const sync=async()=>{const response=await worker.fetch(request(),env,{});assert.equal(response.status,200);return (await response.json()).summary;};
+    const sync=async()=>{const response=await worker.fetch(request(),env,{});const body=await response.json();assert.equal(response.status,200,JSON.stringify(body));return body.summary;};
     assert.equal((await sync()).changes.items.baseline,true);
     assert.equal((await sync()).changes.items.unchanged,2);
     items=csv(item("one","Notebook",12),item("three","Ruler"));

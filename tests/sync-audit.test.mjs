@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {buildAuditSnapshot,diffAuditSnapshots,probeAppsScript} from "../lib/sync-audit.mjs";
 const itemHeader="product_key,sku,category,name,option_label,price_byn,image_url,available,active,brand,strength_mg,variant_image_url";
-const categoryCSV="id,name,image_url,active,sort_order\nstationery,Stationery,,true,0";
+const categoryCSV="id,name,image_url,active,sort_order\nstationery-group,Stationery,,true,0";
 const item=(id,name,price=10)=>[id,id,"Stationery",name,"",price,"",true,true,"","",""].join(",");
 const csv=(...rows)=>[itemHeader,...rows].join("\n");
 
