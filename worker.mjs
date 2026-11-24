@@ -2,7 +2,7 @@ import { COOKIE, json, textResponse, parseCookie, cookieHeader, clearCookie, val
 import { now, randomId, randomToken, sha256, safeEqual } from "./lib/crypto.mjs";
 import { first, all, run, logSystem, getSetting, setSetting } from "./lib/db.mjs";
 import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStorefrontLayout, storefrontAppearance, sanitizeAdminAppearance, getConfig } from "./lib/config.mjs";
-import { PERMISSION_KEYS, normalizePermissions, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
+import { PERMISSION_KEYS, normalizePermissions, permissionsFromStorage, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
 import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { redeemStaffCredential } from "./lib/staff-redemption.mjs";
 import { reserveLoginAttempt, loginRateLimited } from "./lib/login-limit.mjs";
@@ -708,11 +708,7 @@ async function telegramWebhook(request,env){
     const [kind,orderId,action]=String(callback.data).split("|");
     const telegramId=String(callback.from?.id||"");
     const staffRow=await first(env,"SELECT id,role,permissions_json FROM staff WHERE telegram_id=? AND active=1",[telegramId]);
-    let staff=null,permissions=[];
-    if(staffRow){
-      try{permissions=JSON.parse(staffRow.permissions_json||"[]");}catch{}
-      staff={...staffRow,permissions:normalizePermissions(permissions,staffRow.role)};
-    }
+    const staff=staffRow?{...staffRow,permissions:permissionsFromStorage(staffRow.permissions_json,staffRow.role)}:null;
     if(kind==="order"&&staff&&hasPermission(staff,"orders.manage")){
       const result=await updateOrderStatus(env,orderId,action,{id:staff.id,role:staff.role},"Изменено из Telegram");
       try{await telegramCall(env,"answerCallbackQuery",{callback_query_id:callback.id,text:result.error||"Статус обновлён"});}
