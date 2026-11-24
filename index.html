@@ -231,7 +231,6 @@ textarea{resize:vertical}
 <script>
 let products=[];let syncSource='loading';
 const iconPool=['?','?','?','?','?','?','?','?'];
-const defaultCategoryImages={'Жидкости':'/category-icons/liquids.png','POD-системы':'/category-icons/pod-systems.png','Расходники':'/category-icons/consumables.png','Энергетики':'/category-icons/energy-drinks.png','Снюс':'/category-icons/snus.png','Кальяны':'/category-icons/hookahs.png','Табачная продукция':'/category-icons/tobacco-products.png','Одноразовые устройства':'/category-icons/disposable-devices.png','Пиво':'/category-icons/beer.png'};
 const categoryPaths={
   'Жидкости':'M10 3h4v4h-4z M10 7v3l-4 4v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5l-4-4V7 M6 16h12',
   'POD-системы':'M9 6V3h6v3 M8 6h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M11 11h2m-1 4v2',
@@ -269,7 +268,7 @@ function showNotice(text,type="success"){
  noticeTimer=setTimeout(()=>{notice.hidden=true;},type==="error"?5000:2500);
 }
 function setScreen(screen){if(state.screen==='orders'&&screen!=='orders'){$('order-confirmation').hidden=true;ordersRequest?.abort();}if(state.screen==='catalog')state.scroll=scrollY;state.screen=screen;for(const name of ['catalog','detail','promo','cart','orders'])$(name+'-screen').hidden=name!==screen;document.querySelectorAll('[data-screen]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.screen===screen)));telegram?.BackButton?.[screen==='detail'?'show':'hide']?.();render();scrollTo(0,screen==='catalog'?state.scroll:0);}
-function renderCategories(){const keys=Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999));$('categories').replaceChildren(...keys.map(key=>{const meta=categoryMeta[key];const button=document.createElement('button');button.className='category'+(meta.image?' has-image':'');button.title=meta.label;button.setAttribute('aria-label',meta.label);button.setAttribute('aria-pressed',String(state.category===key));if(meta.color)button.style.setProperty('--category-accent',meta.color);button.innerHTML=(meta.image?'<img class="category-image" src="'+escapeHTML(safeImageURL(meta.image))+'" alt="" loading="lazy">':meta.icon?'<span aria-hidden="true">'+escapeHTML(meta.icon)+'</span>':categoryIcon(key))+'<small>'+escapeHTML(cleanUiText(meta.label))+'</small>';button.onclick=()=>{state.category=state.category===key?'all':key;trackEvent('category_filter',{category:state.category});renderCatalog({reset:true});};return button;}));}
+function renderCategories(){const keys=Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999));$('categories').replaceChildren(...keys.map(key=>{const meta=categoryMeta[key];const button=document.createElement('button');button.className='category'+(meta.image?' has-image':'');button.title=meta.label;button.setAttribute('aria-label',meta.label);button.setAttribute('aria-pressed',String(state.category===key));if(meta.color)button.style.setProperty('--category-accent',meta.color);button.innerHTML=(meta.image?'<img class="category-image" src="'+escapeHTML(safeImageURL(meta.image))+'" alt="" loading="lazy">':'<span class="category-icon" aria-hidden="true"></span>')+'<small>'+escapeHTML(cleanUiText(meta.label))+'</small>';button.onclick=()=>{state.category=state.category===key?'all':key;trackEvent('category_filter',{category:state.category});renderCatalog({reset:true});};return button;}));}
 const normalizeSearch=value=>String(value??"").toLowerCase().replace(/ё/g,"е").replace(/[^a-zа-я0-9]+/g," ").trim();
 const LATIN_MAP={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
 const EN_KEYS="qwertyuiop[]asdfghjkl;'zxcvbnm,.";
@@ -1015,7 +1014,7 @@ async function syncCatalog(settingsReady){
   const categories=[...new Set(products.map(item=>item.category).filter(Boolean))];
   categories.forEach((key,index)=>{
    const custom=overrides[key]||{};
-   categoryMeta[key]={icon:cleanUiText(custom.icon),label:custom.label||key,image:defaultCategoryImages[key]||custom.image||"",color:custom.color||"",active:custom.active!==false,sortOrder:custom.sortOrder??index};
+   categoryMeta[key]={label:custom.name||custom.label||key,image:custom.imageUrl||custom.image||"",color:"",active:custom.active!==false,sortOrder:custom.sortOrder??index};
   });
   buildSearchIndex();mergeLegacyCartKeys();save();
   syncSource="google";
