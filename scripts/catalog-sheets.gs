@@ -94,7 +94,9 @@ function checkCategoryImages() {
 function refreshShopCache(){
   const response=UrlFetchApp.fetch(SHOP.REFRESH_URL,{muteHttpExceptions:true});
   if(response.getResponseCode()!==200)throw new Error('Магазин вернул HTTP '+response.getResponseCode());
-  SpreadsheetApp.getUi().alert('Каталог магазина обновлён из таблицы.');
+  const payload=JSON.parse(response.getContentText());
+  if(payload.source!=='google-sheets'||!Array.isArray(payload.products))throw new Error('Некорректный ответ магазина');
+  SpreadsheetApp.getUi().alert('Чтение из таблицы проверено. Глобальная инвалидация кэша и история — через ручную проверку в админке.');
 }
 function createCatalogApiToken(){
   const token=Utilities.getUuid()+Utilities.getUuid();
@@ -110,6 +112,11 @@ function doPost(e){
     if(!secret||String(body.token||'')!==secret)return jsonResponse_({ok:false,error:'Unauthorized'});
     lock.waitLock(15000);
     const sheets=shopSheets_();
+    if(body.action==='inspect')return jsonResponse_({
+      ok:true,schemaVersion:1,spreadsheetId:sheets.book.getId(),
+      productGid:String(sheets.products.getSheetId()),categoryGid:String(sheets.categories.getSheetId()),
+      productHeaders:headers_(sheets.products),categoryHeaders:headers_(sheets.categories)
+    });
     const isCategory=body.action==='saveCategory';
     const isProduct=body.action==='saveProduct';
     if(!isCategory&&!isProduct)throw new Error('Unknown action');
