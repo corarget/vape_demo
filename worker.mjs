@@ -708,7 +708,11 @@ async function telegramWebhook(request,env){
     const [kind,orderId,action]=String(callback.data).split("|");
     const telegramId=String(callback.from?.id||"");
     const staffRow=await first(env,"SELECT id,role,permissions_json FROM staff WHERE telegram_id=? AND active=1",[telegramId]);
-    const staff=staffRow?{...staffRow,permissions:JSON.parse(staffRow.permissions_json||"[]")}:null;
+    let staff=null,permissions=[];
+    if(staffRow){
+      try{permissions=JSON.parse(staffRow.permissions_json||"[]");}catch{}
+      staff={...staffRow,permissions:normalizePermissions(permissions,staffRow.role)};
+    }
     if(kind==="order"&&staff&&hasPermission(staff,"orders.manage")){
       const result=await updateOrderStatus(env,orderId,action,{id:staff.id,role:staff.role},"Изменено из Telegram");
       try{await telegramCall(env,"answerCallbackQuery",{callback_query_id:callback.id,text:result.error||"Статус обновлён"});}
@@ -751,8 +755,7 @@ export default {
 
     try{
       if(path==="/api/health"&&request.method==="GET"){
-        const staffCount=await first(env,"SELECT COUNT(*) AS count FROM staff WHERE active=1");
-        return json({ok:true,service:"violet-shop",version:VERSION,database:!!env.DB,staff:Number(staffCount?.count||0),timestamp:now()});
+        return json({ok:true,service:"violet-shop",version:VERSION});
       }
       if(path==="/api/catalog"&&request.method==="GET")return await catalogResponse(request,env,ctx);
       if(path==="/api/settings/public"&&request.method==="GET")return json(await publicSettings(env));
