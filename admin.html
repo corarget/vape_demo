@@ -99,6 +99,7 @@
   }
   @media(prefers-reduced-motion:reduce){.section.active{animation:none}}
  
+.catalog-tabbar{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px}.catalog-tabbar .btn{flex:1;min-width:160px}
 .category-editor{display:grid;grid-template-columns:74px minmax(0,1fr);gap:14px;align-items:start;padding:14px!important}
 .category-editor-main{min-width:0}
 .category-order-control{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-items:center;position:sticky;top:10px}
@@ -287,6 +288,7 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
     </section>
 
     <section id="page-catalog" class="section">
+      <div class="catalog-tabbar"><button type="button" class="btn primary" data-page="catalog">Товары и синхронизация</button><button type="button" class="btn" data-page="categories">Категории</button></div>
       <div class="grid two">
         <div class="panel"><div class="panel-head"><div><h2>Синхронизация каталога</h2><p>Источник данных — Google Sheets, лист Catalog</p></div><span class="pill" id="sync-state">Не проверено</span></div><div id="catalog-stats" class="grid metrics catalog-stats-grid"></div><button class="btn primary" id="sync-now">↻ Синхронизировать сейчас</button><div class="small muted mt-8">Синхронизация не изменяет исходную таблицу. Витрина читает данные и нормализует варианты в товарные линейки.</div></div>
         <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
@@ -299,7 +301,8 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
     </section>
 
     <section id="page-categories" class="section">
-      <div class="panel"><div class="panel-head"><div><h2>Категории витрины</h2><p>Перетаскивай карточки или используй стрелки, чтобы менять порядок. Цвет, название и видимость настраиваются здесь же.</p><div id="categories-sort-help" class="muted small">Порядок сверху вниз соответствует порядку категорий у покупателей. Скрытые категории остаются в списке.</div></div><button class="btn" id="categories-reload">Обновить из таблицы</button></div><div id="categories-list" class="grid"></div><div class="actions"><button class="btn primary" id="save-categories">Сохранить категории</button></div></div>
+      <div class="catalog-tabbar"><button type="button" class="btn" data-page="catalog">Товары и синхронизация</button><button type="button" class="btn primary" data-page="categories">Категории</button></div>
+      <div class="panel"><div class="panel-head"><div><h2>Категории витрины</h2><p>Формат: id · name · imageUrl. ID категории связан с товарами и сохраняется при переименовании.</p><div id="categories-sort-help" class="muted small">Порядок сверху вниз соответствует порядку категорий у покупателей. Скрытые категории остаются в списке.</div></div><button class="btn" id="categories-reload">Обновить из таблицы</button></div><div id="categories-list" class="grid"></div><div class="actions"><button class="btn primary" id="save-categories">Сохранить категории</button></div></div>
     </section>
 
     <section id="page-analytics" class="section">
@@ -468,7 +471,7 @@ const titles={overview:"Обзор",orders:"Заказы",schedule:"Слоты �
 const labels={new:"Новый",confirmed:"Подтверждён",preparing:"Готовится",ready:"Готов",assigned:"Назначен курьер",picked_up:"Забран",on_the_way:"В пути",delivered:"Доставлен",completed:"Завершён",cancelled:"Отменён",rejected:"Отклонён"};
 const navGroups=[
  [["overview","Обзор"],["orders","Заказы"],["schedule","Слоты"]],
- [["catalog","Каталог"],["categories","Категории"],["promotions","Акции"]],
+ [["catalog","Каталог"],["promotions","Акции"]],
  [["settings","Магазин"],["team","Команда"],["telegram","Telegram"]]
 ];
 const navGroupLabels=["Операции","Магазин","Управление"];
@@ -778,7 +781,7 @@ function renderCatalogProductResults(query=""){
 }
 async function loadCatalog(){
  const canManageCatalog=canPermission("catalog.manage");
- $("page-catalog").querySelectorAll("button,input,select").forEach(element=>{element.disabled=!canManageCatalog;});
+ $("page-catalog").querySelectorAll("button,input,select").forEach(element=>{if(!element.closest(".catalog-tabbar"))element.disabled=!canManageCatalog;});
  $("page-catalog").querySelectorAll("form").forEach(form=>form.hidden=!canManageCatalog);
  const [runs,settings,template,products]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template"),api("/api/admin/catalog/products")]);
  state.catalogProducts=products.products||[];renderCatalogProductResults($("catalog-product-search").value);
@@ -822,7 +825,7 @@ function captureCategoryDrafts(){
 function renderCategoryList(){
  const canManage=canPermission("categories.manage"),list=$("categories-list");
  $("categories-reload").hidden=!canManage;$("save-categories").hidden=!canManage;
- list.innerHTML=state.categories.length?state.categories.map((category,index)=>'<div class="panel category-editor" data-category-key="'+esc(category.key)+'" draggable="'+(canManage?'true':'false')+'"><div class="category-order-control"><span class="category-order-number">'+(index+1)+'</span><button type="button" data-move-category="-1" aria-label="Переместить выше" '+(!canManage||index===0?'disabled':'')+'>↑</button><button type="button" data-move-category="1" aria-label="Переместить ниже" '+(!canManage||index===state.categories.length-1?'disabled':'')+'>↓</button><span class="muted small">из '+state.categories.length+'</span></div><div class="category-editor-main"><div class="row"><div><b>'+esc(category.key)+'</b><div class="muted small">Источник: '+esc(category.sourceLabel||category.key)+'</div></div><label class="field-row"><input type="checkbox" data-category-field="active" '+(category.active?'checked':'')+'> Показывать</label></div><div class="form-grid mt-12"><label>Название на витрине<input data-category-field="label" value="'+esc(category.label)+'" maxlength="80"></label><label>Иконка / символ<input data-category-field="icon" value="'+esc(category.icon||"")+'" maxlength="8" placeholder="Автоматически"></label><label>Цвет категории<input data-category-field="color" type="color" value="'+esc(category.color||"#D8DDE0")+'"></label><label class="full">Изображение категории (необязательно)<input data-category-field="image" type="url" value="'+esc(category.image||"")+'" placeholder="https://…"></label></div></div></div>').join(""):'<div class="empty">Категории появятся после первой синхронизации каталога</div>';
+ list.innerHTML=state.categories.length?state.categories.map((category,index)=>'<div class="panel category-editor" data-category-key="'+esc(category.key)+'" draggable="'+(canManage?'true':'false')+'"><div class="category-order-control"><span class="category-order-number">'+(index+1)+'</span><button type="button" data-move-category="-1" aria-label="Переместить выше" '+(!canManage||index===0?'disabled':'')+'>↑</button><button type="button" data-move-category="1" aria-label="Переместить ниже" '+(!canManage||index===state.categories.length-1?'disabled':'')+'>↓</button><span class="muted small">из '+state.categories.length+'</span></div><div class="category-editor-main"><div class="row"><div><b>ID: '+esc(category.key)+'</b><div class="muted small">Источник: '+esc(category.sourceLabel||category.key)+'</div></div><label class="field-row"><input type="checkbox" data-category-field="active" '+(category.active?'checked':'')+'> Показывать</label></div><div class="form-grid mt-12"><label>name — название<input data-category-field="label" value="'+esc(category.label)+'" maxlength="80"></label><label>Иконка / символ<input data-category-field="icon" value="'+esc(category.icon||"")+'" maxlength="8" placeholder="Автоматически"></label><label>Цвет категории<input data-category-field="color" type="color" value="'+esc(category.color||"#D8DDE0")+'"></label><label class="full">imageUrl — ссылка на фото<input data-category-field="image" type="url" value="'+esc(category.image||"")+'" placeholder="https://…"></label></div></div></div>').join(""):'<div class="empty">Категории появятся после первой синхронизации каталога</div>';
  if(!canManage)list.querySelectorAll("input,button").forEach(input=>input.disabled=true);
  list.querySelectorAll("[data-move-category]").forEach(button=>button.onclick=()=>{
   captureCategoryDrafts();const card=button.closest(".category-editor"),key=card.dataset.categoryKey;
@@ -845,7 +848,7 @@ async function loadCategories(){
  renderCategoryList();
 }
 $("categories-reload").onclick=async()=>{try{await api("/api/admin/sync",{method:"POST",body:"{}"});await loadCatalog();await loadCategories();toast("Категории обновлены из таблицы");}catch(error){toast(error.message);}};
-$("save-categories").onclick=async()=>{captureCategoryDrafts();const categories=state.categories.map((category,index)=>({...category,sortOrder:index}));try{await api("/api/admin/categories",{method:"PUT",body:JSON.stringify({categories})});await loadCategories();toast("Порядок и оформление категорий сохранены");}catch(error){toast(error.message);}};
+$("save-categories").onclick=async()=>{captureCategoryDrafts();const categories=state.categories.map((category,index)=>({...category,id:category.key,name:category.label,imageUrl:category.image,sortOrder:index}));try{await api("/api/admin/categories",{method:"PUT",body:JSON.stringify({categories})});await loadCategories();toast("Порядок и оформление категорий сохранены");}catch(error){toast(error.message);}};
 async function loadAnalytics(){
  const days=Number($("analytics-days").value)||30;const data=await api("/api/admin/analytics?days="+days);
  const metrics=[["Уникальные посетители",data.totals.uniqueVisitors],["Просмотры карточек",data.totals.views],["Добавления в корзину",data.totals.cartAdds],["Оформленные позиции",data.totals.orders],["Поиски",data.totals.searches],["Начатые оформления",data.totals.checkouts]];
