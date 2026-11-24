@@ -12,7 +12,7 @@ test("duplicate SKUs and orphan categories are reported without changing inputs"
   assert.equal(r.ok,false);assert.ok(r.issues.some(x=>x.field==="sku"&&x.relatedRow===2&&x.row===3));assert.ok(r.issues.some(x=>x.code==="unknown_category"));assert.equal(JSON.stringify(rows),original);
 });
 test("duplicate category display names, normalized keys and IDs fail",()=>{
-  const r=audit([item()],"[cat,["category-example"," example ","","true","1","example"]]);
+  const r=audit([item()],[cat,["category-example"," example ","","true","1","example"]]);
   for(const field of ["id","name","product_category"])assert.ok(r.issues.some(x=>x.field===field&&x.code==="duplicate"));
 });
 test("group key cannot identify distinct groups or change across variants",()=>{
