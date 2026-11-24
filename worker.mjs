@@ -859,9 +859,6 @@ export default {
 
       if(path.startsWith("/api/admin/")){
         if(!isManager(staff))return unauthorized();
-        if(path==="/api/admin/appearance"&&request.method==="GET"){
-          return json({appearance:sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE))});
-        }
         const requiredPermission=permissionForAdminRoute(path,request.method);
         if(!requiredPermission)return json({error:"Маршрут не найден"},404);
         if(!hasPermission(staff,requiredPermission))return json({error:"Недостаточно прав для этого действия"},403);
