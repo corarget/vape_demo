@@ -303,12 +303,12 @@ async function refreshCatalogCache(env,cache,cacheKey){
       product.orders30d=signal.orders;
       product.analyticsScore=signal.views+signal.cartAdds*4+signal.orders*12;
     }
-  }catch(error){await logSystem(env,"warning","analytics","Не удалось рассчитать популярность каталога",{error:String(error)});}
+  }catch(error){await logSystem(env,"warning","analytics","Не удалось рассчитать популярность каталога",{});}
   const {updatedAt,...content}=payload;
   const etag='"'+await sha256(JSON.stringify(content))+'"';
   const response=json({...payload,version:VERSION},200,{"Cache-Control":"public, max-age=300","ETag":etag,"X-Catalog-Source":"sheets","X-Catalog-Cached-At":String(Date.now())});
   try{await cache.put(cacheKey,response.clone());}
-  catch(error){await logSystem(env,"warning","cache","Не удалось сохранить кеш каталога",{error:String(error)});}
+  catch(error){await logSystem(env,"warning","cache","Не удалось сохранить кеш каталога",{});}
   return response;
 }
 function catalogClientResponse(request,response,freshSeconds){
@@ -579,7 +579,7 @@ async function staffLogin(request,env){
     await logSystem(env,"info","auth","Вход сотрудника",{staffId,role,permissions});
     return json({success:true,staff:{id:staffId,name:displayName,role,permissions}},200,{"Set-Cookie":cookieHeader(token)});
   }catch(error){
-    await logSystem(env,"error","auth","Не удалось создать учётную запись сотрудника",{error:String(error)});
+    await logSystem(env,"error","auth","Не удалось создать учётную запись сотрудника",{});
     return json({error:"Не удалось выполнить вход"},500);
   }
 }

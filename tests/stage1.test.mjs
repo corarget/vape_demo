@@ -28,6 +28,15 @@ test("cookies, JSON input and cryptographic helpers", async () => {
   assert.equal(safeEqual("abc","abc"), true);
   assert.equal(safeEqual("abc","abd"), false);
 });
+test("JSON body limits actual bytes, including undeclared length and malformed UTF-8",async()=>{
+  const make=body=>new Request("https://example.test",{method:"POST",body});
+  assert.equal(await bodyJson(make(JSON.stringify({x:"x".repeat(100000)}))),null);
+  assert.equal(await bodyJson(make(JSON.stringify({x:"я".repeat(50000)}))),null);
+  assert.equal(await bodyJson(make(new Uint8Array([0x22,0xff,0x22]))),null);
+  assert.equal((await bodyJson(make(JSON.stringify({x:"x".repeat(99992)})))).x.length,99992);
+  const chunks=new ReadableStream({start(c){c.enqueue(new TextEncoder().encode('{"x":"'));c.enqueue(new Uint8Array(100000));c.close();}});
+  assert.equal(await bodyJson(new Request("https://example.test",{method:"POST",body:chunks,duplex:"half"})),null);
+});
 test("D1 helpers preserve bindings and settings fallback", async () => {
   let bound;
   const statement={bind(...args){bound=args;return this;},async first(){return {value_json:'{"n":1}'};},async all(){return {results:[{n:1}]};},async run(){return {success:true};}};
