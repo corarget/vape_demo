@@ -1,5 +1,6 @@
 import { COOKIE, json, textResponse, parseCookie, cookieHeader, clearCookie, validOrigin, bodyJson } from "./lib/http.mjs";
-import { now, randomId, randomToken, sha256, safeEqual } from "./lib/crypto.mjs";\nimport { operationalEvent } from "./lib/operational-safety.mjs";
+import { now, randomId, randomToken, sha256, safeEqual } from "./lib/crypto.mjs";
+import { operationalEvent } from "./lib/operational-safety.mjs";
 import { first, all, run, logSystem, getSetting, setSetting } from "./lib/db.mjs";
 import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStorefrontLayout, storefrontAppearance, sanitizeAdminAppearance, getConfig } from "./lib/config.mjs";
 import { PERMISSION_KEYS, normalizePermissions, permissionsFromStorage, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
