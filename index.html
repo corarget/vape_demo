@@ -1011,7 +1011,7 @@ async function syncCatalog(settingsReady){
   products=payload.products.map((item,index)=>({...item,icon:iconPool[index%iconPool.length],options:Array.isArray(item.options)?item.options:[]}));
   productsById=new Map(products.map(item=>[item.id,item]));
   const overrides=state.storeSettings.categories||{};
-  const categories=[...new Set(products.map(item=>item.category).filter(Boolean))];
+  const categories=Object.keys(overrides);
   categories.forEach((key,index)=>{
    const custom=overrides[key]||{};
    categoryMeta[key]={label:custom.name||custom.label||key,image:custom.imageUrl||custom.image||"",color:"",active:custom.active!==false,sortOrder:custom.sortOrder??index};
