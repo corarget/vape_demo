@@ -240,13 +240,17 @@ async function getCatalogConfig(env){
     columnMapping:saved.columnMapping&&typeof saved.columnMapping==="object"?saved.columnMapping:{}
   };
 }
+async function readCatalog(env){
+  const catalogConfig=await getCatalogConfig(env);
+  if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
+  return loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
+}
+// Only an explicit administrator action belongs in sync_runs.
 async function syncCatalog(env){
   const id=randomId(),started=now();
   await run(env,"INSERT INTO sync_runs(id,status,started_at) VALUES(?,?,?)",[id,"running",started]);
   try{
-    const catalogConfig=await getCatalogConfig(env);
-    if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
-    const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
+    const payload=await readCatalog(env);
     const details={fields:payload.fields,source:payload.source};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
       [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
@@ -281,7 +285,7 @@ function publicCatalog(payload){
   };
 }
 async function refreshCatalogCache(env,cache,cacheKey){
-  const payload=applyCatalogDiscounts(publicCatalog(await syncCatalog(env)),await getPromotions(env));
+  const payload=applyCatalogDiscounts(publicCatalog(await readCatalog(env)),await getPromotions(env));
   try{
     const since=new Date(Date.now()-30*86400000).toISOString();
     const signals=await all(env,"SELECT product_id,SUM(CASE WHEN event_type='product_view' THEN 1 ELSE 0 END) AS views,SUM(CASE WHEN event_type='add_to_cart' THEN 1 ELSE 0 END) AS cartAdds,SUM(CASE WHEN event_type='order_created' THEN 1 ELSE 0 END) AS orders FROM analytics_events WHERE created_at>=? GROUP BY product_id",[since]);
@@ -1159,7 +1163,7 @@ export default {
           return json({success:true});
         }
         if(path==="/api/admin/catalog/products"&&request.method==="GET"){
-          const payload=await syncCatalog(env);
+          const payload=await readCatalog(env);
           return json({products:publicCatalog(payload).products});
         }
         if(path==="/api/admin/catalog/products"&&request.method==="PUT"){
