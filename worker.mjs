@@ -1,3 +1,8 @@
+import { COOKIE, json, textResponse, parseCookie, cookieHeader, clearCookie, validOrigin, bodyJson } from "./lib/http.mjs";
+import { now, randomId, randomToken, sha256, safeEqual } from "./lib/crypto.mjs";
+import { first, all, run, logSystem, getSetting, setSetting } from "./lib/db.mjs";
+import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStorefrontLayout, storefrontAppearance, sanitizeAdminAppearance, getConfig } from "./lib/config.mjs";
+import { PERMISSION_KEYS, normalizePermissions, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
 import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
 import { html } from "./site.mjs";
@@ -5,8 +10,6 @@ import { adminHtml } from "./admin.mjs";
 
 const storefrontHtml=html;
 const VERSION = "2.7.0";
-const COOKIE = "violet_staff";
-const SESSION_DAYS = 30;
 const STATUS_LABELS = {
   new:"Новый", confirmed:"Подтверждён", preparing:"Готовится", ready:"Готов",
   assigned:"Назначен курьер", picked_up:"Забран курьером", on_the_way:"В пути",
@@ -14,61 +17,6 @@ const STATUS_LABELS = {
 };
 const ACTIVE_STATUSES = ["new","confirmed","preparing","ready","assigned","picked_up","on_the_way"];
 
-const DEFAULT_ADMIN_APPEARANCE={
-  background:"#11151D",sidebar:"#151A24",panel:"#1B2230",panel2:"#222C3C",text:"#F0F3F8",muted:"#AAB6CA",line:"#36445A",accent:"#A8C5FF",
-  fontFamily:"Inter",headingFontFamily:"Manrope",radius:14,density:"comfortable",sidebarWidth:230,fontScale:100
-};
-const DEFAULT_STOREFRONT_LAYOUT={showHero:true,mobileColumns:2,desktopColumns:3};
-const DEFAULT_CONFIG = {
-  timezone:"Europe/Minsk",currency:"BYN",storeName:"VIOLET SHOP",
-  metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,slotMinutes:60,leadMinutes:60,
-  daysAhead:7,slotCapacity:4,minOrder:0,deliveryFee:0,address:"",phone:"",
-  ageGateEnabled:true,cashPaymentEnabled:true,transferPaymentEnabled:false,transferDetails:"",
-  maxItemQuantity:10,metroMeetingHint:"",
-  brandTagline:"",logoUrl:"",heroTitle:"Каталог",heroSubtitle:"Выберите то, что вам нужно",
-  theme:{accent:"#E5E7EB",accent2:"#C4C9CC",background:"#101112",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Inter",headingFontFamily:"Manrope"},
-  storefrontLayout:DEFAULT_STOREFRONT_LAYOUT,
-  defaultSort:"featured",analyticsEnabled:true,
-  weeklyHours:{
-    mon:{open:"10:00",close:"21:00",closed:false},
-    tue:{open:"10:00",close:"21:00",closed:false},
-    wed:{open:"10:00",close:"21:00",closed:false},
-    thu:{open:"10:00",close:"21:00",closed:false},
-    fri:{open:"10:00",close:"21:00",closed:false},
-    sat:{open:"10:00",close:"21:00",closed:false},
-    sun:{open:"10:00",close:"21:00",closed:false}
-  }
-};
-
-function json(data,status=200,extra={}) {
-  const headers=new Headers({
-    "Content-Type":"application/json; charset=utf-8",
-    "Cache-Control":"no-store",
-    "X-Content-Type-Options":"nosniff"
-  });
-  for(const [key,value] of Object.entries(extra))headers.set(key,value);
-  return new Response(JSON.stringify(data),{status,headers});
-}
-function textResponse(body,status=200,extra={}) {
-  return new Response(body,{status,headers:{"Content-Type":"text/html; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff","Referrer-Policy":"strict-origin-when-cross-origin","Content-Security-Policy":"default-src 'self'; img-src 'self' https: data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; script-src 'self' 'unsafe-inline' https://telegram.org; connect-src 'self'; base-uri 'self'; object-src 'none'",...extra}});
-}
-function now(){return new Date().toISOString();}
-function randomId(){return crypto.randomUUID();}
-function randomToken(bytes=24){
-  const data=crypto.getRandomValues(new Uint8Array(bytes));
-  return [...data].map(value=>value.toString(16).padStart(2,"0")).join("");
-}
-async function sha256(value){
-  const digest=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(String(value)));
-  return [...new Uint8Array(digest)].map(value=>value.toString(16).padStart(2,"0")).join("");
-}
-function safeEqual(a,b){
-  a=String(a??"");b=String(b??"");
-  let result=a.length^b.length;
-  const max=Math.max(a.length,b.length);
-  for(let i=0;i<max;i++)result|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);
-  return result===0;
-}
 function normalizePromoCode(value){return String(value||"").trim().toUpperCase().replace(/\s+/g,"");}
 function normalizePromocode(input,id){
   const code=normalizePromoCode(input?.code),title=String(input?.title||"").trim().slice(0,80);
@@ -91,174 +39,6 @@ async function promocodeDiscount(env,code,subtotal){
   }
   const discount=promo.type==="percent"?Math.round(subtotal*promo.value/100):Math.min(subtotal,promo.value);
   return {promo,discount};
-}
-function parseCookie(request,name){
-  const raw=request.headers.get("Cookie")||"";
-  for(const part of raw.split(";")){
-    const index=part.indexOf("=");
-    if(index<0)continue;
-    if(part.slice(0,index).trim()===name)return decodeURIComponent(part.slice(index+1).trim());
-  }
-  return "";
-}
-function cookieHeader(token,maxAge=SESSION_DAYS*86400){
-  return COOKIE+"="+encodeURIComponent(token)+"; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age="+maxAge;
-}
-function clearCookie(){return COOKIE+"=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0";}
-function validOrigin(request){
-  const origin=request.headers.get("Origin");
-  return !origin||origin===new URL(request.url).origin;
-}
-async function bodyJson(request){
-  const length=Number(request.headers.get("Content-Length")||0);
-  if(length>100000)return null;
-  try{return await request.json();}catch{return null;}
-}
-async function first(env,sql,params=[]){
-  let stmt=env.DB.prepare(sql);
-  if(params.length)stmt=stmt.bind(...params);
-  return await stmt.first();
-}
-async function all(env,sql,params=[]){
-  let stmt=env.DB.prepare(sql);
-  if(params.length)stmt=stmt.bind(...params);
-  const result=await stmt.all();
-  return result.results||[];
-}
-async function run(env,sql,params=[]){
-  let stmt=env.DB.prepare(sql);
-  if(params.length)stmt=stmt.bind(...params);
-  return await stmt.run();
-}
-async function logSystem(env,level,area,message,details={}){
-  try{
-    await run(env,"INSERT INTO system_logs(level,area,message,details_json,created_at) VALUES(?,?,?,?,?)",
-      [level,area,String(message).slice(0,500),JSON.stringify(details).slice(0,5000),now()]);
-  }catch(error){console.error("system_log_write_failed",String(error));}
-}
-async function getSetting(env,key,fallback=null){
-  const row=await first(env,"SELECT value_json FROM settings WHERE key=?",[key]);
-  if(!row)return fallback;
-  try{return JSON.parse(row.value_json);}catch{return row.value_json??fallback;}
-}
-async function setSetting(env,key,value,updatedBy="system"){
-  await run(env,"INSERT INTO settings(key,value_json,updated_at,updated_by) VALUES(?,?,?,?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=excluded.updated_at,updated_by=excluded.updated_by",
-    [key,JSON.stringify(value),now(),updatedBy]);
-}
-async function getConfig(env){
-  const saved=await getSetting(env,"store_config",{});
-  return {...DEFAULT_CONFIG,...saved,storeName:String(saved?.storeName||env.STORE_NAME||DEFAULT_CONFIG.storeName),theme:sanitizeTheme(saved?.theme||{}),storefrontLayout:sanitizeStorefrontLayout(saved?.storefrontLayout),weeklyHours:{...DEFAULT_CONFIG.weeklyHours,...(saved?.weeklyHours||{})}};
-}
-async function getStaff(request,env){
-  const token=parseCookie(request,COOKIE);
-  if(!token)return null;
-  const idHash=await sha256(token);
-  const row=await first(env,
-    "SELECT s.id,s.display_name,s.role,s.telegram_id,s.active,s.permissions_json,ss.expires_at FROM sessions ss JOIN staff s ON s.id=ss.staff_id WHERE ss.id_hash=? AND ss.expires_at>? AND s.active=1",
-    [idHash,now()]);
-  if(!row)return null;
-  let permissions=[];try{permissions=JSON.parse(row.permissions_json||"[]");}catch{}
-  if(row.role==="manager"&&Array.isArray(permissions)&&permissions.length===0)permissions=DEFAULT_MANAGER_PERMISSIONS;
-  return {id:row.id,name:row.display_name,role:row.role,permissions:normalizePermissions(permissions,row.role),telegramId:row.telegram_id||"",expiresAt:row.expires_at};
-}
-function isManager(staff){return !!staff&&["owner","manager"].includes(staff.role);}
-const PERMISSION_KEYS=["overview","orders","orders.manage","schedule","schedule.manage","catalog","catalog.manage","categories","categories.manage","analytics","branding","branding.manage","settings","settings.manage","team","logs","telegram","telegram.manage"];
-const DEFAULT_MANAGER_PERMISSIONS=["overview","orders","orders.manage","schedule","schedule.manage","catalog","catalog.manage"];
-const FONT_FAMILIES=["Inter","Open Sans","Manrope","Montserrat"];
-function normalizePermissions(value,role="manager"){
-  if(role==="owner")return [...PERMISSION_KEYS];
-  if(role==="courier")return [];
-  const source=Array.isArray(value)?value:[];
-  const result=[...new Set(source.filter(item=>PERMISSION_KEYS.includes(item)))];
-  if(result.includes("orders.manage")&&!result.includes("orders"))result.push("orders");
-  if(result.includes("catalog.manage")&&!result.includes("catalog"))result.push("catalog");
-  if(result.includes("categories.manage")&&!result.includes("categories"))result.push("categories");
-  if(result.includes("branding.manage")&&!result.includes("branding"))result.push("branding");
-  if(result.includes("schedule.manage")&&!result.includes("schedule"))result.push("schedule");
-  if(result.includes("settings.manage")&&!result.includes("settings"))result.push("settings");
-  if(result.includes("telegram.manage")&&!result.includes("telegram"))result.push("telegram");
-  return result;
-}
-function sanitizeTheme(value={},base=DEFAULT_CONFIG.theme){
-  const theme={...DEFAULT_CONFIG.theme,...(base||{}),...(value||{})};
-  const validColor=value=>/^#[0-9a-f]{6}$/i.test(String(value||""));
-  for(const key of ["accent","accent2","background","panel","panel2","text","muted","line"]){
-    if(!validColor(theme[key]))theme[key]=DEFAULT_CONFIG.theme[key];
-  }
-  if(!FONT_FAMILIES.includes(theme.fontFamily))theme.fontFamily=DEFAULT_CONFIG.theme.fontFamily;
-  if(!FONT_FAMILIES.includes(theme.headingFontFamily))theme.headingFontFamily=DEFAULT_CONFIG.theme.headingFontFamily;
-  return theme;
-}
-function sanitizeStorefrontLayout(value,base=DEFAULT_STOREFRONT_LAYOUT){
-  return {
-    showHero:typeof value?.showHero==="boolean"?value.showHero:base.showHero,
-    mobileColumns:[1,2].includes(value?.mobileColumns)?value.mobileColumns:base.mobileColumns,
-    desktopColumns:[2,3,4].includes(value?.desktopColumns)?value.desktopColumns:base.desktopColumns
-  };
-}
-function storefrontAppearance(config){
-  return {
-    storeName:config.storeName,brandTagline:config.brandTagline||"",logoUrl:config.logoUrl||"",
-    heroTitle:config.heroTitle||"Каталог",heroSubtitle:config.heroSubtitle||"",
-    theme:config.theme,storefrontLayout:config.storefrontLayout,
-    defaultSort:config.defaultSort||"featured",analyticsEnabled:config.analyticsEnabled!==false
-  };
-}
-function sanitizeAdminAppearance(value={}){
-  const appearance={...DEFAULT_ADMIN_APPEARANCE,...(value||{})};
-  const validColor=color=>/^#[0-9a-f]{6}$/i.test(String(color||""));
-  for(const key of ["background","sidebar","panel","panel2","text","muted","line","accent"])if(!validColor(appearance[key]))appearance[key]=DEFAULT_ADMIN_APPEARANCE[key];
-  if(!["Inter","Open Sans"].includes(appearance.fontFamily))appearance.fontFamily="Inter";
-  if(!["Manrope","Montserrat"].includes(appearance.headingFontFamily))appearance.headingFontFamily="Manrope";
-  appearance.radius=[10,12,14,18,22].includes(Number(appearance.radius))?Number(appearance.radius):14;
-  appearance.density=appearance.density==="compact"?"compact":"comfortable";
-  appearance.sidebarWidth=[200,230,260].includes(Number(appearance.sidebarWidth))?Number(appearance.sidebarWidth):230;
-  appearance.fontScale=[90,100,110,120].includes(Number(appearance.fontScale))?Number(appearance.fontScale):100;
-  return appearance;
-}
-function permissionForAdminRoute(path,method){
-  if(path==="/api/admin/dashboard")return "overview";
-  if(path==="/api/admin/orders"||path.startsWith("/api/admin/orders/"))return method==="GET"?"orders":"orders.manage";
-  if(path==="/api/admin/schedule-settings")return method==="GET"?"schedule":"schedule.manage";
-  if(path==="/api/admin/slot-blocks"||path.startsWith("/api/admin/slot-blocks/"))return method==="GET"?"schedule":"schedule.manage";
-  if(path==="/api/admin/couriers")return "orders.manage";
-  if(path==="/api/admin/staff"||path.startsWith("/api/admin/staff/")||path==="/api/admin/invites")return "team";
-  if(path==="/api/admin/analytics")return "analytics";
-  if(path==="/api/admin/categories")return method==="GET"?"categories":"categories.manage";
-  if(path==="/api/admin/branding")return method==="GET"?"branding":"branding.manage";
-  if(path==="/api/admin/appearance"&&method==="PUT")return "branding.manage";
-  if(path==="/api/admin/settings"||path==="/api/admin/promotions"||path==="/api/admin/promocodes")return method==="GET"?"settings":"settings.manage";
-  if(path==="/api/admin/config/export")return "settings";
-  if(path==="/api/admin/config/import")return "settings.manage";
-  if(["/api/admin/catalog-products","/api/admin/catalog/products","/api/admin/catalog-preview","/api/admin/catalog-template","/api/admin/catalog-template/file","/api/admin/sync-settings","/api/admin/sync","/api/admin/sync-runs"].includes(path))return method==="GET"?"catalog":"catalog.manage";
-  if(path==="/api/admin/logs")return "logs";
-  if(path==="/api/admin/integrations")return method==="GET"?"telegram":"telegram.manage";
-  if(path==="/api/admin/integrations/webhook")return "telegram.manage";
-  return null;
-}
-function hasPermission(staff,permission){
-  if(!staff)return false;
-  if(staff.role==="owner")return true;
-  if(permission==="team")return false;
-  return Array.isArray(staff.permissions)&&staff.permissions.includes(permission);
-}
-function unauthorized(){return json({error:"Требуется вход в панель управления" },401);}
-async function requireManager(request,env){
-  const staff=await getStaff(request,env);
-  return isManager(staff)?staff:null;
-}
-async function requireCourier(request,env){
-  const staff=await getStaff(request,env);
-  return staff?.role==="courier"?staff:null;
-}
-async function createSession(env,staffId){
-  const token=randomToken(32);
-  const idHash=await sha256(token);
-  const created=now();
-  const expires=new Date(Date.now()+SESSION_DAYS*86400000).toISOString();
-  await run(env,"INSERT INTO sessions(id_hash,staff_id,created_at,expires_at,last_seen_at) VALUES(?,?,?,?,?)",
-    [idHash,staffId,created,expires,created]);
-  return token;
 }
 async function loadOrder(env,id){
   const order=await first(env,"SELECT o.*,s.display_name AS courier_name FROM orders o LEFT JOIN staff s ON s.id=o.courier_id WHERE o.id=?",[id]);

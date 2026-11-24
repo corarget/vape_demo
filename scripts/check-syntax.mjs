@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { Script } from "node:vm";
 const root = new URL("../", import.meta.url);
-for (const directory of ["", "scripts/"]) {
+for (const directory of ["", "scripts/", "lib/", "tests/"]) {
   for (const file of await readdir(new URL(directory, root))) {
     const name = directory + file;
     if (file.endsWith(".mjs")) {
