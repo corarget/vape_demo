@@ -4,6 +4,30 @@ import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
 const CATEGORY_ICON_BASE="https://cdn.jsdelivr.net/gh/corarget/vape_demo@9aff9b7a6eef57fb4541108defeb226fc2ecfdf1/assets/category-icons/";
+// Category asset URLs are stored as explicit HTTPS imageUrl values, not inline artwork.
+// The IDs remain exactly equal to product category keys from the catalog.
+const CATEGORY_ASSET_FILES={
+  beer:"beer.png",consumables:"consumables.png",disposable:"disposable-devices.png",
+  energy:"energy-drinks.png",hookah:"hookahs.png",liquids:"liquids.png",
+  pods:"pod-systems.png",snus:"snus.png",tobacco:"tobacco-products.png"
+};
+function defaultCategoryImage(key,label){
+  const value=(String(key||"")+" "+String(label||"")).toLowerCase().replace(/ё/g,"е");
+  const checks=[
+    ["beer",/(?:пиво|beer|пивн)/],
+    ["consumables",/(?:испарител|картридж|расходник|coil|cartridge|consumable)/],
+    ["disposable",/(?:однораз|disposable|одноразк)/],
+    ["energy",/(?:энергетик|energy|энергетическ)/],
+    ["hookah",/(?:кальян|hookah|shisha)/],
+    ["liquids",/(?:жидкост|жиж|liquid|salt|e-liquid)/],
+    ["pods",/(?:под-систем|под систем|поды|pod.system|pod device|pods)/],
+    ["snus",/(?:снюс|snus|никотинов.*пакет|nicotine pouch)/],
+    ["tobacco",/(?:табак|сигарет|tobacco|cigarette)/]
+  ];
+  const match=checks.find(([,pattern])=>pattern.test(value));
+  return match?CATEGORY_ICON_BASE+CATEGORY_ASSET_FILES[match[0]]:"";
+}
+
 const storefrontHtml=html.replaceAll("/assets/category-icons/liquids.svg",CATEGORY_ICON_BASE+"liquids.png").replaceAll("/assets/category-icons/pods.svg",CATEGORY_ICON_BASE+"pod-systems.png").replaceAll("/assets/category-icons/consumables.svg",CATEGORY_ICON_BASE+"consumables.png").replaceAll("/assets/category-icons/energy.svg",CATEGORY_ICON_BASE+"energy-drinks.png").replaceAll("/assets/category-icons/hookah.svg",CATEGORY_ICON_BASE+"hookahs.png").replaceAll("/assets/category-icons/disposable.svg",CATEGORY_ICON_BASE+"disposable-devices.png");
 const VERSION = "2.7.0";
 const COOKIE = "violet_staff";
@@ -843,12 +867,16 @@ async function categorySettings(env){
   source.forEach((category,index)=>{
     const override=saved[category.key]||{};
     if(override.deleted===true)return;
-    result[category.key]={key:category.key,label:override.label??category.label,image:override.image??category.image,icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??"",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image,custom:false};
+    result[category.key]={key:category.key,id:category.key,label:override.label??category.label,name:override.label??category.label,image:override.image??category.image??"",imageUrl:override.image??category.image??"",icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??"",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image,custom:false};
   });
   Object.entries(saved).forEach(([key,override],index)=>{
     if(result[key]||override?.deleted===true)return;
-    result[key]={key,label:override.label||key,image:override.image||"",icon:override.icon||"",color:override.color||"#D8DDE0",active:override.active!==false,description:override.description||"",showDescription:override.showDescription===true,sortOrder:Number.isFinite(Number(override.sortOrder))?Number(override.sortOrder):source.length+index,sourceLabel:"Добавлена вручную",sourceImage:"",custom:true};
+    result[key]={key,id:key,label:override.label||key,name:override.label||key,image:override.image||"",imageUrl:override.image||"",icon:override.icon||"",color:override.color||"#D8DDE0",active:override.active!==false,description:override.description||"",showDescription:override.showDescription===true,sortOrder:Number.isFinite(Number(override.sortOrder))?Number(override.sortOrder):source.length+index,sourceLabel:"Добавлена вручную",sourceImage:"",custom:true};
   });
+  for(const category of Object.values(result)){
+    const image=category.image||defaultCategoryImage(category.key,category.label);
+    category.image=image;category.imageUrl=image;category.id=category.key;category.name=category.label;
+  }
   return result;
 }
 async function getPromotions(env){
@@ -1096,15 +1124,15 @@ export default {
           if(!Array.isArray(body?.categories)||body.categories.length>200)return json({error:"Некорректный список категорий"},400);
           const sourceRows=await sourceCategories(env);
           const sourceMap=new Map(sourceRows.map(category=>[category.key,category]));
-          const incomingKeys=new Set(body.categories.map(item=>String(item?.key||"").trim()).filter(Boolean));
+          const incomingKeys=new Set(body.categories.map(item=>String(item?.id||item?.key||"").trim()).filter(Boolean));
           const config={};
           for(const source of sourceRows)if(!incomingKeys.has(source.key))config[source.key]={deleted:true};
           for(const [index,item] of body.categories.entries()){
-            const key=String(item?.key||"").trim().slice(0,100);
+            const key=String(item?.id||item?.key||"").trim().slice(0,100);
             if(!key)continue;
             const source=sourceMap.get(key)||{label:key,image:"",icon:"",color:"#D8DDE0",sortOrder:index};
-            const label=String(item.label||source.label||key).trim().slice(0,80);
-            const image=String(item.image||"").trim().slice(0,500);
+            const label=String(item.name||item.label||source.label||key).trim().slice(0,80);
+            const image=String(item.imageUrl??item.image??"").trim().slice(0,500);
             const icon=String(item.icon||source.icon||"").trim().slice(0,48);
             const description=String(item.description||"").trim().slice(0,300);
             const color=String(item.color||source.color||"#D8DDE0");
