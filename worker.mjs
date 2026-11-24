@@ -467,7 +467,7 @@ async function syncCatalog(env){
     const catalogConfig=await getCatalogConfig(env);
     if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
     const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
-    const details={fields:payload.fields,source:payload.source,categories:payload.categories||[...new Set(payload.products.map(product=>product.category).filter(Boolean))].map(key=>({key,label:key,image:"",icon:"?"}))};
+    const details={fields:payload.fields,source:payload.source};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
       [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
     await logSystem(env,"info","catalog","Каталог синхронизирован",{
@@ -1150,9 +1150,9 @@ export default {
           if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","storefrontLayout","defaultSort","analyticsEnabled"])delete config[key];
           delete config.transferDetails;
           const template=hasPermission(staff,"catalog")?await getSetting(env,"catalog_template",{name:"",headers:[],columnMapping:{}}):{name:"",headers:[],columnMapping:{}};
-          const categories=hasPermission(staff,"categories")?await getSetting(env,"category_config",{}):{};
+          
           const adminAppearance=hasPermission(staff,"branding")?sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE)):null;
-          return json({schemaVersion:1,exportedAt:now(),store:config,categories,catalogTemplate:template,adminAppearance});
+          return json({schemaVersion:1,exportedAt:now(),store:config,catalogTemplate:template,adminAppearance});
         }
         if(path==="/api/admin/config/import"&&request.method==="POST"){
           const body=await bodyJson(request);
@@ -1171,7 +1171,7 @@ export default {
           next.minOrder=Math.max(0,Number(next.minOrder)||0);next.deliveryFee=Math.max(0,Number(next.deliveryFee)||0);
           await setSetting(env,"store_config",next,staff.id);
           if(body.adminAppearance&&hasPermission(staff,"branding.manage"))await setSetting(env,"admin_appearance",sanitizeAdminAppearance(body.adminAppearance),staff.id);
-          if(body.categories&&typeof body.categories==="object"&&hasPermission(staff,"categories.manage"))await setSetting(env,"category_config",body.categories,staff.id);
+          
           if(body.catalogTemplate&&Array.isArray(body.catalogTemplate.headers)&&hasPermission(staff,"catalog.manage")){
             const headers=body.catalogTemplate.headers.slice(0,100).map(value=>String(value).slice(0,100));
             const mapping={};
