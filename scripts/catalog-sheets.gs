@@ -9,11 +9,11 @@ const SHOP = Object.freeze({
   CATEGORIES: 'Категории',
   REFRESH_URL: 'https://violet-shop-staging.platondran.workers.dev/api/catalog?refresh=1'
 });
-const CATEGORY_COLUMNS = ['id','name','image_url','active','sort_order','product_category'];
-const EDITABLE_CATEGORY_COLUMNS = new Set(['name','image_url','active','sort_order','product_category']);
+const CATEGORY_COLUMNS = ['id','name','image_url','active','sort_order'];
+const EDITABLE_CATEGORY_COLUMNS = new Set(['name','image_url','active','sort_order']);
 const EDITABLE_PRODUCT_COLUMNS = new Set([
   'name','category','option_label','price_byn','image_url','variant_image_url',
-  'available','active','manufacturer','strength_mg'
+  'available','active','brand','manufacturer','strength_mg'
 ]);
 
 function onOpen() {
@@ -125,12 +125,15 @@ function doPost(e){
     const changes=body.changes||{};
     for(const [field,value] of Object.entries(changes)){
       if(!editable.has(field))throw new Error('Column is not editable: '+field);
-      const column=columns.indexOf(field);
+      const targetField=field==='manufacturer'&&columns.includes('brand')?'brand':field==='brand'&&columns.includes('manufacturer')?'manufacturer':field;
+      const column=columns.indexOf(targetField);
       if(column<0)throw new Error('Column not found: '+field);
       if(field==='image_url'||field==='variant_image_url'){
         if(value&&!/^https:\/\//i.test(String(value)))throw new Error('Only HTTPS image URLs are allowed');
       }
-      sheet.getRange(matches[0],column+1).setValue(value);
+      const typedValue=(field==='active'||field==='available')?((value===true||String(value).toUpperCase()==='TRUE')?true:(value===false||String(value).toUpperCase()==='FALSE')?false:null):value;
+      if(typedValue===null&&(field==='active'||field==='available'))throw new Error('Expected boolean: '+field);
+      sheet.getRange(matches[0],column+1).setValue(typedValue);
     }
     if(isCategory){
       const all=data_(sheets.categories),heads=headers_(sheets.categories),ids=new Set(),mapped=new Set();
