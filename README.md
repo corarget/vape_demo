@@ -18,6 +18,17 @@ White-label движок магазина: Telegram Mini App-витрина, о�
 - Cloudflare D1 (`violet-shop-db`) — orders, order items, staff, sessions, schedule, logs and settings.
 - Google Sheets — source of truth for product catalog only.
 
+## Canonical catalog storage (November 2026)
+
+The connected Google Sheets spreadsheet contains exactly two tabs:
+
+- `Товары` (configured with `GOOGLE_CATALOG_GID`): product variants, SKU, category ID, availability, prices, `image_url`, optional `variant_image_url`.
+- `Категории` (configured with `GOOGLE_CATEGORIES_GID`): `id`, `name`, `image_url`, `active`, `sort_order`. The `id` must exactly match the `category` value in `Товары`.
+
+The URL in each image cell is the only source of that image. Blank or invalid image URLs do not fall back to repository assets or code-defined category graphics. Images are hosted externally; the Sheets fields contain direct HTTPS URLs. The Worker may cache catalog API responses for performance, but it does not store independent category or product overrides in D1.
+
+The admin offers a catalog browser and direct Google Sheets editing links. Writing edits from the admin directly to Google Sheets requires Google Sheets API write credentials and has **not** been configured. For now edit the two tabs in Google Sheets and use sync/refresh to see changes.
+
 ## Google Sheets catalog
 
 Источник Google Sheets задаётся в `/admin → Каталог и синхронизация`. Для новой копии нет привязки к таблице предыдущего магазина: менеджер подключает свою таблицу, выбирает GID листа, проверяет заголовки и настраивает сопоставление столбцов.
