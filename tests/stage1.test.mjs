@@ -16,6 +16,9 @@ test("response headers and origin policy", async () => {
   assert.match(textResponse("hi").headers.get("content-security-policy"), /object-src 'none'/);
   assert.equal(validOrigin(req("/", {headers:{Origin:"https://example.test"}})), true);
   assert.equal(validOrigin(req("/", {headers:{Origin:"https://other.test"}})), false);
+  assert.equal(validOrigin(req("/", {headers:{"Sec-Fetch-Site":"cross-site"}})), false);
+  assert.equal(validOrigin(req("/", {headers:{"Sec-Fetch-Site":"same-site"}})), false);
+  assert.equal(validOrigin(req("/", {headers:{"Sec-Fetch-Site":"same-origin"}})), true);
 });
 test("cookies, JSON input and cryptographic helpers", async () => {
   assert.equal(parseCookie(req("/", {headers:{Cookie:"other=1; session=a%20b"}}), "session"), "a b");

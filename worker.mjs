@@ -1172,13 +1172,27 @@ export default {
           if(!target)return json({error:"Сотрудник не найден"},404);
           if(target.role==="owner")return json({error:"Права владельца нельзя изменить через список сотрудников"},403);
           if(staffMatch[1]===staff.id&&body?.active===false)return json({error:"Нельзя отключить текущую сессию"},400);
-          if(body?.telegramId!==undefined){await run(env,"UPDATE staff SET telegram_id=? WHERE id=?",[String(body.telegramId||"").trim()||null,staffMatch[1]]);}
-          if(body?.active!==undefined){await run(env,"UPDATE staff SET active=? WHERE id=?",[body.active===false?0:1,staffMatch[1]]);if(body.active===false)await run(env,"DELETE FROM sessions WHERE staff_id=?",[staffMatch[1]]);}
-          if(body?.permissions!==undefined){
+          if(!body||typeof body!=="object"||Array.isArray(body))return json({error:"Некорректные данные сотрудника"},400);
+          const fields=[],values=[];
+          let revoke=false;
+          if(body.telegramId!==undefined){
+            if(typeof body.telegramId!=="string"||body.telegramId.trim().length>40)return json({error:"Некорректный Telegram ID"},400);
+            fields.push("telegram_id=?");values.push(body.telegramId.trim()||null);revoke=true;
+          }
+          if(body.active!==undefined){
+            if(typeof body.active!=="boolean")return json({error:"Некорректное состояние сотрудника"},400);
+            fields.push("active=?");values.push(body.active?1:0);revoke=true;
+          }
+          if(body.permissions!==undefined){
+            if(!Array.isArray(body.permissions))return json({error:"Некорректный список разрешений"},400);
             const permissions=normalizePermissions(body.permissions,target.role);
             if(target.role==="manager"&&!permissions.length)return json({error:"Выберите хотя бы одно разрешение менеджеру"},400);
-            await run(env,"UPDATE staff SET permissions_json=? WHERE id=?",[JSON.stringify(permissions),staffMatch[1]]);
-            await run(env,"DELETE FROM sessions WHERE staff_id=?",[staffMatch[1]]);
+            fields.push("permissions_json=?");values.push(JSON.stringify(permissions));revoke=true;
+          }
+          if(fields.length){
+            const statements=[env.DB.prepare("UPDATE staff SET "+fields.join(",")+" WHERE id=? AND role!='owner'").bind(...values,staffMatch[1])];
+            if(revoke)statements.push(env.DB.prepare("DELETE FROM sessions WHERE staff_id=? AND EXISTS(SELECT 1 FROM staff WHERE id=? AND role!='owner')").bind(staffMatch[1],staffMatch[1]));
+            await env.DB.batch(statements);
           }
           return json({success:true});
         }
