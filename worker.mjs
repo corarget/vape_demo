@@ -4,6 +4,7 @@ import { first, all, run, logSystem, getSetting, setSetting } from "./lib/db.mjs
 import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStorefrontLayout, storefrontAppearance, sanitizeAdminAppearance, getConfig } from "./lib/config.mjs";
 import { PERMISSION_KEYS, normalizePermissions, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
 import { loadCatalog, parseCSV } from "./catalog.mjs";
+import { redeemStaffCredential } from "./lib/staff-redemption.mjs";
 import { verifyTelegramInitData, customerOrderScope } from "./lib/telegram-auth.mjs";
 import { BASELINE_KEY, readCSV, buildAuditSnapshot, diffAuditSnapshots, probeAppsScript } from "./lib/sync-audit.mjs";
 import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
@@ -551,31 +552,30 @@ async function dashboard(env){
 }
 async function staffLogin(request,env){
   const body=await bodyJson(request);
-  const code=String(body?.code||"").trim();
+  if(!body||typeof body.code!=="string")return json({error:"Введите код доступа"},400);
+  const code=body.code.trim();
   if(code.length<12||code.length>128)return json({error:"Введите код доступа"},400);
   const codeHash=await sha256(code);
   const bootstrapUsed=await getSetting(env,"bootstrap_used",false);
   const storedBootstrapHash=await getSetting(env,"bootstrap_hash","");
   const bootstrapHash=storedBootstrapHash||(env.BOOTSTRAP_CODE?await sha256(env.BOOTSTRAP_CODE):"");
-  let staffId=randomId(),role="manager",displayName=String(body.displayName||"").trim().slice(0,80),telegramId="",permissions=[];
+  let staffId=randomId(),role="manager",displayName=String(body.displayName||"").trim().slice(0,80),telegramId="",permissions=[],inviteId=null;
   if(!bootstrapUsed&&bootstrapHash&&safeEqual(codeHash,bootstrapHash)){
     if(displayName.length<2)return json({error:"Укажите имя владельца"},400);
     role="owner";permissions=PERMISSION_KEYS;
-    await setSetting(env,"bootstrap_used",true,"bootstrap");
-    await setSetting(env,"bootstrap_hash","","bootstrap");
+    // Consumption happens atomically with account and session creation.
   }else{
     const invite=await first(env,"SELECT * FROM staff_invites WHERE code_hash=? AND active=1 AND used_at IS NULL AND expires_at>?",[codeHash,now()]);
     if(!invite)return json({error:"Код недействителен или уже использован"},401);
-    role=invite.role;displayName=invite.display_name;telegramId=invite.telegram_id||"";
+    if(!["manager","courier"].includes(invite.role))return json({error:"Код недействителен или уже использован"},401);
+    inviteId=invite.id;role=invite.role;displayName=invite.display_name;telegramId=invite.telegram_id||"";
     try{permissions=JSON.parse(invite.permissions_json||"[]");}catch{permissions=[];}
-    await run(env,"UPDATE staff_invites SET active=0,used_at=? WHERE id=?",[now(),invite.id]);
   }
   permissions=normalizePermissions(permissions,role);
-  const created=now();
+  if(role==="manager"&&!permissions.length)return json({error:"Код недействителен или уже использован"},401);
   try{
-    await run(env,"INSERT INTO staff(id,display_name,role,telegram_id,permissions_json,active,created_at,last_seen_at) VALUES(?,?,?,?,?,1,?,?)",
-      [staffId,displayName,role,telegramId||null,JSON.stringify(permissions),created,created]);
-    const token=await createSession(env,staffId);
+    const token=await redeemStaffCredential(env,{staffId,displayName,role,telegramId,permissions,inviteId,codeHash});
+    if(!token)return json({error:"Код недействителен или уже использован"},401);
     await logSystem(env,"info","auth","Вход сотрудника",{staffId,role,permissions});
     return json({success:true,staff:{id:staffId,name:displayName,role,permissions}},200,{"Set-Cookie":cookieHeader(token)});
   }catch(error){
