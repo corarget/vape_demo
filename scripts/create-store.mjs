@@ -72,6 +72,7 @@ async function main() {
 
     await mkdir(deploymentDir, { recursive: true });
     for (const file of SOURCE_FILES) await cp(path.join(ROOT, file), path.join(deploymentDir, file));
+    await cp(path.join(ROOT, "lib"), path.join(deploymentDir, "lib"), { recursive: true });
     await cp(path.join(ROOT, "migrations"), path.join(deploymentDir, "migrations"), { recursive: true });
 
     const config = {

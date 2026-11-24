@@ -1045,35 +1045,6 @@ $("settings-form").onsubmit=async event=>{
  }catch(error){toast(error.message);}
 };
 const promotionGroups=[["liquid","Жидкости"],["coil","Испарители"],["cartridge","Картриджи"]];
-function readPromotionInputs(){
- return Array.from($("promotion-rules").querySelectorAll("fieldset"),field=>{
-  const value=name=>field.querySelector('[name="'+name+'"]').value;
-  return {id:field.dataset.id||"",title:value("title"),description:value("description"),minimum:Number(value("minimum")),giftLabel:value("giftLabel"),giftBrand:value("giftBrand"),
-   groups:[...field.querySelectorAll('input[name="group"]:checked')].map(input=>input.value),active:field.querySelector('[name="active"]').checked};
- });
-}
-function renderPromotionEditor(){
- const editable=canPermission("settings.manage");
- $("add-promotion").hidden=!editable;
- $("promotion-save").hidden=!editable;
- $("promotion-rules").innerHTML=state.promotions.length?state.promotions.map((rule,index)=>{
-  const groups=promotionGroups.map(([value,label])=>'<label class="field-row"><input type="checkbox" name="group" value="'+value+'" '+(rule.groups.includes(value)?"checked":"")+'> '+label+'</label>').join("");
-  return '<fieldset class="panel form-grid" data-id="'+esc(rule.id)+'" '+(editable?"":"disabled")+'><legend>'+esc(rule.title||"Новая акция")+'</legend>'+
-   '<label>Название<input name="title" required maxlength="80" value="'+esc(rule.title)+'"></label>'+
-   '<label>От скольких штук<input name="minimum" type="number" min="1" max="99" required value="'+esc(rule.minimum)+'"></label>'+
-   '<label class="full">Описание на витрине<textarea name="description" maxlength="300" required>'+esc(rule.description)+'</textarea></label>'+
-   '<div class="full"><p>Что участвует в акции</p><div class="promo-checks">'+groups+'</div></div>'+
-   '<label>Название подарка<input name="giftLabel" required maxlength="100" value="'+esc(rule.giftLabel)+'"></label>'+
-   '<label>Бренд подарка<input name="giftBrand" maxlength="80" placeholder="Любой бренд" value="'+esc(rule.giftBrand)+'"></label>'+
-   '<label class="field-row"><input type="checkbox" name="active" '+(rule.active?"checked":"")+'> Показывать на витрине</label>'+
-   (editable?'<div><button class="btn" type="button" data-delete-promotion="'+index+'">Убрать акцию</button></div>':"")+'</fieldset>';
- }).join(""):'<div class="empty">Акций пока нет</div>';
- $("promotion-rules").querySelectorAll("[data-delete-promotion]").forEach(button=>button.onclick=()=>{
-  state.promotions=readPromotionInputs();
-  state.promotions.splice(Number(button.dataset.deletePromotion),1);
-  renderPromotionEditor();
- });
-}
 // Discount rules deliberately share the same compact promotion editor as gifts.
 function readPromotionInputs(){
  return Array.from($("promotion-rules").querySelectorAll("fieldset"),field=>{

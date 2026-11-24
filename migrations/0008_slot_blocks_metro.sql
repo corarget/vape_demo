@@ -1,6 +1,7 @@
 -- Allow metro-specific blocks without changing the already-applied 0001 schema.
+-- D1's migration runner already provides atomic rollback; explicit BEGIN/COMMIT is rejected.
 -- slot_blocks has no inbound foreign keys, so rebuilding it preserves existing data safely.
-BEGIN;
+PRAGMA defer_foreign_keys = true;
 
 CREATE TABLE slot_blocks_rebuild (
   id TEXT PRIMARY KEY,
@@ -21,5 +22,3 @@ FROM slot_blocks;
 
 DROP TABLE slot_blocks;
 ALTER TABLE slot_blocks_rebuild RENAME TO slot_blocks;
-
-COMMIT;
