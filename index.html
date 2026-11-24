@@ -231,21 +231,7 @@ textarea{resize:vertical}
 <script>
 let products=[];let syncSource='loading';
 const iconPool=['?','?','?','?','?','?','?','?'];
-const categoryPaths={
-  'Жидкости':'M10 3h4v4h-4z M10 7v3l-4 4v5a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-5l-4-4V7 M6 16h12',
-  'POD-системы':'M9 6V3h6v3 M8 6h8a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z M11 11h2m-1 4v2',
-  'Расходники':'M8 3h8l2 4H6l2-4z M7 7v11h10V7 M9 18v3h6v-3 M10 10v5m4-5v5',
-  'Энергетики':'M8 3h8l2 3v13l-2 2H8l-2-2V6l2-3z M6 7h12 M13 9l-4 5h4l-2 4',
-  'Снюс':'M4 9a8 4 0 1 0 16 0 8 4 0 1 0-16 0z M4 9v6a8 4 0 0 0 16 0V9 M10 8h4',
-  'Кальян':'M10 3h4m-2 0v9m-3 0h6l2 6a2 2 0 0 1-2 3H9a2 2 0 0 1-2-3l2-6z M15 13c4 0 3-6 6-6 M3 9h7',
-  'Прочие товары':'M6 7l6-4 6 4v13H6z M6 9h12 M9 13h6m-6 3h4',
- 'Одноразовые устройства':'M9 3h6v3H9z M8 6h8v12l-2 3h-4l-2-3z M11 16h2'
-};
-function categoryIcon(key, fallback='?'){
- const path=Object.hasOwn(categoryPaths,key)?categoryPaths[key]:'';
- return path?'<svg class="category-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="'+path+'"/></svg>':'<span aria-hidden="true">'+escapeHTML(fallback)+'</span>';
-}
-let categoryMeta={all:{icon:'✦',label:'Все',active:true,sortOrder:-1}};
+let categoryMeta={all:{id:'home',label:'Главное',active:true,sortOrder:-1}};
 const state={screen:'catalog',category:'all',brand:'all',sort:localStorage.getItem('violet-sort')||'featured',query:'',promotionGroups:[],categoryQuery:'',categorySearchOpen:false,cart:JSON.parse(localStorage.getItem('violet-cart')||'{}'),scroll:0,returnScreen:'catalog',returnScroll:0,selected:null,checkoutOpen:false,checkoutDate:'',checkoutMethod:'metro',paymentMethod:'cash',promoCode:localStorage.getItem('violet-promo-code')||'',appliedPromo:null,storeSettings:{metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,deliveryFee:0,minOrder:0,categories:{},promotions:[],analyticsEnabled:true}};
 const $=id=>document.getElementById(id);const ageGate=$('age-gate'),storeApp=$('store-app');
 function initAgeGate(){
@@ -268,7 +254,23 @@ function showNotice(text,type="success"){
  noticeTimer=setTimeout(()=>{notice.hidden=true;},type==="error"?5000:2500);
 }
 function setScreen(screen){if(state.screen==='orders'&&screen!=='orders'){$('order-confirmation').hidden=true;ordersRequest?.abort();}if(state.screen==='catalog')state.scroll=scrollY;state.screen=screen;for(const name of ['catalog','detail','promo','cart','orders'])$(name+'-screen').hidden=name!==screen;document.querySelectorAll('[data-screen]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.screen===screen)));telegram?.BackButton?.[screen==='detail'?'show':'hide']?.();render();scrollTo(0,screen==='catalog'?state.scroll:0);}
-function renderCategories(){const keys=Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999));$('categories').replaceChildren(...keys.map(key=>{const meta=categoryMeta[key];const button=document.createElement('button');button.className='category'+(meta.image?' has-image':'');button.title=meta.label;button.setAttribute('aria-label',meta.label);button.setAttribute('aria-pressed',String(state.category===key));if(meta.color)button.style.setProperty('--category-accent',meta.color);button.innerHTML=(meta.image?'<img class="category-image" src="'+escapeHTML(safeImageURL(meta.image))+'" alt="" loading="lazy">':'<span class="category-icon" aria-hidden="true"></span>')+'<small>'+escapeHTML(cleanUiText(meta.label))+'</small>';button.onclick=()=>{state.category=state.category===key?'all':key;trackEvent('category_filter',{category:state.category});renderCatalog({reset:true});};return button;}));}
+function renderCategories(){
+ const keys=['all',...Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999))];
+ $('categories').replaceChildren(...keys.map(key=>{
+  const meta=categoryMeta[key],isHome=key==='all';
+  const button=document.createElement('button');
+  button.type='button';button.className='category'+(meta.image?' has-image':'')+(isHome?' category-home':'');
+  button.title=isHome?'Главное':meta.label;
+  button.setAttribute('aria-label',button.title);
+  button.setAttribute('aria-pressed',String(state.category===key));
+  const image=safeImageURL(meta.image);
+  const symbol=isHome?'<svg class="category-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m3 11 9-8 9 8v9H3zM9 20v-6h6v6"/></svg>':
+     image?'<img class="category-image" src="'+escapeHTML(image)+'" alt="" loading="lazy">':'<span class="category-icon" aria-hidden="true"></span>';
+  button.innerHTML=symbol+'<small>'+escapeHTML(isHome?'Главное':cleanUiText(meta.label))+'</small>';
+  button.onclick=()=>{state.category=key;state.brand='all';state.query='';$('query').value='';trackEvent('category_filter',{category:key});renderCatalog({reset:true});};
+  return button;
+ }));
+}
 const normalizeSearch=value=>String(value??"").toLowerCase().replace(/ё/g,"е").replace(/[^a-zа-я0-9]+/g," ").trim();
 const LATIN_MAP={а:"a",б:"b",в:"v",г:"g",д:"d",е:"e",ж:"zh",з:"z",и:"i",й:"y",к:"k",л:"l",м:"m",н:"n",о:"o",п:"p",р:"r",с:"s",т:"t",у:"u",ф:"f",х:"kh",ц:"ts",ч:"ch",ш:"sh",щ:"shch",ъ:"",ы:"y",ь:"",э:"e",ю:"yu",я:"ya"};
 const EN_KEYS="qwertyuiop[]asdfghjkl;'zxcvbnm,.";
@@ -447,7 +449,7 @@ function renderCatalog({reset=false}={}){
  $('products').innerHTML='<div class="empty catalog-empty"><p>'+message+'</p>'+(syncSource==="google"?'<button class="btn" type="button" id="reset-filters">Сбросить фильтры</button>':"")+'</div>';
  if($('reset-filters'))$('reset-filters').onclick=resetFilters;
 }
-function art(item,option){const image=productImage(item,option);return image?'<img src="'+escapeHTML(image)+'" alt="'+escapeHTML(cleanUiText(item.name))+'" loading="lazy" referrerpolicy="no-referrer">':categoryIcon(item.category,item.icon);}
+function art(item,option){const image=productImage(item,option);return image?'<img src="'+escapeHTML(image)+'" alt="'+escapeHTML(cleanUiText(item.name))+'" loading="lazy" referrerpolicy="no-referrer">':'<span class="no-product-image">Фото отсутствует</span>';}
 function productImage(item,option){return safeImageURL(option?.image)||safeImageURL(item.image);}
 function openDetail(id,navigation={}){
  const item=productsById.get(id);if(!item)return;
