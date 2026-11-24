@@ -778,15 +778,15 @@ function renderCatalogProductResults(query=""){
  const products=state.catalogProducts.filter(product=>!normalized||[product.name,product.manufacturer,product.category].join(" ").toLowerCase().includes(normalized)).slice(0,80);
  $("catalog-product-results").innerHTML=products.length?products.map(product=>'<button type="button" class="catalog-product-result" data-catalog-product="'+esc(product.id)+'"><img src="'+esc(product.image||"")+'" alt=""><span><b>'+esc(product.name)+'</b><small>'+esc(product.category||"")+(product.manufacturer?" · "+esc(product.manufacturer):"")+'</small></span></button>').join(""):'<div class="empty">Ничего не найдено</div>';
  $("catalog-product-results").querySelectorAll("[data-catalog-product]").forEach(button=>button.onclick=()=>{
-  const product=state.catalogProducts.find(item=>item.id===button.dataset.catalogProduct);if(!product)return;
-  $("catalog-product-id").value=product.id;$("catalog-product-name").value=product.name||"";$("catalog-product-manufacturer").value=product.manufacturer||"";$("catalog-product-category").value=product.category||"";$("catalog-product-image").value=product.image||"";$("catalog-product-description").value=product.description||"";$("catalog-product-available").checked=product.available!==false;
-  $("catalog-product-modal").hidden=false;$("catalog-product-modal").setAttribute("aria-hidden","false");$("catalog-product-name").focus();
+   const url=$("edit-products-sheet").href;
+   if(url&&url!=="#")window.open(url,"_blank","noopener,noreferrer");
  });
 }
 async function loadCatalog(){
  const canManageCatalog=canPermission("catalog.manage");
  $("page-catalog").querySelectorAll("button,input,select").forEach(element=>{if(!element.closest(".catalog-tabbar"))element.disabled=!canManageCatalog;});
  $("page-catalog").querySelectorAll("form").forEach(form=>form.hidden=!canManageCatalog);
+ $("catalog-product-search").disabled=false;
  const [runs,settings,template,products]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template"),api("/api/admin/catalog/products")]);
  state.catalogProducts=products.products||[];renderCatalogProductResults($("catalog-product-search").value);
  const latest=runs.runs[0];state.catalogTemplate=template||{headers:[],columnMapping:{}};
