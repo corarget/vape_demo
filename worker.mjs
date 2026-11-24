@@ -3,32 +3,7 @@ import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestProm
 import { html } from "./site.mjs";
 import { adminHtml } from "./admin.mjs";
 
-const CATEGORY_ICON_BASE="https://cdn.jsdelivr.net/gh/corarget/vape_demo@9aff9b7a6eef57fb4541108defeb226fc2ecfdf1/assets/category-icons/";
-// Category asset URLs are stored as explicit HTTPS imageUrl values, not inline artwork.
-// The IDs remain exactly equal to product category keys from the catalog.
-const CATEGORY_ASSET_FILES={
-  beer:"beer.png",consumables:"consumables.png",disposable:"disposable-devices.png",
-  energy:"energy-drinks.png",hookah:"hookahs.png",liquids:"liquids.png",
-  pods:"pod-systems.png",snus:"snus.png",tobacco:"tobacco-products.png"
-};
-function defaultCategoryImage(key,label){
-  const value=(String(key||"")+" "+String(label||"")).toLowerCase().replace(/ё/g,"е");
-  const checks=[
-    ["beer",/(?:пиво|beer|пивн)/],
-    ["consumables",/(?:испарител|картридж|расходник|coil|cartridge|consumable)/],
-    ["disposable",/(?:однораз|disposable|одноразк)/],
-    ["energy",/(?:энергетик|energy|энергетическ)/],
-    ["hookah",/(?:кальян|hookah|shisha)/],
-    ["liquids",/(?:жидкост|жиж|liquid|salt|e-liquid)/],
-    ["pods",/(?:под-систем|под систем|поды|pod.system|pod device|pods)/],
-    ["snus",/(?:снюс|snus|никотинов.*пакет|nicotine pouch)/],
-    ["tobacco",/(?:табак|сигарет|tobacco|cigarette)/]
-  ];
-  const match=checks.find(([,pattern])=>pattern.test(value));
-  return match?CATEGORY_ICON_BASE+CATEGORY_ASSET_FILES[match[0]]:"";
-}
-
-const storefrontHtml=html.replaceAll("/assets/category-icons/liquids.svg",CATEGORY_ICON_BASE+"liquids.png").replaceAll("/assets/category-icons/pods.svg",CATEGORY_ICON_BASE+"pod-systems.png").replaceAll("/assets/category-icons/consumables.svg",CATEGORY_ICON_BASE+"consumables.png").replaceAll("/assets/category-icons/energy.svg",CATEGORY_ICON_BASE+"energy-drinks.png").replaceAll("/assets/category-icons/hookah.svg",CATEGORY_ICON_BASE+"hookahs.png").replaceAll("/assets/category-icons/disposable.svg",CATEGORY_ICON_BASE+"disposable-devices.png");
+const storefrontHtml=html;
 const VERSION = "2.7.0";
 const COOKIE = "violet_staff";
 const SESSION_DAYS = 30;
@@ -481,6 +456,7 @@ async function getCatalogConfig(env){
     spreadsheetId:String(saved.spreadsheetId||env.GOOGLE_SHEET_ID||""),
     catalogGid:String(saved.catalogGid||env.GOOGLE_CATALOG_GID||""),
     cacheSeconds:Math.max(60,Math.min(240,Number(saved.cacheSeconds)||90)),
+    categoriesGid:String(saved.categoriesGid||env.GOOGLE_CATEGORIES_GID||""),
     columnMapping:saved.columnMapping&&typeof saved.columnMapping==="object"?saved.columnMapping:{}
   };
 }
@@ -491,18 +467,6 @@ async function syncCatalog(env){
     const catalogConfig=await getCatalogConfig(env);
     if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
     const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
-    const edits=await getSetting(env,"catalog_product_edits",{});
-    for(const product of payload.products){
-      const edit=edits[product.id];
-      if(!edit)continue;
-      for(const key of ["name","manufacturer","category","image","description"]){
-        if(Object.prototype.hasOwnProperty.call(edit,key))product[key]=edit[key];
-      }
-      if(Object.prototype.hasOwnProperty.call(edit,"available")){
-        product.available=edit.available;
-        if(!edit.available)for(const option of product.options)option.available=false;
-      }
-    }
     const details={fields:payload.fields,source:payload.source,categories:payload.categories||[...new Set(payload.products.map(product=>product.category).filter(Boolean))].map(key=>({key,label:key,image:"",icon:"?"}))};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
       [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
@@ -572,7 +536,7 @@ async function catalogResponse(request,env,ctx){
   const config=await getCatalogConfig(env);
   const cacheUrl=new URL("/api/catalog",request.url);
   cacheUrl.searchParams.set("version",VERSION);
-  cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.columnMapping,await getPromotions(env),await getSetting(env,"catalog_product_edits",{})])));
+  cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.columnMapping,await getPromotions(env)]])));
   const cacheKey=new Request(cacheUrl,{method:"GET"});
   const cached=await cache.match(cacheKey);
   const force=new URL(request.url).searchParams.has("refresh");
@@ -867,29 +831,37 @@ async function demoStaffLogin(request,env){
   await logSystem(env,"info","auth","Вход демо-администратора",{staffId:owner.id});
   return json({success:true,staff:{id:owner.id,name:owner.display_name,role:"owner",permissions:PERMISSION_KEYS}},200,{"Set-Cookie":cookieHeader(token)});
 }
+// Categories are read solely from the Categories tab. D1 is not a category database.
 async function sourceCategories(env){
-  const latest=await first(env,"SELECT details_json FROM sync_runs WHERE status='success' ORDER BY started_at DESC LIMIT 1");
-  let categories=[];
-  try{categories=JSON.parse(latest?.details_json||"{}").categories||[];}catch{}
-  return categories.map((item,index)=>typeof item==="string"?{key:item,label:item,image:"",icon:"",color:"#D8DDE0",sortOrder:index}:{key:String(item.key||item.label||"Другое"),label:String(item.label||item.key||"Другое"),image:String(item.image||""),icon:String(item.icon||""),color:"#D8DDE0",sortOrder:index});
-}
-async function categorySettings(env){
-  const [source,saved]=await Promise.all([sourceCategories(env),getSetting(env,"category_config",{})]);
-  const result={};
-  source.forEach((category,index)=>{
-    const override=saved[category.key]||{};
-    if(override.deleted===true)return;
-    result[category.key]={key:category.key,id:category.key,label:override.label??category.label,name:override.label??category.label,image:override.image??category.image??"",imageUrl:override.image??category.image??"",icon:override.icon??category.icon,color:override.color??category.color,active:override.active!==false,description:override.description??"",showDescription:override.showDescription===true,sortOrder:override.sortOrder??index,sourceLabel:category.label,sourceImage:category.image,custom:false};
-  });
-  Object.entries(saved).forEach(([key,override],index)=>{
-    if(result[key]||override?.deleted===true)return;
-    result[key]={key,id:key,label:override.label||key,name:override.label||key,image:override.image||"",imageUrl:override.image||"",icon:override.icon||"",color:override.color||"#D8DDE0",active:override.active!==false,description:override.description||"",showDescription:override.showDescription===true,sortOrder:Number.isFinite(Number(override.sortOrder))?Number(override.sortOrder):source.length+index,sourceLabel:"Добавлена вручную",sourceImage:"",custom:true};
-  });
-  for(const category of Object.values(result)){
-    const image=category.image||defaultCategoryImage(category.key,category.label);
-    category.image=image;category.imageUrl=image;category.id=category.key;category.name=category.label;
+  const config=await getCatalogConfig(env);
+  const gid=String(config.categoriesGid||env.GOOGLE_CATEGORIES_GID||"");
+  if(!config.spreadsheetId||!/^\d+$/.test(gid))throw new Error("Подключите вкладку «Категории» Google Sheets");
+  const url="https://docs.google.com/spreadsheets/d/"+encodeURIComponent(config.spreadsheetId)+"/export?format=csv&gid="+gid;
+  const response=await fetch(url,{headers:{Accept:"text/csv"},signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw new Error("Не удалось прочитать вкладку «Категории»: HTTP "+response.status);
+  const rows=parseCSV(await response.text());
+  const header=(rows.shift()||[]).map(v=>String(v).trim().toLowerCase());
+  const col=key=>header.indexOf(key);
+  if(col("id")<0||col("name")<0||col("image_url")<0)throw new Error("Вкладка «Категории»: нужны колонки id, name, image_url");
+  const result=[];
+  const seen=new Set();
+  for(const [index,row] of rows.entries()){
+    const key=String(row[col("id")]||"").trim();
+    if(!key||seen.has(key))continue;
+    seen.add(key);
+    const label=String(row[col("name")]||key).trim();
+    const rawImage=String(row[col("image_url")]||"").trim();
+    const image=/^https:\/\//i.test(rawImage)?rawImage:"";
+    const rawActive=col("active")>=0?String(row[col("active")]||"").toLowerCase():"true";
+    const active=!["false","0","нет","no"].includes(rawActive);
+    const rawSort=col("sort_order")>=0?Number(row[col("sort_order")]):index;
+    result.push({key,id:key,label,name:label,image,imageUrl:image,active,sortOrder:Number.isFinite(rawSort)?rawSort:index,icon:"",color:"#D8DDE0",sourceLabel:label,sourceImage:image});
   }
   return result;
+}
+async function categorySettings(env){
+  const categories=await sourceCategories(env);
+  return Object.fromEntries(categories.map(c=>[c.key,c]));
 }
 async function getPromotions(env){
   const defaults=env.DEMO_ADMIN_USERNAME&&env.DEMO_ADMIN_PASSWORD?DEMO_PROMOTIONS:[];
@@ -1132,37 +1104,7 @@ export default {
           return json({categories:Object.values(await categorySettings(env))});
         }
         if(path==="/api/admin/categories"&&request.method==="PUT"){
-          const body=await bodyJson(request);
-          if(!Array.isArray(body?.categories)||body.categories.length>200)return json({error:"Некорректный список категорий"},400);
-          const sourceRows=await sourceCategories(env);
-          const sourceMap=new Map(sourceRows.map(category=>[category.key,category]));
-          const incomingKeys=new Set(body.categories.map(item=>String(item?.id||item?.key||"").trim()).filter(Boolean));
-          const config={};
-          for(const source of sourceRows)if(!incomingKeys.has(source.key))config[source.key]={deleted:true};
-          for(const [index,item] of body.categories.entries()){
-            const key=String(item?.id||item?.key||"").trim().slice(0,100);
-            if(!key)continue;
-            const source=sourceMap.get(key)||{label:key,image:"",icon:"",color:"#D8DDE0",sortOrder:index};
-            const label=String(item.name||item.label||source.label||key).trim().slice(0,80);
-            const image=String(item.imageUrl??item.image??"").trim().slice(0,500);
-            const icon=String(item.icon||source.icon||"").trim().slice(0,48);
-            const description=String(item.description||"").trim().slice(0,300);
-            const color=String(item.color||source.color||"#D8DDE0");
-            const override={};
-            if(!sourceMap.has(key)||label!==source.label)override.label=label;
-            if(image!==source.image)override.image=/^https:\/\//i.test(image)?image:"";
-            if(icon!==source.icon)override.icon=icon;
-            if(description)override.description=description;
-            if(item.showDescription===true)override.showDescription=true;
-            if(/^#[0-9a-f]{6}$/i.test(color)&&color!==source.color)override.color=color;
-            if(item.active===false)override.active=false;
-            const rawSortOrder=Number(item.sortOrder);const sortOrder=Math.max(0,Math.min(999,Number.isFinite(rawSortOrder)?rawSortOrder:index));
-            if(!sourceMap.has(key)||sortOrder!==source.sortOrder)override.sortOrder=sortOrder;
-            config[key]=override;
-          }
-          await setSetting(env,"category_config",config,staff.id);
-          await logSystem(env,"info","catalog","Обновлены настройки категорий",{count:Object.keys(config).length,staffId:staff.id});
-          return json({success:true,categories:config});
+          return json({error:"Изменения категорий вносятся во вкладке «Категории» Google Sheets. Изолированное сохранение в D1 отключено."},409);
         }
         if(path==="/api/admin/catalog-preview"&&request.method==="GET"){
           const config=await getCatalogConfig(env);
@@ -1438,26 +1380,7 @@ export default {
           return json({products:publicCatalog(payload).products});
         }
         if(path==="/api/admin/catalog/products"&&request.method==="PUT"){
-          const body=await bodyJson(request);
-          const id=String(body?.productId||"").trim();
-          if(!id||id.length>250)return json({error:"Некорректный ID товара"},400);
-          const payload=await syncCatalog(env);
-          if(!payload.products.some(product=>product.id===id))return json({error:"Товар не найден в каталоге"},404);
-          const edited={
-            name:String(body.name||"").trim().slice(0,160),
-            manufacturer:String(body.manufacturer||"").trim().slice(0,160),
-            category:String(body.category||"").trim().slice(0,160),
-            image:String(body.image||"").trim().slice(0,500),
-            description:String(body.description||"").trim().slice(0,600),
-            available:body.available!==false
-          };
-          if(!edited.name||!edited.category)return json({error:"Название и категория обязательны"},400);
-          if(edited.image&&!/^https:\/\//i.test(edited.image))return json({error:"Фото должно иметь HTTPS-ссылку"},400);
-          const overrides=await getSetting(env,"catalog_product_edits",{});
-          overrides[id]=edited;
-          await setSetting(env,"catalog_product_edits",overrides,staff.id);
-          await logSystem(env,"info","catalog","Товар отредактирован",{id,staffId:staff.id});
-          return json({success:true,productId:id});
+          return json({error:"Товары редактируются в Google Sheets. Независимое сохранение вне таблицы отключено."},409);
         }
         if(path==="/api/admin/sync-settings"&&request.method==="GET")return json(await getCatalogConfig(env));
         if(path==="/api/admin/sync-settings"&&request.method==="PUT"){
@@ -1467,8 +1390,9 @@ export default {
           const catalogGid=String(body?.catalogGid||current.catalogGid).trim();
           const cacheSeconds=Math.max(60,Math.min(240,Number(body?.cacheSeconds)||current.cacheSeconds));
           const columnMapping=body?.columnMapping&&typeof body.columnMapping==="object"?body.columnMapping:current.columnMapping||{};
+          const categoriesGid=String(body?.categoriesGid||current.categoriesGid||"");
           if(!/^[A-Za-z0-9_-]{20,}$/.test(spreadsheetId)||!/^\d+$/.test(catalogGid))return json({error:"Проверьте ID таблицы и GID листа"},400);
-          await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,cacheSeconds,columnMapping},staff.id);
+          await setSetting(env,"catalog_config",{spreadsheetId,catalogGid,categoriesGid,cacheSeconds,columnMapping},staff.id);
           await caches.default.delete(new Request(new URL("/api/catalog",request.url).toString(),{method:"GET"}));
           await logSystem(env,"info","catalog","Изменены настройки источника каталога",{spreadsheetId,catalogGid,cacheSeconds});
           return json({success:true,settings:{spreadsheetId,catalogGid,cacheSeconds,columnMapping}});
