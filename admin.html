@@ -533,6 +533,9 @@ function setPage(page){
  history.replaceState(null,"",page==="courier"?"/courier":page==="overview"?"/admin":"/admin#"+page);
  loadPage(page);
 }
+document.querySelectorAll(".catalog-tabbar [data-page]").forEach(button=>{
+ button.onclick=()=>setPage(button.dataset.page);
+});
 function navForRole(){
  const courier=state.staff.role==="courier";
  $("side-nav").innerHTML=courier?navButton(["courier","Мои доставки"]):navGroups.map((group,index)=>{
