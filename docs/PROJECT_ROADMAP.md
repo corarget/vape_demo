@@ -340,6 +340,8 @@
 
 | 2026-11-25 | Этап 8: эксплуатация, smoke, backup/restore и финальная техническая приёмка | commit этапа 8; release:check | staging через Workers Builds |
 
+| 2026-11-25 | Пересборка UI по glass workspace референсу | shared glass skin + regression tests | staging через Workers Builds |
+
 ### Формат записи для будущих изменений
 
 ```md
