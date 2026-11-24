@@ -18,6 +18,17 @@ const STATUS_LABELS = {
 };
 const ACTIVE_STATUSES = ["new","confirmed","preparing","ready","assigned","picked_up","on_the_way"];
 
+async function storeConfigRevision(env){
+  const row=await first(env,"SELECT updated_at FROM settings WHERE key='store_config'");
+  return row?.updated_at||"";
+}
+async function saveStoreConfig(env,value,staffId,expectedRevision){
+  const revision=now();
+  const result=await run(env,"UPDATE settings SET value_json=?,updated_at=?,updated_by=? WHERE key='store_config' AND updated_at=?",
+    [JSON.stringify(value),revision,staffId,String(expectedRevision||"")]);
+  return result.meta?.changes?revision:null;
+}
+
 function normalizePromoCode(value){return String(value||"").trim().toUpperCase().replace(/\s+/g,"");}
 function normalizePromocode(input,id){
   const code=normalizePromoCode(input?.code),title=String(input?.title||"").trim().slice(0,80);
@@ -1021,7 +1032,7 @@ export default {
           return json({success:true,order:adminOrder(order)});
         }
         if(path==="/api/admin/branding"&&request.method==="GET"){
-          return json(storefrontAppearance(await getConfig(env)));
+          return json({...storefrontAppearance(await getConfig(env)),_revision:await storeConfigRevision(env)});
         }
         if(path==="/api/admin/branding"&&request.method==="PUT"){
           const body=await bodyJson(request);
@@ -1037,9 +1048,10 @@ export default {
           next.storefrontLayout=sanitizeStorefrontLayout(body.storefrontLayout,current.storefrontLayout);
           if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
           next.analyticsEnabled=next.analyticsEnabled!==false;
-          await setSetting(env,"store_config",next,staff.id);
+          const revision=await saveStoreConfig(env,next,staff.id,body._revision);
+          if(!revision)return json({error:"Настройки уже изменились другим сотрудником. Обновите страницу и повторите действие."},409);
           await logSystem(env,"info","branding","Обновлён интерфейс витрины",{staffId:staff.id});
-          return json({success:true,settings:storefrontAppearance(next)});
+          return json({success:true,settings:{...storefrontAppearance(next),_revision:revision}});
         }
         if(path==="/api/admin/schedule-settings"&&request.method==="GET"){
           const config=await getConfig(env);
@@ -1064,14 +1076,16 @@ export default {
           next.leadMinutes=bounded(body.leadMinutes,current.leadMinutes,0,1440);
           next.daysAhead=bounded(body.daysAhead,current.daysAhead,1,30);
           next.slotCapacity=bounded(body.slotCapacity,current.slotCapacity,1,100);
-          await setSetting(env,"store_config",next,staff.id);
+          const revision=await saveStoreConfig(env,next,staff.id,body._revision);
+          if(!revision)return json({error:"Настройки уже изменились другим сотрудником. Обновите страницу и повторите действие."},409);
           await logSystem(env,"info","schedule","Обновлено расписание магазина",{staffId:staff.id});
-          return json({success:true,settings:{weeklyHours:next.weeklyHours,slotMinutes:next.slotMinutes,leadMinutes:next.leadMinutes,daysAhead:next.daysAhead,slotCapacity:next.slotCapacity}});
+          return json({success:true,settings:{weeklyHours:next.weeklyHours,slotMinutes:next.slotMinutes,leadMinutes:next.leadMinutes,daysAhead:next.daysAhead,slotCapacity:next.slotCapacity,_revision:revision}});
         }
         if(path==="/api/admin/settings"&&request.method==="GET"){
           const config={...await getConfig(env)};
           if(!hasPermission(staff,"schedule"))for(const key of ["weeklyHours","slotMinutes","leadMinutes","daysAhead","slotCapacity"])delete config[key];
           if(!hasPermission(staff,"branding"))for(const key of ["brandTagline","logoUrl","heroTitle","heroSubtitle","theme","defaultSort","analyticsEnabled"])delete config[key];
+          config._revision=await storeConfigRevision(env);
           return json(config);
         }
         if(path==="/api/admin/settings"&&request.method==="PUT"){
@@ -1116,9 +1130,10 @@ export default {
           next.theme=sanitizeTheme(body.theme||{},current.theme);
           if(!["featured","analytics","price-asc","price-desc","name","brand"].includes(next.defaultSort))next.defaultSort="featured";
           next.analyticsEnabled=next.analyticsEnabled!==false;
-          await setSetting(env,"store_config",next,staff.id);
+          const revision=await saveStoreConfig(env,next,staff.id,body._revision);
+          if(!revision)return json({error:"Настройки уже изменились другим сотрудником. Обновите страницу и повторите действие."},409);
           await logSystem(env,"info","settings","Настройки магазина обновлены",{staffId:staff.id});
-          return json({success:true,settings:next});
+          return json({success:true,settings:{...next,_revision:revision}});
         }
         if(path==="/api/admin/slot-blocks"&&request.method==="GET"){
           return json({blocks:await all(env,"SELECT * FROM slot_blocks ORDER BY slot_date,start_time LIMIT 200")});
