@@ -1,0 +1,22 @@
+(()=>{"use strict";
+if(window.__sharedUxReady)return;window.__sharedUxReady=true;
+const ready=fn=>document.readyState==="loading"?document.addEventListener("DOMContentLoaded",fn,{once:true}):fn();
+ready(()=>{
+ const main=document.querySelector("main,[role=main],#app")||document.body;
+ if(main!==document.body&&!main.id)main.id="main-content";
+ if(main!==document.body&&!main.hasAttribute("tabindex"))main.tabIndex=-1;
+ const skip=document.createElement("a");skip.className="skip-link";skip.href="#"+(main.id||"main-content");skip.textContent="Перейти к содержимому";document.body.prepend(skip);
+ const live=document.createElement("div");live.className="ux-sr";live.setAttribute("role","status");live.setAttribute("aria-live","polite");live.setAttribute("aria-atomic","true");document.body.append(live);
+ const progress=document.createElement("div");progress.className="ux-progress";progress.setAttribute("aria-hidden","true");document.body.append(progress);
+ const network=document.createElement("div");network.className="ux-network";network.setAttribute("role","status");document.body.append(network);
+ let pending=0,timer=0;
+ const update=()=>{clearTimeout(timer);if(pending>0){timer=setTimeout(()=>progress.dataset.active="true",180)}else{progress.dataset.active="false"}};
+ const originalFetch=window.fetch.bind(window);
+ window.fetch=async(...args)=>{pending++;update();try{return await originalFetch(...args)}finally{pending=Math.max(0,pending-1);update()}};
+ const connectivity=()=>{const offline=!navigator.onLine;network.textContent=offline?"Нет соединения. Изменения могут не сохраниться.":"Соединение восстановлено.";network.dataset.visible="true";live.textContent=network.textContent;clearTimeout(network._hide);if(!offline)network._hide=setTimeout(()=>network.dataset.visible="false",2600)};
+ addEventListener("offline",connectivity);addEventListener("online",connectivity);if(!navigator.onLine)connectivity();
+ document.querySelectorAll("img").forEach(img=>{if(!img.hasAttribute("decoding"))img.decoding="async";if(!img.hasAttribute("loading")&&!img.closest("[data-hero]"))img.loading="lazy";if(!img.hasAttribute("alt"))img.alt=""});
+ document.querySelectorAll("[role=dialog],dialog").forEach(dialog=>{if(!dialog.hasAttribute("aria-modal"))dialog.setAttribute("aria-modal","true")});
+ document.querySelectorAll("nav").forEach((nav,index)=>{if(!nav.hasAttribute("aria-label")&&!nav.hasAttribute("aria-labelledby"))nav.setAttribute("aria-label",index?"Дополнительная навигация":"Основная навигация")});
+});
+})();

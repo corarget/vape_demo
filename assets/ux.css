@@ -1,0 +1,16 @@
+:root{--ux-focus:#8ab4ff;--ux-danger:#ff8a8a;--ux-safe:#91d5a4;--ux-bar:3px}
+.skip-link{position:fixed;z-index:100000;left:12px;top:12px;transform:translateY(-180%);padding:10px 14px;border-radius:10px;background:#f4f7fb;color:#111;text-decoration:none;font:600 14px/1.2 Inter,system-ui,sans-serif;box-shadow:0 8px 28px #0006}
+.skip-link:focus{transform:none}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid var(--ux-focus)!important;outline-offset:3px!important}
+:where(button,[role="button"],a,input,select,textarea){touch-action:manipulation}
+.ux-progress{position:fixed;z-index:99999;inset:0 0 auto;height:var(--ux-bar);pointer-events:none;opacity:0;background:linear-gradient(90deg,var(--ux-focus),#d9e7ff,var(--ux-focus));background-size:200% 100%;transition:opacity .16s}
+.ux-progress[data-active="true"]{opacity:1;animation:ux-progress 1s linear infinite}
+.ux-network{position:fixed;z-index:99998;left:50%;bottom:max(16px,env(safe-area-inset-bottom));translate:-50% 16px;max-width:min(92vw,520px);padding:10px 14px;border:1px solid #ffffff24;border-radius:12px;background:#211;color:#fff;box-shadow:0 12px 32px #0008;font:600 14px/1.35 Inter,system-ui,sans-serif;opacity:0;pointer-events:none;transition:.2s}
+.ux-network[data-visible="true"]{opacity:1;translate:-50% 0}
+.ux-sr{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+:where(img){max-width:100%;height:auto}
+@keyframes ux-progress{to{background-position:-200% 0}}
+@media(max-width:720px){:where(button,[role="button"],input,select){min-height:44px}.skip-link{left:8px;top:8px}.ux-network{bottom:max(12px,env(safe-area-inset-bottom))}}
+@media(min-width:1280px){:where(main,[role="main"]){scroll-margin-top:24px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+@media(forced-colors:active){:where(a,button,input,select,textarea,[tabindex]):focus-visible{outline:3px solid CanvasText!important}.ux-progress{background:Highlight}}
