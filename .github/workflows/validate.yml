@@ -18,4 +18,6 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run embed
+      - run: git diff --exit-code -- site.mjs admin.mjs
       - run: node --check worker.mjs
+      - run: node --check catalog.mjs
