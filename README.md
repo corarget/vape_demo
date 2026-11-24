@@ -50,3 +50,7 @@ npm run dev
 - Старый документ [WHITE_LABEL_SETUP.md](docs/WHITE_LABEL_SETUP.md) описывает предполагаемый процесс, а не проверенную готовность.
 
 См. [инвентаризацию этапа 1](docs/STAGE_1.md), [контракт данных](docs/DATA_MODEL.md) и [аудит этапа 2](docs/STAGE_2.md).
+
+## Эксплуатация
+
+Релизы, smoke-проверка, резервное копирование, восстановление и откат описаны в [docs/RUNBOOK.md](docs/RUNBOOK.md).

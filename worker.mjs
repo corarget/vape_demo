@@ -1,5 +1,5 @@
 import { COOKIE, json, textResponse, parseCookie, cookieHeader, clearCookie, validOrigin, bodyJson } from "./lib/http.mjs";
-import { now, randomId, randomToken, sha256, safeEqual } from "./lib/crypto.mjs";
+import { now, randomId, randomToken, sha256, safeEqual } from "./lib/crypto.mjs";\nimport { operationalEvent } from "./lib/operational-safety.mjs";
 import { first, all, run, logSystem, getSetting, setSetting } from "./lib/db.mjs";
 import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStorefrontLayout, storefrontAppearance, sanitizeAdminAppearance, getConfig } from "./lib/config.mjs";
 import { PERMISSION_KEYS, normalizePermissions, permissionsFromStorage, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
@@ -1244,7 +1244,7 @@ export default {
       return json({error:"Not found"},404);
     }catch(error){
       // Request paths and exception text can contain customer data or credentials.
-      console.error("worker_request_failed");
+      console.error(JSON.stringify(operationalEvent("worker_request_failed")));
       await logSystem(env,"error","api","Необработанная ошибка API",{});
       return json({error:"Внутренняя ошибка сервера"},500);
     }

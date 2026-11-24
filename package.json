@@ -1,6 +1,6 @@
 {
   "name": "violet-shop-demo",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -18,7 +18,11 @@
     "test:migrations": "node scripts/test-migrations.mjs",
     "check:build": "wrangler deploy --dry-run --outdir .wrangler/build",
     "audit:data": "node scripts/audit-data.mjs",
-    "verify": "npm run embed && npm test && npm run test:migrations && npm run check:build"
+    "verify": "npm run embed && npm test && npm run test:migrations && npm run check:build",
+    "smoke": "node scripts/smoke-test.mjs",
+    "backup:d1": "node scripts/backup-d1.mjs",
+    "release:contract": "node scripts/release-check.mjs",
+    "release:check": "npm run verify && npm run release:contract"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
