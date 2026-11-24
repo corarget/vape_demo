@@ -576,7 +576,7 @@ async function boot(){
   $("staff-name").textContent=state.staff.name;$("staff-role").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
   $("role-pill").textContent=state.staff.role==="owner"?"Владелец":state.staff.role==="manager"?"Менеджер":"Курьер";
   navForRole();
-  if(state.staff.role!=="courier"){try{await loadAdminAppearance();}catch{}const firstPage=pages.find(([page])=>canOpenPage(page))?.[0]||"overview";setPage(canOpenPage(location.hash.slice(1))?location.hash.slice(1):firstPage);}
+  if(state.staff.role!=="courier"){if(canPermission("branding")){try{await loadAdminAppearance();}catch{}}const firstPage=pages.find(([page])=>canOpenPage(page))?.[0]||"overview";setPage(canOpenPage(location.hash.slice(1))?location.hash.slice(1):firstPage);}
  }catch{$("login-view").classList.remove("hidden");$("app-view").classList.add("hidden");$("mobile-nav").classList.add("hidden");}
 }
 $("login-form").onsubmit=async e=>{
