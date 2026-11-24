@@ -844,18 +844,21 @@ async function sourceCategories(env){
   const col=key=>header.indexOf(key);
   if(col("id")<0||col("name")<0||col("image_url")<0)throw new Error("Вкладка «Категории»: нужны колонки id, name, image_url");
   const result=[];
-  const seen=new Set();
+  const seen=new Set(),productKeys=new Set();
   for(const [index,row] of rows.entries()){
-    const key=String(row[col("id")]||"").trim();
-    if(!key||seen.has(key))continue;
-    seen.add(key);
-    const label=String(row[col("name")]||key).trim();
+    const id=String(row[col("id")]||"").trim();
+    const name=String(row[col("name")]||"").trim();
+    const key=String(row[col("product_category")]||name).trim();
+    if(!id&&!name&&!key)continue;
+    if(!id||!name||!key||id===name||seen.has(id)||productKeys.has(key))
+      throw new Error("Категории: некорректный или повторяющийся ID / категория в строке "+(index+2));
+    seen.add(id);productKeys.add(key);
     const rawImage=String(row[col("image_url")]||"").trim();
     const image=/^https:\/\//i.test(rawImage)?rawImage:"";
     const rawActive=col("active")>=0?String(row[col("active")]||"").toLowerCase():"true";
     const active=!["false","0","нет","no"].includes(rawActive);
     const rawSort=col("sort_order")>=0?Number(row[col("sort_order")]):index;
-    result.push({key,id:key,label,name:label,image,imageUrl:image,active,sortOrder:Number.isFinite(rawSort)?rawSort:index,icon:"",color:"#D8DDE0",sourceLabel:label,sourceImage:image});
+    result.push({key,id,label:name,name,image,imageUrl:image,active,sortOrder:Number.isFinite(rawSort)?rawSort:index,sourceCategory:key,sourceLabel:name,sourceImage:image});
   }
   return result;
 }
