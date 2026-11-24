@@ -862,6 +862,9 @@ export default {
         const requiredPermission=permissionForAdminRoute(path,request.method);
         if(!requiredPermission)return json({error:"Маршрут не найден"},404);
         if(!hasPermission(staff,requiredPermission))return json({error:"Недостаточно прав для этого действия"},403);
+        if(path==="/api/admin/appearance"&&request.method==="GET"){
+          return json({appearance:sanitizeAdminAppearance(await getSetting(env,"admin_appearance",DEFAULT_ADMIN_APPEARANCE))});
+        }
         if(path==="/api/admin/promotions"&&request.method==="GET")return json({promotions:await getPromotions(env)});
         if(path==="/api/admin/promotions"&&request.method==="PUT"){
           const body=await bodyJson(request);
