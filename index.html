@@ -219,7 +219,7 @@ textarea{resize:vertical}
   <section id="detail-screen" class="detail" hidden><button class="back" id="back">← Назад в каталог</button><div id="detail"></div></section>
   <section id="promo-screen" hidden><h1 class="screen-title">Акции</h1><div id="promo-offers" class="promo-offers"></div><div id="promo-products"></div><div id="promo-empty" class="empty"><div class="promo-empty-mark">✦</div><strong>Акций пока нет</strong><p class="muted promo-empty-copy">Здесь появятся специальные предложения магазина.</p></div></section>
   <section id="cart-screen" hidden><h1 class="screen-title">Корзина</h1><div id="cart"></div></section>
-  <section id="orders-screen" hidden><h1 class="screen-title">Мои заказы</h1><div id="order-confirmation" class="panel order-success" hidden></div><div id="orders"></div><details class="panel order-recovery" id="order-recovery" hidden><summary>Найти заказ по коду</summary><form id="order-recovery-form" class="checkout-form"><label>Код из подтверждения заказа<input name="code" required minlength="24" maxlength="24" pattern="[A-Fa-f0-9]{24}" autocomplete="off" spellcheck="false"></label><button class="btn" type="submit">Найти заказ</button></form></details></section>
+  <section id="orders-screen" hidden><h1 class="screen-title" tabindex="-1">Мои заказы</h1><div id="order-confirmation" class="panel order-success" hidden></div><div id="orders"></div><details class="panel order-recovery" id="order-recovery" hidden><summary>Найти заказ по коду</summary><form id="order-recovery-form" class="checkout-form"><label>Код из подтверждения заказа<input name="code" required minlength="24" maxlength="24" pattern="[A-Fa-f0-9]{24}" autocomplete="off" spellcheck="false"></label><button class="btn" type="submit">Найти заказ</button></form></details></section>
 </main>
 <nav class="bottom" id="bottom-nav" aria-label="Основная навигация" hidden>
   <button data-screen="catalog" aria-pressed="true"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l8-6 8 6v10H4zm5 10v-6h6v6"/></svg>Каталог</button>
@@ -232,28 +232,42 @@ textarea{resize:vertical}
 let products=[];let syncSource='loading';
 const iconPool=['?','?','?','?','?','?','?','?'];
 let categoryMeta={all:{id:'home',label:'Главное',active:true,sortOrder:-1}};
-const state={screen:'catalog',category:'all',brand:'all',sort:localStorage.getItem('violet-sort')||'featured',query:'',promotionGroups:[],categoryQuery:'',categorySearchOpen:false,cart:JSON.parse(localStorage.getItem('violet-cart')||'{}'),scroll:0,returnScreen:'catalog',returnScroll:0,selected:null,checkoutOpen:false,checkoutDate:'',checkoutMethod:'metro',paymentMethod:'cash',promoCode:localStorage.getItem('violet-promo-code')||'',appliedPromo:null,storeSettings:{metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,deliveryFee:0,minOrder:0,categories:{},promotions:[],analyticsEnabled:true}};
+function guardedStorage(name){
+ const memory=new Map();
+ const unavailable=new Set();
+ return {
+  getItem(key){if(unavailable.has(key))return memory.get(key)??null;try{return window[name].getItem(key);}catch{return memory.get(key)??null;}},
+  setItem(key,value){memory.set(key,String(value));try{window[name].setItem(key,String(value));unavailable.delete(key);}catch{unavailable.add(key);}},
+  removeItem(key){memory.delete(key);try{window[name].removeItem(key);unavailable.delete(key);}catch{unavailable.add(key);}}
+ };
+}
+const localStore=guardedStorage("localStorage"),sessionStore=guardedStorage("sessionStorage");
+function readStoredCart(){
+ try{const value=JSON.parse(localStore.getItem('violet-cart')||'{}');return value&&typeof value==='object'&&!Array.isArray(value)?value:{};}catch{return {};}
+}
+const state={screen:'catalog',category:'all',brand:'all',sort:localStore.getItem('violet-sort')||'featured',query:'',promotionGroups:[],categoryQuery:'',categorySearchOpen:false,cart:readStoredCart(),scroll:0,returnScreen:'catalog',returnScroll:0,selected:null,checkoutOpen:false,checkoutDate:'',checkoutMethod:'metro',paymentMethod:'cash',promoCode:localStore.getItem('violet-promo-code')||'',appliedPromo:null,storeSettings:{metroEnabled:true,pickupEnabled:true,deliveryEnabled:false,deliveryFee:0,minOrder:0,categories:{},promotions:[],analyticsEnabled:true}};
 const $=id=>document.getElementById(id);const ageGate=$('age-gate'),storeApp=$('store-app');
 function initAgeGate(){
- const canEnter=state.storeSettings.ageGateEnabled===false||localStorage.getItem("violet-age-confirmed")==="yes";
+ const canEnter=sessionStore.getItem("violet-age-declined")!=="yes"&&(state.storeSettings.ageGateEnabled===false||localStore.getItem("violet-age-confirmed")==="yes");
  ageGate.hidden=canEnter;storeApp.hidden=!canEnter;$('bottom-nav').hidden=!canEnter;
- if(!canEnter&&sessionStorage.getItem("violet-age-declined")==="yes")showAgeDeclined();
+ if(!canEnter&&sessionStore.getItem("violet-age-declined")==="yes")showAgeDeclined();
+ if(!canEnter){const focus=$('age-confirm').hidden?$('age-gate-title'):$('age-confirm');focus.setAttribute('tabindex',focus.tagName==='BUTTON'?'0':'-1');focus.focus();}
 }
 function showAgeDeclined(){
-  $('age-gate-title').textContent="Возраст подтверждён";
+  $('age-gate-title').textContent="Доступ ограничен";
   $('age-gate-copy').textContent="Просмотр каталога доступен только совершеннолетним пользователям.";
  $('age-confirm').hidden=true;$('age-decline').hidden=true;
 }
-$('age-confirm').onclick=()=>{localStorage.setItem("violet-age-confirmed","yes");initAgeGate();};
-$('age-decline').onclick=()=>{sessionStorage.setItem("violet-age-declined","yes");showAgeDeclined();};
-const money=n=>(Number(n||0)/100).toFixed(2).replace('.',',')+' BYN';const cleanUiText=value=>String(value??'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu,'').replace(/\s{2,}/g,' ').trim();const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));const safeImageURL=value=>{try{const url=new URL(value);return url.protocol==='https:'?url.href:'';}catch{return '';}};const save=()=>{localStorage.setItem('violet-cart',JSON.stringify(state.cart));};
+$('age-confirm').onclick=()=>{localStore.setItem("violet-age-confirmed","yes");initAgeGate();};
+$('age-decline').onclick=()=>{localStore.removeItem("violet-age-confirmed");sessionStore.setItem("violet-age-declined","yes");initAgeGate();};
+const money=n=>(Number(n||0)/100).toFixed(2).replace('.',',')+' BYN';const cleanUiText=value=>String(value??'').replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D]/gu,'').replace(/\s{2,}/g,' ').trim();const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));const safeImageURL=value=>{try{const url=new URL(value);return url.protocol==='https:'?url.href:'';}catch{return '';}};const save=()=>{localStore.setItem('violet-cart',JSON.stringify(state.cart));};
 let noticeTimer;
 function showNotice(text,type="success"){
  const notice=$('notice');clearTimeout(noticeTimer);
  notice.dataset.type=type;notice.textContent=text;notice.hidden=false;
  noticeTimer=setTimeout(()=>{notice.hidden=true;},type==="error"?5000:2500);
 }
-function setScreen(screen){if(state.screen==='orders'&&screen!=='orders'){$('order-confirmation').hidden=true;ordersRequest?.abort();}if(state.screen==='catalog')state.scroll=scrollY;state.screen=screen;for(const name of ['catalog','detail','promo','cart','orders'])$(name+'-screen').hidden=name!==screen;document.querySelectorAll('[data-screen]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.screen===screen)));telegram?.BackButton?.[screen==='detail'?'show':'hide']?.();render();scrollTo(0,screen==='catalog'?state.scroll:0);}
+function setScreen(screen){if(state.screen==='orders'&&screen!=='orders'){$('order-confirmation').hidden=true;$('order-confirmation').replaceChildren();$('orders').replaceChildren();$('order-recovery-form').reset();ordersRequest?.abort();}if(state.screen==='catalog')state.scroll=scrollY;state.screen=screen;for(const name of ['catalog','detail','promo','cart','orders'])$(name+'-screen').hidden=name!==screen;document.querySelectorAll('[data-screen]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.screen===screen)));telegram?.BackButton?.[screen==='detail'?'show':'hide']?.();render();scrollTo(0,screen==='catalog'?state.scroll:0);}
 function renderCategories(){
  const keys=['all',...Object.keys(categoryMeta).filter(key=>key!=='all'&&categoryMeta[key].active!==false).sort((a,b)=>(categoryMeta[a].sortOrder??999)-(categoryMeta[b].sortOrder??999))];
  $('categories').replaceChildren(...keys.map(key=>{
@@ -563,7 +577,7 @@ async function applyPromoCode(){
  try{
   const response=await fetch('/api/promocodes/validate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,subtotal:cartSubtotal()})});
    const data=await response.json();if(!response.ok)throw new Error(data.error||'Промокод не найден');
-   state.promoCode=code;state.appliedPromo={...data.promo,discount:data.discount};localStorage.setItem('violet-promo-code',code);renderCart();showNotice('Промокод применён');
+   state.promoCode=code;state.appliedPromo={...data.promo,discount:data.discount};localStore.setItem('violet-promo-code',code);renderCart();showNotice('Промокод применён');
  }catch(error){state.appliedPromo=null;showNotice(error.message,'error');renderCart();}
 }
 function cartRow(line){
@@ -626,7 +640,7 @@ function renderCart(){
   promoBox.innerHTML='<strong>Промокод</strong><div class="promo-code-row"><input id="promo-code-input" maxlength="30" autocomplete="off" placeholder="Введите код" value="'+escapeHTML(state.promoCode)+'"><button class="btn" id="apply-promo-code" type="button">Применить</button></div>'+(state.appliedPromo?'<div class="promo-code-summary"><span>'+escapeHTML(state.appliedPromo.title)+'</span><b>−'+money(promoDiscount())+'</b><button class="text-button" id="remove-promo-code" type="button">Убрать</button></div>':'');
  $('cart').append(promoBox);
  const promoInput=$('promo-code-input');promoInput.oninput=()=>{state.promoCode=promoInput.value.toUpperCase();state.appliedPromo=null;};promoInput.onkeydown=event=>{if(event.key==='Enter'){event.preventDefault();applyPromoCode();}};
- $('apply-promo-code').onclick=applyPromoCode;$('remove-promo-code')?.addEventListener('click',()=>{state.promoCode='';state.appliedPromo=null;localStorage.removeItem('violet-promo-code');renderCart();});
+ $('apply-promo-code').onclick=applyPromoCode;$('remove-promo-code')?.addEventListener('click',()=>{state.promoCode='';state.appliedPromo=null;localStore.removeItem('violet-promo-code');renderCart();});
  $('cart').append(checkout);
  $('checkout-open')?.addEventListener("click",()=>{
   state.checkoutOpen=true;state.checkoutDate||=minskDate();trackEvent("checkout_start");renderCart();
@@ -671,8 +685,8 @@ function prettyDate(date){
  return new Intl.DateTimeFormat("ru-BY",{timeZone:"UTC",day:"numeric",month:"long"}).format(new Date(date+"T12:00:00Z"));
 }
 function customerToken(){
- let token=localStorage.getItem("violet-customer-token");
- if(!token){token=[...crypto.getRandomValues(new Uint8Array(32))].map(value=>value.toString(16).padStart(2,"0")).join("");localStorage.setItem("violet-customer-token",token);}
+ let token=localStore.getItem("violet-customer-token");
+ if(!token){token=[...crypto.getRandomValues(new Uint8Array(32))].map(value=>value.toString(16).padStart(2,"0")).join("");localStore.setItem("violet-customer-token",token);}
  return token;
 }
 function telegramCustomerName(){
@@ -799,8 +813,9 @@ async function renderOrders(){
  $('order-recovery').hidden=checkoutTelegram();
  ordersRequest?.abort();const controller=new AbortController();ordersRequest=controller;
  target.setAttribute("aria-busy","true");target.innerHTML='<div class="empty" role="status">Загружаем заказы…</div>';
- const token=customerToken(),telegramData=telegram?.initData||"";
+ const timeout=setTimeout(()=>controller.abort("timeout"),10000);
  try{
+  const telegramData=telegram?.initData||"",token=telegramData?"":customerToken();
   const response=await fetch("/api/orders",{signal:controller.signal,headers:{"X-Customer-Token":token,"X-Telegram-Init-Data":telegramData}});
   const data=await response.json();
   if(controller.signal.aborted)return;
@@ -822,11 +837,13 @@ async function renderOrders(){
    }catch(error){showNotice(error.message,"error");button.disabled=false;}
   });
  }catch(error){
-  if(!controller.signal.aborted){
-   target.innerHTML='<div class="empty" role="alert">'+escapeHTML(error.message)+'<br><button type="button" id="orders-retry">Повторить</button></div>';
+  if(ordersRequest===controller&&state.screen==="orders"&&(!controller.signal.aborted||controller.signal.reason==="timeout")){
+   const message=controller.signal.reason==="timeout"?"Сервер не ответил вовремя.":error instanceof TypeError?"Нет соединения с сервером.":error.message||"Не удалось загрузить данные.";
+   target.innerHTML='<div class="empty" role="alert">'+escapeHTML(message)+'<br><button type="button" id="orders-retry">Повторить</button></div>';
    $('orders-retry').onclick=()=>renderOrders();
   }
  }finally{
+  clearTimeout(timeout);
   if(ordersRequest===controller)target.removeAttribute("aria-busy");
  }
 }
@@ -889,8 +906,8 @@ function renderPromos(){
  else $('promo-empty').querySelector('strong').textContent='Акций пока нет';
 }
 function render(){if(state.screen==='catalog')renderCatalog();if(state.screen==='promo')renderPromos();if(state.screen==='cart')renderCart();if(state.screen==='orders')renderOrders();updateBadge();}
-function visitorToken(){let token=localStorage.getItem('violet-analytics-visitor');if(!token){token=crypto.randomUUID()+crypto.randomUUID();localStorage.setItem('violet-analytics-visitor',token);}return token;}
-function trackEvent(eventType,data={}){if(state.storeSettings.analyticsEnabled===false)return;const payload={eventType,visitorToken:visitorToken(),...data};fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});}
+function visitorToken(){let token=localStore.getItem('violet-analytics-visitor');if(!token){token=crypto.randomUUID()+crypto.randomUUID();localStore.setItem('violet-analytics-visitor',token);}return token;}
+function trackEvent(eventType,data={}){if(state.storeSettings.analyticsEnabled===false)return;const {query:discardedQuery,...metadata}=data;const payload={eventType,visitorToken:visitorToken(),...metadata};fetch('/api/analytics/event',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});}
 function applyBrandTheme(){
  const theme=state.storeSettings.theme||{};
  const defaults={accent:"#E5E7EB",accent2:"#C4C9CC",background:"#101112",panel:"#191D1F",panel2:"#24292B",text:"#E8ECEF",muted:"#A0AAA4",line:"#363D3F",fontFamily:"Inter",headingFontFamily:"Manrope"};
@@ -919,7 +936,7 @@ function applyStorefrontLayout(){
 }
 
 $('sort').value=state.sort;
-$('sort').onchange=event=>{state.sort=event.target.value;localStorage.setItem("violet-sort",state.sort);renderCatalog({reset:true});};
+$('sort').onchange=event=>{state.sort=event.target.value;localStore.setItem("violet-sort",state.sort);renderCatalog({reset:true});};
 $('brand-filter').onchange=event=>{
  state.brand=event.target.value;trackEvent("brand_filter",{brand:state.brand});renderCatalog({reset:true});
 };
@@ -978,8 +995,10 @@ window.addEventListener("popstate",()=>{
  }
 });
 document.querySelectorAll("[data-screen]").forEach(button=>button.onclick=()=>{
- if(state.screen==="detail"&&location.hash.startsWith("#product-"))history.replaceState(null,"",location.pathname+location.search);
+ if(state.screen==="detail")history.replaceState(null,"",location.pathname+location.search);
  setScreen(button.dataset.screen);
+ const heading=document.querySelector("#"+button.dataset.screen+"-screen h1");
+ if(heading){heading.setAttribute("tabindex","-1");heading.focus({preventScroll:true});}
 });
 async function loadStoreSettings(){
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
@@ -987,7 +1006,7 @@ async function loadStoreSettings(){
   const response=await fetch("/api/settings/public",{signal:controller.signal});
   if(!response.ok)return;
   state.storeSettings={...state.storeSettings,...await response.json()};
-  if(!localStorage.getItem("violet-sort")&&state.storeSettings.defaultSort){
+  if(!localStore.getItem("violet-sort")&&state.storeSettings.defaultSort){
    state.sort=state.storeSettings.defaultSort;$('sort').value=state.sort;
   }
   applyStoreIdentity();applyBrandTheme();applyStorefrontLayout();
@@ -1031,9 +1050,10 @@ function initializeTelegram(){
  telegram=window.Telegram?.WebApp;
  telegram?.ready();telegram?.expand();telegram?.BackButton?.onClick(goBackInApp);telegram?.BackButton?.hide();
  if(state.screen==="cart")renderCart();
+ if(state.screen==="orders")renderOrders();
 }
 if(telegram)initializeTelegram();else document.addEventListener("DOMContentLoaded",initializeTelegram,{once:true});
-for(const key of ["violet-query","violet-category","violet-brand"])localStorage.removeItem(key);
+for(const key of ["violet-query","violet-category","violet-brand"])localStore.removeItem(key);
 render();
 const settingsReady=loadStoreSettings().finally(initAgeGate);
 syncCatalog(settingsReady);

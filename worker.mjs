@@ -117,7 +117,7 @@ async function sendTelegram(env,chatId,message,replyMarkup=null){
       ...(replyMarkup?{reply_markup:replyMarkup}:{})
     });
   }catch(error){
-    await logSystem(env,"warning","telegram","Не удалось отправить уведомление Telegram",{error:String(error)});
+    await logSystem(env,"warning","telegram","Не удалось отправить уведомление Telegram",{});
   }
 }
 async function notifyOrder(env,order,status="new"){
@@ -402,7 +402,7 @@ async function createOrder(request,env){
 
   let catalog;
   try{const catalogConfig=await getCatalogConfig(env);catalog=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});}
-  catch(error){await logSystem(env,"error","orders","Не удалось проверить каталог при оформлении заказа",{error:String(error)});return json({error:"Не удалось проверить наличие товаров. Попробуйте позже"},503);}
+  catch(error){await logSystem(env,"error","orders","Не удалось проверить каталог при оформлении заказа",{});return json({error:"Не удалось проверить наличие товаров. Попробуйте позже"},503);}
   const products=new Map(catalog.products.map(product=>[product.id,product]));
   const items=[],unavailableItems=[],resolvedQuantities=new Map();let total=0;
   for(const raw of body.items){
@@ -479,7 +479,7 @@ async function createOrder(request,env){
   let result;
   try{result=await env.DB.batch(statements);}
   catch(error){
-    await logSystem(env,"error","orders","Ошибка создания заказа",{error:String(error)});
+    await logSystem(env,"error","orders","Ошибка создания заказа",{});
     return json({error:"Не удалось сохранить заказ. Попробуйте ещё раз"},500);
   }
   if(!result?.[0]?.meta?.changes)return json({error:"Слот только что заняли. Выберите другое время"},409);
@@ -675,6 +675,8 @@ async function publicSettings(env){
   };
 }
 async function recordAnalyticsEvent(request,env){
+  const config=await getConfig(env);
+  if(config.analyticsEnabled===false)return json({success:true});
   const body=await bodyJson(request);
   if(!body)return json({error:"Некорректное событие"},400);
   const allowed=new Set(["product_view","add_to_cart","variant_unavailable_click","search","category_filter","brand_filter","checkout_start","order_created"]);
@@ -682,8 +684,8 @@ async function recordAnalyticsEvent(request,env){
   if(!allowed.has(eventType))return json({error:"Неизвестный тип события"},400);
   const token=String(body.visitorToken||"").slice(0,200);
   const visitorHash=token.length>=16?await sha256(token):null;
-  let query=String(body.query||"").trim().slice(0,120);
-  if(/@|\d{7,}/.test(query))query="";
+  // Never persist free-form search text: it may contain personal information.
+  const query=null;
   await run(env,"INSERT INTO analytics_events(event_type,product_id,product_name,category,brand,query_text,visitor_hash,created_at) VALUES(?,?,?,?,?,?,?,?)",[
     eventType,String(body.productId||"").slice(0,500)||null,
     String(body.productName||"").slice(0,180)||null,
@@ -724,7 +726,7 @@ async function telegramWebhook(request,env){
     if(kind==="order"&&staff&&hasPermission(staff,"orders.manage")){
       const result=await updateOrderStatus(env,orderId,action,{id:staff.id,role:staff.role},"Изменено из Telegram");
       try{await telegramCall(env,"answerCallbackQuery",{callback_query_id:callback.id,text:result.error||"Статус обновлён"});}
-      catch(error){await logSystem(env,"warning","telegram","Не удалось подтвердить callback Telegram",{error:String(error)});}
+      catch(error){await logSystem(env,"warning","telegram","Не удалось подтвердить callback Telegram",{});}
     }else{
       await telegramCall(env,"answerCallbackQuery",{callback_query_id:callback.id,text:"Нет доступа к этому действию",show_alert:true});
     }
@@ -746,7 +748,7 @@ function publicInfoPage(path){
   const privacy=path==="/privacy";
   const title=privacy?"Конфиденциальность":"Правила магазина";
   const copy=privacy?
-    "<p>Магазин использует имя и телефон из веб-заказа или данные подтверждённой учётной записи Telegram, чтобы обработать заказ и связаться с покупателем. В браузере сохраняются корзина, подтверждение возраста и ключ доступа к своим заказам.</p><p>Вопросы о данных можно задать менеджеру по контактам, указанным при оформлении заказа.</p>":
+    "<p>Демонстрационное приложение обрабатывает идентификатор и имя подтверждённой учётной записи Telegram, данные, предоставленные пользователем, и технические сведения о сеансе. В браузере могут сохраняться настройки, корзина и технический ключ исторической сессии. При включённой аналитике сохраняются псевдонимные события; свободный текст поиска больше не записывается. Это описание демо, а не окончательная политика обработки персональных данных коммерческого оператора.</p><p>Вопросы о данных можно задать менеджеру по контактам, указанным при оформлении заказа.</p>":
     "<p>Каталог предназначен для совершеннолетних покупателей. При оформлении выберите доступные способы получения и оплаты. Наличие и время получения подтверждает менеджер.</p><p>Новый заказ можно отменить в разделе «Мои заказы». Сохраните номер заказа, если вам нужно связаться с менеджером.</p>";
   return '<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+title+' — VIOLET SHOP</title><style>html{font:1rem/1.55 system-ui,sans-serif;color-scheme:dark;background:#101112;color:#e8ecef}main{max-width:42rem;margin:auto;padding:1.4rem}a{color:#e8ecef}</style><main><a href="/">Вернуться в магазин</a><h1>'+title+'</h1>'+copy+'</main></html>';
 }
@@ -1242,8 +1244,9 @@ export default {
       if(request.method==="GET"&&(path==="/courier"||path==="/courier/"))return textResponse(adminHtml);
       return json({error:"Not found"},404);
     }catch(error){
-      console.error("worker_request_failed",path,String(error));
-      await logSystem(env,"error","api","Необработанная ошибка API",{path,error:error instanceof Error?error.message:String(error)});
+      // Request paths and exception text can contain customer data or credentials.
+      console.error("worker_request_failed");
+      await logSystem(env,"error","api","Необработанная ошибка API",{});
       return json({error:"Внутренняя ошибка сервера"},500);
     }
   }
