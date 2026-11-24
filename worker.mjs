@@ -491,6 +491,18 @@ async function syncCatalog(env){
     const catalogConfig=await getCatalogConfig(env);
     if(!catalogConfig.spreadsheetId||!catalogConfig.catalogGid)throw new Error("Подключите Google Sheets в админке → Каталог");
     const payload=await loadCatalog({spreadsheetId:catalogConfig.spreadsheetId,catalogGid:catalogConfig.catalogGid,columnMapping:catalogConfig.columnMapping||{}});
+    const edits=await getSetting(env,"catalog_product_edits",{});
+    for(const product of payload.products){
+      const edit=edits[product.id];
+      if(!edit)continue;
+      for(const key of ["name","manufacturer","category","image","description"]){
+        if(Object.prototype.hasOwnProperty.call(edit,key))product[key]=edit[key];
+      }
+      if(Object.prototype.hasOwnProperty.call(edit,"available")){
+        product.available=edit.available;
+        if(!edit.available)for(const option of product.options)option.available=false;
+      }
+    }
     const details={fields:payload.fields,source:payload.source,categories:payload.categories||[...new Set(payload.products.map(product=>product.category).filter(Boolean))].map(key=>({key,label:key,image:"",icon:"?"}))};
     await run(env,"UPDATE sync_runs SET status='success',finished_at=?,source_rows=?,product_families=?,variants=?,details_json=? WHERE id=?",
       [now(),payload.sourceRows,payload.productFamilies,payload.variants,JSON.stringify(details),id]);
@@ -560,7 +572,7 @@ async function catalogResponse(request,env,ctx){
   const config=await getCatalogConfig(env);
   const cacheUrl=new URL("/api/catalog",request.url);
   cacheUrl.searchParams.set("version",VERSION);
-  cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.columnMapping,await getPromotions(env)])));
+  cacheUrl.searchParams.set("source",await sha256(JSON.stringify([config.spreadsheetId,config.catalogGid,config.columnMapping,await getPromotions(env),await getSetting(env,"catalog_product_edits",{})])));
   const cacheKey=new Request(cacheUrl,{method:"GET"});
   const cached=await cache.match(cacheKey);
   const force=new URL(request.url).searchParams.has("refresh");
@@ -1424,6 +1436,28 @@ export default {
         if(path==="/api/admin/catalog/products"&&request.method==="GET"){
           const payload=await syncCatalog(env);
           return json({products:publicCatalog(payload).products});
+        }
+        if(path==="/api/admin/catalog/products"&&request.method==="PUT"){
+          const body=await bodyJson(request);
+          const id=String(body?.productId||"").trim();
+          if(!id||id.length>250)return json({error:"Некорректный ID товара"},400);
+          const payload=await syncCatalog(env);
+          if(!payload.products.some(product=>product.id===id))return json({error:"Товар не найден в каталоге"},404);
+          const edited={
+            name:String(body.name||"").trim().slice(0,160),
+            manufacturer:String(body.manufacturer||"").trim().slice(0,160),
+            category:String(body.category||"").trim().slice(0,160),
+            image:String(body.image||"").trim().slice(0,500),
+            description:String(body.description||"").trim().slice(0,600),
+            available:body.available!==false
+          };
+          if(!edited.name||!edited.category)return json({error:"Название и категория обязательны"},400);
+          if(edited.image&&!/^https:\/\//i.test(edited.image))return json({error:"Фото должно иметь HTTPS-ссылку"},400);
+          const overrides=await getSetting(env,"catalog_product_edits",{});
+          overrides[id]=edited;
+          await setSetting(env,"catalog_product_edits",overrides,staff.id);
+          await logSystem(env,"info","catalog","Товар отредактирован",{id,staffId:staff.id});
+          return json({success:true,productId:id});
         }
         if(path==="/api/admin/sync-settings"&&request.method==="GET")return json(await getCatalogConfig(env));
         if(path==="/api/admin/sync-settings"&&request.method==="PUT"){
