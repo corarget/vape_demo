@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { auditData, ITEM_COLUMNS, CATEGORY_COLUMNS } from "../lib/data-contract.mjs";
-const cat=["category-example","Example","https://example.test/a.png","TRUE","0","Example"];
+const cat=["category-example","Example","https://example.test/a.png","TRUE","0"];
 const item=(key="group-1",sku="sku-1",link="Example",name="Sample")=>[key,sku,link,name,"Option","12.50","","TRUE","TRUE","Brand","",""];
 const audit=(p,c=[cat])=>auditData([ITEM_COLUMNS,...p],[CATEGORY_COLUMNS,...c]);
 test("repeated group key is valid when variants have distinct SKUs",()=>{
@@ -12,8 +12,8 @@ test("duplicate SKUs and orphan categories are reported without changing inputs"
   assert.equal(r.ok,false);assert.ok(r.issues.some(x=>x.field==="sku"&&x.relatedRow===2&&x.row===3));assert.ok(r.issues.some(x=>x.code==="unknown_category"));assert.equal(JSON.stringify(rows),original);
 });
 test("duplicate category display names, normalized keys and IDs fail",()=>{
-  const r=audit([item()],[cat,["category-example"," example ","","true","1","example"]]);
-  for(const field of ["id","name","product_category"])assert.ok(r.issues.some(x=>x.field===field&&x.code==="duplicate"));
+  const r=audit([item()],[cat,["category-example"," example ","","true","1"]]);
+  for(const field of ["id","name"])assert.ok(r.issues.some(x=>x.field===field&&x.code==="duplicate"));
 });
 test("group key cannot identify distinct groups or change across variants",()=>{
   const r=audit([item(),item("group-1","sku-2","Example","Another"),item("group-2","sku-3")]);
