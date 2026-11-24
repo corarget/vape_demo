@@ -6,6 +6,7 @@ import { PERMISSION_KEYS, normalizePermissions, getStaff, isManager, permissionF
 import { loadCatalog, parseCSV } from "./catalog.mjs";
 import { redeemStaffCredential } from "./lib/staff-redemption.mjs";
 import { reserveLoginAttempt, loginRateLimited } from "./lib/login-limit.mjs";
+import { resolveDemoOwner } from "./lib/demo-owner.mjs";
 import { verifyTelegramInitData, customerOrderScope } from "./lib/telegram-auth.mjs";
 import { BASELINE_KEY, readCSV, buildAuditSnapshot, diffAuditSnapshots, probeAppsScript } from "./lib/sync-audit.mjs";
 import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
@@ -602,13 +603,8 @@ async function demoStaffLogin(request,env){
     await logSystem(env,"info","auth","Вход демо-курьера",{staffId:staff.id});
     return json({success:true,staff:{id:staff.id,name:staff.display_name,role:"courier",permissions:[]}},200,{"Set-Cookie":cookieHeader(token)});
   }
-  let owner=await first(env,"SELECT id,display_name FROM staff WHERE role='owner' AND active=1 ORDER BY created_at LIMIT 1");
-  if(!owner){
-    const id=randomId(),created=now();
-    await run(env,"INSERT INTO staff(id,display_name,role,telegram_id,permissions_json,active,created_at,last_seen_at) VALUES(?,?,'owner',NULL,?,1,?,?)",
-      [id,"Демо-администратор",JSON.stringify(PERMISSION_KEYS),created,created]);
-    owner={id,display_name:"Демо-администратор"};
-  }
+  const owner=await resolveDemoOwner(env);
+  if(!owner)return json({error:"Демо-администратор отключён"},403);
   const token=await createSession(env,owner.id);
   await logSystem(env,"info","auth","Вход демо-администратора",{staffId:owner.id});
   return json({success:true,staff:{id:owner.id,name:owner.display_name,role:"owner",permissions:PERMISSION_KEYS}},200,{"Set-Cookie":cookieHeader(token)});
