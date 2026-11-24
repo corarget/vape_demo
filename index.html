@@ -822,7 +822,10 @@ async function renderOrders(){
    }catch(error){showNotice(error.message,"error");button.disabled=false;}
   });
  }catch(error){
-  if(!controller.signal.aborted)target.innerHTML='<div class="empty">'+escapeHTML(error.message)+'</div>';
+  if(!controller.signal.aborted){
+   target.innerHTML='<div class="empty" role="alert">'+escapeHTML(error.message)+'<br><button type="button" id="orders-retry">Повторить</button></div>';
+   $('orders-retry').onclick=()=>renderOrders();
+  }
  }finally{
   if(ordersRequest===controller)target.removeAttribute("aria-busy");
  }

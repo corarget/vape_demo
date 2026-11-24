@@ -4,6 +4,7 @@ import { first, all, run, logSystem, getSetting, setSetting } from "./lib/db.mjs
 import { DEFAULT_ADMIN_APPEARANCE, DEFAULT_CONFIG, sanitizeTheme, sanitizeStorefrontLayout, storefrontAppearance, sanitizeAdminAppearance, getConfig } from "./lib/config.mjs";
 import { PERMISSION_KEYS, normalizePermissions, getStaff, isManager, permissionForAdminRoute, hasPermission, unauthorized, createSession } from "./lib/auth.mjs";
 import { loadCatalog, parseCSV } from "./catalog.mjs";
+import { verifyTelegramInitData, customerOrderScope } from "./lib/telegram-auth.mjs";
 import { BASELINE_KEY, readCSV, buildAuditSnapshot, diffAuditSnapshots, probeAppsScript } from "./lib/sync-audit.mjs";
 import { DEMO_PROMOTIONS, applyCatalogDiscounts, discountForProduct, highestPromotion, normalizePromotion, promotionGiftOptions, promotionGroup } from "./promotions.mjs";
 import { html } from "./site.mjs";
@@ -151,27 +152,6 @@ async function notifyOrder(env,order,status="new"){
 }
 function escapeTelegram(value){
   return String(value??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-}
-async function verifyTelegramInitData(initData,botToken){
-  if(!initData||!botToken)return null;
-  try{
-    const params=new URLSearchParams(initData);
-    const hash=params.get("hash");
-    const authDate=Number(params.get("auth_date")||0);
-    const nowSeconds=Math.floor(Date.now()/1000);
-    if(!hash||!Number.isInteger(authDate)||authDate>nowSeconds+60||nowSeconds-authDate>86400)return null;
-    params.delete("hash");
-    const checkString=[...params.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([key,value])=>key+"="+value).join("\n");
-    const encoder=new TextEncoder();
-    const key1=await crypto.subtle.importKey("raw",encoder.encode("WebAppData"),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-    const secret=new Uint8Array(await crypto.subtle.sign("HMAC",key1,encoder.encode(botToken)));
-    const key2=await crypto.subtle.importKey("raw",secret,{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-    const signature=new Uint8Array(await crypto.subtle.sign("HMAC",key2,encoder.encode(checkString)));
-    const actual=[...signature].map(v=>v.toString(16).padStart(2,"0")).join("");
-    if(!safeEqual(actual,hash))return null;
-    const user=JSON.parse(params.get("user")||"null");
-    return user&&user.id?user:null;
-  }catch{return null;}
 }
 function timeParts(date,timezone){
   const parts=new Intl.DateTimeFormat("en-GB",{
@@ -513,7 +493,7 @@ async function recoverOrder(request,env){
   if(!customerHash)return json({error:"Сессия покупателя не найдена"},400);
   const code=String(body?.code||"").trim().toLowerCase();
   if(!/^[a-f0-9]{24}$/.test(code))return json({error:"Проверьте код из подтверждения заказа"},400);
-  const order=await first(env,"SELECT id,customer_key_hash FROM orders WHERE recovery_hash=?",[await sha256(code)]);
+  const order=await first(env,"SELECT id,customer_key_hash FROM orders WHERE recovery_hash=? AND COALESCE(telegram_user_id,'')=''",[await sha256(code)]);
   if(!order)return json({error:"Заказ с таким номером не найден"},404);
   if(order.customer_key_hash!==customerHash){
     await run(env,"INSERT OR IGNORE INTO order_recovery_sessions(order_id,customer_key_hash,created_at) VALUES(?,?,?)",[order.id,customerHash,now()]);
@@ -817,21 +797,27 @@ export default {
       if(customerCancelMatch&&request.method==="POST"){
         const body=await bodyJson(request);
         const hash=await verifyCustomerToken(request,body);
-        const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(body?.telegramInitData||request.headers.get("X-Telegram-Init-Data")||"",env.BOT_TOKEN):null;
-        if(!hash&&!telegramUser)return json({error:"Сессия покупателя не найдена"},401);
+        const initData=body?.telegramInitData||request.headers.get("X-Telegram-Init-Data")||"";
+        const telegramUser=await verifyTelegramInitData(initData,env.BOT_TOKEN);
+        const scope=customerOrderScope(telegramUser,hash,!!initData);
+        if(!scope)return json({error:"Сессия недействительна. Откройте приложение заново в Telegram."},401);
         const order=await loadOrder(env,customerCancelMatch[1]);
         if(!order)return json({error:"Заказ не найден"},404);
-        const sessionMatch=hash&&(order.customer_key_hash===hash||await first(env,"SELECT 1 FROM order_recovery_sessions WHERE order_id=? AND customer_key_hash=?",[order.id,hash]));
-        if(!sessionMatch&&!(telegramUser&&order.telegram_user_id===String(telegramUser.id)))return json({error:"Заказ не найден"},404);
+        const sessionMatch=!order.telegram_user_id&&scope.customerHash&&(order.customer_key_hash===scope.customerHash||await first(env,"SELECT 1 FROM order_recovery_sessions WHERE order_id=? AND customer_key_hash=?",[order.id,scope.customerHash]));
+        if(!(scope.telegramId&&order.telegram_user_id===scope.telegramId)&&!sessionMatch)return json({error:"Заказ не найден"},404);
         if(order.status!=="new")return json({error:"Отменить можно только новый заказ. Свяжитесь с магазином"},409);
         const result=await updateOrderStatus(env,order.id,"cancelled",{id:null,role:"customer"},"Отменён покупателем");
         return result.error?json({error:result.error},result.status):json({success:true,order:customerOrder(result.order)});
       }
       if(path==="/api/orders"&&request.method==="GET"){
         const hash=await verifyCustomerToken(request);
-        const telegramUser=env.BOT_TOKEN?await verifyTelegramInitData(request.headers.get("X-Telegram-Init-Data")||"",env.BOT_TOKEN):null;
-        if(!hash&&!telegramUser)return json({error:"Сессия покупателя не найдена"},401);
-        const orders=await all(env,"SELECT id FROM orders WHERE customer_key_hash=? OR telegram_user_id=? OR id IN (SELECT order_id FROM order_recovery_sessions WHERE customer_key_hash=?) ORDER BY created_at DESC LIMIT 50",[hash||null,telegramUser?String(telegramUser.id):null,hash||null]);
+        const initData=request.headers.get("X-Telegram-Init-Data")||"";
+        const telegramUser=await verifyTelegramInitData(initData,env.BOT_TOKEN);
+        const scope=customerOrderScope(telegramUser,hash,!!initData);
+        if(!scope)return json({error:"Сессия недействительна. Откройте приложение заново в Telegram."},401);
+        const orders=scope.telegramId
+          ?await all(env,"SELECT id FROM orders WHERE telegram_user_id=? ORDER BY created_at DESC LIMIT 50",[scope.telegramId])
+          :await all(env,"SELECT id FROM orders WHERE COALESCE(telegram_user_id,'')='' AND (customer_key_hash=? OR id IN (SELECT order_id FROM order_recovery_sessions WHERE customer_key_hash=?)) ORDER BY created_at DESC LIMIT 50",[scope.customerHash,scope.customerHash]);
         const detailed=await Promise.all(orders.map(row=>loadOrder(env,row.id)));
         return json({orders:detailed.filter(Boolean).map(customerOrder)});
       }
