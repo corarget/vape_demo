@@ -53,7 +53,6 @@
 .mt-16{margin-top:16px}
 .mt-24{margin-top:24px}
 .panel-spaced{margin-top:16px}
-.catalog-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .full-width{width:100%}
 .compact-select{max-width:190px}
 .order-customer{margin-top:4px}
@@ -290,14 +289,10 @@ input[type="checkbox"] { accent-color: var(--admin-accent); }
 
     <section id="page-catalog" class="section">
       <div class="catalog-tabbar"><button type="button" class="btn primary" data-page="catalog">Товары и синхронизация</button><button type="button" class="btn" data-page="categories">Категории</button></div>
-      <div class="grid two">
-        <div class="panel"><div class="panel-head"><div><h2>Синхронизация каталога</h2><p>Источник данных — Google Sheets, листы «Товары» и «Категории»</p></div><span class="pill" id="sync-state">Не проверено</span></div><div id="catalog-stats" class="grid metrics catalog-stats-grid"></div><button class="btn primary" id="sync-now">↻ Синхронизировать сейчас</button><div class="small muted mt-8">Синхронизация не изменяет исходную таблицу. Витрина читает данные и нормализует варианты в товарные линейки.</div></div>
-        <div class="panel"><div class="panel-head"><div><h2>Модель каталога</h2><p>Как товары объединяются в карточки</p></div></div><div class="config-note">Карточка = категория + производитель + название линейки + тип компонента. Вкусы, крепость, цвет и сопротивление становятся вариантами. SKU и внутренний ключ доступны менеджеру, но скрыты от покупателя.</div></div>
-      </div>
+      <div class="panel"><div class="panel-head"><h2>Синхронизация</h2><button class="btn primary" id="sync-now">Синхронизировать</button></div></div>
       <div class="panel panel-spaced"><div class="panel-head"><div><h2>Источник каталога</h2><p>Вставьте ссылку на нужный лист Google Sheets</p></div></div><form id="sync-settings-form" class="form-grid"><label class="full">Ссылка на Google Sheets<input id="sync-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=…" autocomplete="off" required></label><input id="sync-sheet-id" type="hidden"><input id="sync-gid" type="hidden"><label class="full">GID вкладки «Категории»<input id="sync-categories-gid" placeholder="GID Категории" inputmode="numeric"></label>><input id="sync-cache" type="hidden" value="90"><div class="full"><button class="btn primary" type="submit">Сохранить ссылку</button> <button class="btn" id="preview-sheet" type="button">Проверить</button></div></form></div>
       <div class="panel panel-spaced"><div class="panel-head"><div><h2>Товары</h2><p>Исходные данные редактируются непосредственно в Google Sheets.</p></div><a class="btn primary" id="edit-products-sheet" target="_blank" rel="noopener" href="#">Редактировать товары</a></div><div class="catalog-browser"><input id="catalog-product-search" type="search" placeholder="Найти товар"><div id="catalog-product-results" class="catalog-product-results"></div></div></div>
       <div class="panel panel-spaced" hidden><div class="panel-head"><div><h2>Шаблон и сопоставление столбцов</h2><p>Можно прикрепить CSV-шаблон или проверить заголовки подключённой таблицы. Данные источника не изменяются.</p></div></div><div class="form-grid"><label class="full">Прикрепить шаблон CSV<input id="catalog-template-file" type="file" accept=".csv,text/csv"></label><div class="full actions"><button class="btn" id="attach-template" type="button">Сохранить шаблон</button><button class="btn" id="download-template" type="button">Скачать пустой шаблон</button><button class="btn" id="download-attached-template" type="button">Скачать прикреплённый</button><span id="template-info" class="muted small"></span></div><div id="column-mapping" class="full form-grid"></div><div class="full"><button class="btn" id="save-template" type="button">Сохранить сопоставление столбцов</button></div></div></div>
-      <div class="panel panel-spaced"><div class="panel-head"><div><h2>История синхронизации</h2><p>Последние запуски и результаты</p></div></div><div id="sync-history"></div></div>
     </section>
 
     <section id="page-categories" class="section">
@@ -779,37 +774,28 @@ function renderCatalogProductResults(query=""){
    if(url&&url!=="#")window.open(url,"_blank","noopener,noreferrer");
  });
 }
-function syncDetails(run){try{return JSON.parse(run?.details_json||"{}");}catch{return {};}}
-function deltaText(delta){
- if(!delta)return "Нет данных сравнения";
- if(delta.baseline)return "Создан базовый снимок";
- if(!delta.added&&!delta.changed&&!delta.removed)return "Изменений нет";
- return "Добавлено: "+delta.added+" · изменено: "+delta.changed+" · удалено: "+delta.removed+" · без изменений: "+delta.unchanged;
-}
-function integrationText(value){
- const labels={verified:"Apps Script проверен",needs_redeploy:"Apps Script требует обновления deployment",not_configured:"Apps Script не настроен",unauthorized:"Apps Script: неверный токен",source_mismatch:"Apps Script: несовпадение источника или схемы",invalid_url:"Apps Script: неверный URL",invalid_redirect:"Apps Script: неожиданный redirect",http_error:"Apps Script: ошибка HTTP",invalid_response:"Apps Script: некорректный ответ",unreachable:"Apps Script недоступен"};
- return labels[value?.status]||"Apps Script не проверен";
-}
 function syncSummary(summary){
- const changes=summary.changes||{};
- return "Строки: "+deltaText(changes.items)+"; группы: "+deltaText(changes.groups)+"; категории: "+deltaText(changes.categories)+". "+integrationText(summary.integration)+(summary.warnings?.length?" · "+summary.warnings.join(" "):"");
+ const changes=summary?.changes||{},items=changes.items,categories=changes.categories;
+ if(!items||!categories)return "Проверка завершена. Число изменений недоступно.";
+ const warning=summary.integration?.status==="verified"?"":" · Интеграция не подтверждена";
+ if(items.baseline||categories.baseline)return "Первичная проверка завершена"+warning;
+ const affected=delta=>Number(delta.added||0)+Number(delta.changed||0)+Number(delta.removed||0);
+ const count=affected(items)+affected(categories);
+ return (count===0?"Изменений нет":"Затронуто записей: "+count)+warning;
 }
 async function loadCatalog(){
  const canManageCatalog=canPermission("catalog.manage");
  $("page-catalog").querySelectorAll("button,input,select").forEach(element=>{if(!element.closest(".catalog-tabbar"))element.disabled=!canManageCatalog;});
  $("page-catalog").querySelectorAll("form").forEach(form=>form.hidden=!canManageCatalog);
  $("catalog-product-search").disabled=false;
- const [runs,settings,template,products]=await Promise.all([api("/api/admin/sync-runs"),api("/api/admin/sync-settings"),api("/api/admin/catalog-template"),api("/api/admin/catalog/products").catch(error=>({error:error.message}))]);
+ const [settings,template,products]=await Promise.all([api("/api/admin/sync-settings"),api("/api/admin/catalog-template"),api("/api/admin/catalog/products").catch(error=>({error:error.message}))]);
  if(!products.error)state.catalogProducts=products.products||[];renderCatalogProductResults($("catalog-product-search").value);
- const latest=runs.runs.find(run=>syncDetails(run).manual);const details=syncDetails(latest);state.catalogTemplate=template||{headers:[],columnMapping:{}};
- $("sync-state").textContent=products.error?"Источник недоступен":latest?.status==="success"?"Проверен":latest?.status==="error"?"Ошибка":latest?.status==="running"?"Проверяется":"Ожидает проверки";
- $("catalog-stats").innerHTML=[["Строк в источнике",latest?.source_rows??"—"],["Карточек",latest?.product_families??"—"],["Вариантов",latest?.variants??"—"],["Последний запуск",latest?.finished_at?new Date(latest.finished_at).toLocaleString("ru-BY"):"—"],["Строки — результат",deltaText(details.changes?.items)],["Группы — результат",deltaText(details.changes?.groups)],["Категории — результат",deltaText(details.changes?.categories)],["Интеграция",integrationText(details.integration)]].map(x=>'<div class="metric"><small>'+x[0]+'</small><strong class="metric-small-value">'+esc(x[1])+'</strong></div>').join("");
+ state.catalogTemplate=template||{headers:[],columnMapping:{}};
  $("sync-sheet-id").value=settings.spreadsheetId;$("sync-gid").value=settings.catalogGid;$("sync-categories-gid").value=settings.categoriesGid||"";$("sync-cache").value=settings.cacheSeconds;
  $("sync-sheet-url").value="https://docs.google.com/spreadsheets/d/"+settings.spreadsheetId+"/edit?gid="+settings.catalogGid;
  $("edit-products-sheet").href="https://docs.google.com/spreadsheets/d/"+settings.spreadsheetId+"/edit#gid="+settings.catalogGid;
  $("template-info").textContent=template?.name?template.name+" · "+(template.headers||[]).length+" столбцов"+(template.hasContent?" · файл сохранён":""):"Шаблон ещё не прикреплён";
  renderColumnMapping(template?.headers||[],template?.columnMapping||settings.columnMapping||{});
- $("sync-history").innerHTML=runs.runs.length?'<div class="table-wrap"><table><thead><tr><th>Дата</th><th>Статус</th><th>Строк</th><th>Карточек</th><th>Вариантов</th><th>Результат</th><th>Ошибка</th></tr></thead><tbody>'+runs.runs.map(r=>'<tr><td>'+new Date(r.started_at).toLocaleString("ru-BY")+'</td><td>'+statusPill(r.status==="success"?"completed":r.status==="error"?"rejected":"new")+'</td><td>'+(r.source_rows??"—")+'</td><td>'+(r.product_families??"—")+'</td><td>'+(r.variants??"—")+'</td><td>'+esc(syncDetails(r).manual?deltaText(syncDetails(r).changes?.items):"Историческая запись без сравнения")+'</td><td>'+esc(r.error||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty">История появится после первого запуска</div>';
 }
 $("sync-sheet-url").onchange=()=>{const parsed=sheetParts($("sync-sheet-url").value);if(parsed.spreadsheetId)$("sync-sheet-id").value=parsed.spreadsheetId;if(parsed.catalogGid)$("sync-gid").value=parsed.catalogGid;};
 $("catalog-product-search").oninput=event=>renderCatalogProductResults(event.target.value);
@@ -819,7 +805,7 @@ $("attach-template").onclick=async()=>{const file=$("catalog-template-file").fil
 $("save-template").onclick=async()=>{try{if(!state.catalogTemplate.headers?.length)throw new Error("Сначала проверьте таблицу или прикрепите CSV-шаблон");const template={...state.catalogTemplate,columnMapping:readColumnMapping()};await api("/api/admin/catalog-template",{method:"PUT",body:JSON.stringify(template)});await saveCatalogConnection();state.catalogTemplate=template;toast("Сопоставление сохранено");}catch(error){toast(error.message);}};
 $("download-template").onclick=()=>{const headers=catalogFields.map(field=>field.key);const csv=headers.join(",")+"\r\n";const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="violet-shop-catalog-template.csv";link.click();URL.revokeObjectURL(link.href);};
 $("download-attached-template").onclick=async()=>{try{const response=await fetch("/api/admin/catalog-template/file",{credentials:"same-origin"});if(!response.ok){const data=await response.json().catch(()=>({}));throw new Error(data.error||"Файл шаблона не найден");}const blob=await response.blob();const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download=state.catalogTemplate.name||"catalog-template.csv";link.click();URL.revokeObjectURL(link.href);}catch(error){toast(error.message);}};
-$("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="Синхронизация…";try{await saveCatalogConnection();const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast(syncSummary(d.summary));}catch(error){toast(error.message);}finally{try{await loadCatalog();}catch{}try{await loadCategories();}catch{}b.disabled=!canPermission("catalog.manage");b.textContent="↻ Синхронизировать сейчас";}};
+$("sync-now").onclick=async()=>{const b=$("sync-now");b.disabled=true;b.textContent="Синхронизация…";try{await saveCatalogConnection();const d=await api("/api/admin/sync",{method:"POST",body:"{}"});toast(syncSummary(d.summary));}catch(error){toast("Ошибка синхронизации: "+error.message);}finally{try{await loadCatalog();}catch{}try{await loadCategories();}catch{}b.disabled=!canPermission("catalog.manage");b.textContent="Синхронизировать";}};
 function renderCategoryList(){
  const list=$("categories-list");
  $("categories-reload").hidden=false;
